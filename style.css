@@ -1,0 +1,21 @@
+:root {
+  --bg: #0b1326;
+  --panel: #13284a;
+  --panel2: #0f1d35;
+  --text: #eaf3ff;
+  --sub: #9bc6ff;
+  --accent: #5ea2ff;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; }
+#app { max-width: 900px; margin: 20px auto; padding: 12px; }
+.panel { border: 2px solid var(--accent); background: var(--panel); padding: 12px; margin-bottom: 10px; }
+.title { font-size: 34px; margin: 0 0 8px; }
+.sub { color: var(--sub); margin-bottom: 10px; }
+.btn { display: block; width: 100%; text-align: left; margin: 8px 0; padding: 10px 12px; border: 1px solid #91beff; background: #1a3e73; color: #fff; cursor: pointer; }
+.btn:hover { background: #255396; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.map { position: relative; height: 300px; background: #0f2343; border: 2px solid #86b8ff; overflow: hidden; }
+.player { position: absolute; width: 18px; height: 18px; background: #8ec9ff; border: 1px solid #fff; }
+.spot { position: absolute; transform: translate(-50%, -50%); background: #2d6db5; border: 1px solid #b8e2ff; color: #fff; padding: 4px 6px; font-size: 12px; }
+.log { white-space: pre-wrap; border: 1px solid #5f8fcc; background: var(--panel2); padding: 10px; min-height: 78px; }
+.small { font-size: 13px; color: #b8d7ff; }
