@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>一画面ひなた勇者</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101828;color:#fff;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN",sans-serif}main{min-height:100vh;display:grid;place-items:center;padding:10px}.wrap{width:min(100%,700px);background:#182230;border:3px solid #e4e7ec;border-radius:14px;padding:10px;box-shadow:0 15px 40px #0009}header{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:8px}h1{font-size:21px;margin:0}header small{color:#98a2b3}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:8px}.stat{background:#0c111d;border:1px solid #475467;border-radius:6px;padding:5px;text-align:center;font-size:12px}.wide{grid-column:span 3}canvas{display:block;width:100%;height:auto;border:3px solid #fff;background:#000;image-rendering:pixelated;touch-action:manipulation}.msg{min-height:92px;background:#05070b;border:3px solid #fff;border-radius:7px;margin-top:8px;padding:10px 12px;white-space:pre-line;line-height:1.55}.cmd{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}.cmd button,.util button{border:2px solid #fff;border-radius:7px;background:#111827;color:#fff;font-weight:700;padding:11px}.cmd button:disabled{opacity:.35}.util{display:flex;gap:6px;margin-top:8px}.util button{flex:1}.help{font-size:11px;color:#98a2b3;text-align:center;margin:8px 0 0}@media(max-width:520px){.stats{grid-template-columns:repeat(3,1fr)}.wide{grid-column:span 3}.msg{font-size:14px}}
+</style>
+</head>
+<body><main><section class="wrap">
+<header><h1>一画面ひなた勇者</h1><small>有限イベント型RPG</small></header>
+<div id="stats" class="stats"></div>
+<canvas id="game" width="640" height="480"></canvas>
+<div id="msg" class="msg">崩れゆく一画面世界。魔王を倒す前に、誰を助け、何を使うかを選べ。</div>
+<div id="cmd" class="cmd"></div>
+<div class="util"><button id="save">セーブ</button><button id="reset">最初から</button></div>
+<p class="help">マップ上の人物・敵・施設をタップ。イベントは原則一度きりです。</p>
+</section></main>
+<script>
+(()=>{'use strict';
+const cvs=document.getElementById('game'),ctx=cvs.getContext('2d'),msg=document.getElementById('msg'),cmd=document.getElementById('cmd'),stats=document.getElementById('stats');
+const SAVE='one_screen_hinata_v1';
+const fresh=()=>({hp:38,maxHp:38,mp:8,maxMp:8,atk:8,def:4,lv:1,exp:0,gold:20,smile:0,fragments:0,allies:[],used:{},ended:false});
+let s=load();
+const spots=[
+{id:'kumi',x:82,y:80,type:'ally',name:'佐々木久美',color:'#eab308',text:'久美「世界が一画面でも、まとめる人は必要でしょ？」',gain:{ally:'久美',def:3,smile:12}},
+{id:'kyo',x:182,y:82,type:'ally',name:'齊藤京子',color:'#9333ea',cost:8,text:'京子「助けるなら薬草代8G。歌魔法で返すから。」',gain:{ally:'京子',atk:3,mp:5,smile:10}},
+{id:'katoshi',x:295,y:78,type:'ally',name:'加藤史帆',color:'#ec4899',need:'wolf',text:'史帆「狼を倒してくれたの？ じゃあ守る！」',gain:{ally:'史帆',def:4,smile:10}},
+{id:'mirei',x:415,y:82,type:'ally',name:'佐々木美玲',color:'#f59e0b',cost:12,text:'美玲「パン代12Gで元気百倍！」',gain:{ally:'美玲',maxHp:14,hp:14,smile:12}},
+{id:'ushio',x:548,y:80,type:'heal',name:'潮紗理菜',color:'#0ea5e9',text:'潮の祈りで全回復した。'},
+{id:'shop',x:80,y:215,type:'shop',name:'武器屋',color:'#b45309'},
+{id:'inn',x:180,y:215,type:'inn',name:'宿屋',color:'#16a34a'},
+{id:'chest',x:285,y:215,type:'chest',name:'宝箱',color:'#a16207'},
+{id:'slime',x:400,y:215,type:'enemy',name:'ひなたスライム',color:'#22c55e',hp:20,atk:6,def:1,exp:10,gold:10},
+{id:'wolf',x:530,y:215,type:'enemy',name:'影オオカミ',color:'#64748b',hp:42,atk:10,def:3,exp:18,gold:18,fragment:true},
+{id:'tower',x:80,y:360,type:'enemy',name:'黒い塔の番人',color:'#334155',hp:64,atk:13,def:5,exp:28,gold:25,fragment:true},
+{id:'quiz',x:205,y:360,type:'quiz',name:'ひなた坂クイズ',color:'#f97316'},
+{id:'shrine',x:330,y:360,type:'shrine',name:'笑顔の祠',color:'#fde047'},
+{id:'mimic',x:455,y:360,type:'enemy',name:'ミミック',color:'#7c2d12',hp:76,atk:16,def:6,exp:36,gold:45,fragment:true},
+{id:'boss',x:565,y:360,type:'boss',name:'魔王アンチサンシャイン',color:'#111827',hp:125,atk:19,def:8}
+];
+function load(){try{return JSON.parse(localStorage.getItem(SAVE))||fresh()}catch(e){return fresh()}}
+function save(t){localStorage.setItem(SAVE,JSON.stringify(s));if(t)msg.textContent=t}
+function draw(){ctx.clearRect(0,0,640,480);ctx.fillStyle='#6fbf62';ctx.fillRect(0,0,640,480);ctx.fillStyle='#4f8e4a';for(let i=0;i<50;i++)ctx.fillRect((i*83)%640,(i*47)%480,3,3);ctx.strokeStyle='#d1fae5';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,145);ctx.lineTo(640,145);ctx.moveTo(0,300);ctx.lineTo(640,300);ctx.stroke();spots.forEach(o=>drawSpot(o));drawStats()}
+function drawSpot(o){const gone=s.used[o.id]&&o.id!=='boss';ctx.globalAlpha=gone?.18:1;ctx.fillStyle=o.color;ctx.beginPath();ctx.arc(o.x,o.y,30,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(o.name,o.x,o.y+47);if(gone){ctx.fillStyle='#111';ctx.font='bold 28px sans-serif';ctx.fillText('×',o.x,o.y+9)}ctx.globalAlpha=1}
+function drawStats(){stats.innerHTML=`<div class="stat">Lv ${s.lv}</div><div class="stat">HP ${s.hp}/${s.maxHp}</div><div class="stat">MP ${s.mp}/${s.maxMp}</div><div class="stat">攻 ${s.atk}</div><div class="stat">守 ${s.def}</div><div class="stat">${s.gold}G</div><div class="stat wide">仲間：${s.allies.join('・')||'なし'}</div><div class="stat">欠片 ${s.fragments}/3</div><div class="stat">笑顔 ${s.smile}</div>`}
+function buttons(items){cmd.innerHTML='';items.forEach(i=>{const b=document.createElement('button');b.textContent=i.label;b.disabled=!!i.disabled;b.onclick=i.fn;cmd.appendChild(b)})}
+function clear(){cmd.innerHTML=''}
+function use(o){if(s.ended)return;if(s.used[o.id]&&o.id!=='boss'){msg.textContent='そのイベントはもう終わっている。';return}if(o.type==='ally')return ally(o);if(o.type==='heal')return heal(o);if(o.type==='shop')return shop(o);if(o.type==='inn')return inn(o);if(o.type==='chest')return chest(o);if(o.type==='enemy'||o.type==='boss')return battle(o);if(o.type==='quiz')return quiz(o);if(o.type==='shrine')return shrine(o)}
+function ally(o){if(o.need&&!s.used[o.need])return msg.textContent=`${o.name}を助けるには、先に影オオカミを倒す必要がある。`;if(o.cost&&s.gold<o.cost)return msg.textContent=`${o.name}を助けるには${o.cost}G必要だ。`;buttons([{label:'助ける',fn:()=>{if(o.cost)s.gold-=o.cost;const g=o.gain;s.allies.push(g.ally);['atk','def','maxHp','hp','mp','smile'].forEach(k=>{if(g[k])s[k]+=g[k]});s.used[o.id]=true;msg.textContent=o.text+'\n'+g.ally+'が仲間になった！';clear();save();draw()}},{label:'今はやめる',fn:()=>{msg.textContent='まだイベントは残っている。';clear()}}])}
+function heal(o){s.hp=s.maxHp;s.mp=s.maxMp;s.used[o.id]=true;msg.textContent=o.text+'\nただし祈りは一度きりだった。';save();draw()}
+function shop(o){buttons([{label:'光の剣 20G（攻+6）',disabled:s.gold<20,fn:()=>{s.gold-=20;s.atk+=6;s.used[o.id]=true;msg.textContent='光の剣を買った。武器屋は消えた。';clear();save();draw()}},{label:'光の盾 18G（守+5）',disabled:s.gold<18,fn:()=>{s.gold-=18;s.def+=5;s.used[o.id]=true;msg.textContent='光の盾を買った。武器屋は消えた。';clear();save();draw()}},{label:'やめる',fn:()=>{msg.textContent='買わなければ武器屋はまだ残る。';clear()}}])}
+function inn(o){if(s.gold<10)return msg.textContent='宿泊には10G必要だ。';buttons([{label:'泊まる 10G',fn:()=>{s.gold-=10;s.hp=s.maxHp;s.mp=s.maxMp;s.used[o.id]=true;msg.textContent='一晩休み、全回復した。宿屋は消えた。';clear();save();draw()}},{label:'やめる',fn:clear}])}
+function chest(o){s.used[o.id]=true;s.gold+=22;s.smile+=5;msg.textContent='宝箱から22Gと「思い出の写真」を手に入れた。笑顔+5。';save();draw()}
+function quiz(o){buttons([{label:'「キュン」',fn:()=>answer(true)},{label:'「絶望の一秒前」',fn:()=>answer(false)},{label:'やめる',fn:clear}]);function answer(ok){s.used[o.id]=true;if(ok){s.smile+=18;s.mp+=4;msg.textContent='正解！ 笑顔+18、MP+4。'}else{s.hp=Math.max(1,s.hp-10);msg.textContent='不正解。HPを10失った。'}clear();save();draw()}}
+function shrine(o){if(s.smile<35)return msg.textContent='笑顔が35以上ないと祠は反応しない。';s.used[o.id]=true;s.fragments++;s.maxHp+=10;s.hp+=10;msg.textContent='笑顔の祠が輝き、光の欠片を得た。最大HP+10。';save();draw()}
+function battle(o){const e={...o};let guarding=false;msg.textContent=`${e.name}が現れた！`;turn();function turn(){buttons([{label:'たたかう',fn:()=>attack(false)},{label:'ひなた魔法 MP3',disabled:s.mp<3,fn:()=>attack(true)},{label:'ぼうぎょ',fn:()=>{guarding=true;enemyTurn()}},{label:'にげる',disabled:o.type==='boss',fn:()=>{msg.textContent='逃げ出した。敵はまだ残っている。';clear()}}])}function attack(magic){let d;if(magic){s.mp-=3;d=Math.max(4,s.atk+8+s.allies.length*2-e.def+rand(7))}else d=Math.max(1,s.atk+s.allies.length-e.def+rand(6));e.hp-=d;msg.textContent=`${magic?'ひなた魔法':'みんなの攻撃'}！ ${d}ダメージ。`;if(e.hp<=0)return win();setTimeout(enemyTurn,350)}function enemyTurn(){let d=Math.max(1,e.atk-s.def+rand(6));if(guarding){d=Math.ceil(d/2);guarding=false}s.hp-=d;msg.textContent=`${e.name}の攻撃！ ${d}ダメージ。`;if(s.hp<=0)return lose();save();draw();setTimeout(turn,350)}function win(){s.gold+=e.gold||0;s.exp+=e.exp||0;if(e.fragment)s.fragments++;if(o.type==='boss')return ending();s.used[o.id]=true;while(s.exp>=18*s.lv){s.exp-=18*s.lv;s.lv++;s.maxHp+=7;s.hp=s.maxHp;s.atk+=2;s.def+=1}msg.textContent=`${e.name}を倒した！ ${e.gold||0}G獲得。${e.fragment?' 光の欠片も得た。':''}`;clear();save();draw()}function lose(){s.hp=1;s.gold=Math.floor(s.gold/2);msg.textContent='敗北した……。HP1で復帰し、所持金が半分になった。敵は残っている。';clear();save();draw()}}
+function ending(){s.used.boss=true;s.ended=true;clear();let title='ノーマルエンド「とりあえず世界は救われた」',text='魔王は倒れた。しかし、消えた仲間と施設は戻らなかった。';if(s.fragments>=3&&s.smile>=70&&s.allies.length>=4){title='ベストエンド「約束のライブ」';text='三つの欠片と笑顔の力で世界は完全に復元。全員そろって異世界ライブを成功させた。'}else if(s.fragments>=3||s.smile>=50){title='ベターエンド「ひなたの夜明け」';text='世界の大半は戻り、残った仲間たちと新しい朝を迎えた。'}msg.textContent=`${title}\n${text}\n\n仲間 ${s.allies.length}人／欠片 ${s.fragments}／笑顔 ${s.smile}`;save();draw()}
+function rand(n){return Math.floor(Math.random()*n)}
+cvs.addEventListener('pointerup',e=>{const r=cvs.getBoundingClientRect(),x=(e.clientX-r.left)*640/r.width,y=(e.clientY-r.top)*480/r.height;let best=null,bd=999;spots.forEach(o=>{const d=Math.hypot(x-o.x,y-o.y);if(d<bd){bd=d;best=o}});if(best&&bd<48)use(best)});
+document.getElementById('save').onclick=()=>save('冒険の記録を保存した。');document.getElementById('reset').onclick=()=>{if(confirm('最初から始めますか？')){s=fresh();save();location.reload()}};draw();
+})();
+</script></body></html>
