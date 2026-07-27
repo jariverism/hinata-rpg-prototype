@@ -209,8 +209,15 @@ test("タイトルから第二章終了、セーブ・ロードまでの進行",
   assert.equal(state.flags.chapter2, true);
   assert.equal(state.map, "world");
 
-  window.__HQ0_TEST__.step("milerea");
+  for (let i = 0; i < 12; i += 1) pressDirection(document, "right");
   pressDirection(document, "up");
+  pressA(document);
+  assert.equal(document.querySelector("#speaker").textContent, "SYSTEM");
+  document.querySelector("#dialogue").click();
+  window.__HQ0_TEST__.settle();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.map, "milerea");
+  for (let i = 0; i < 5; i += 1) pressDirection(document, "up");
   pressA(document);
   assert.equal(
     document.querySelector("#speaker").textContent,
