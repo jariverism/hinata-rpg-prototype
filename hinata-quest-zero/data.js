@@ -18,6 +18,9 @@ window.HQ0 = (() => {
     LAVA: 14,
     MOSS: 15,
     ROOT: 16,
+    CLOUD: 17,
+    WOOD: 18,
+    WIND: 19,
   };
   const grid = (fill) => Array.from({ length: 11 }, () => Array(20).fill(fill));
 
@@ -329,6 +332,71 @@ window.HQ0 = (() => {
     return g;
   }
 
+  function katoshia() {
+    const g = grid(TILE.STONE);
+    for (let x = 0; x < 20; x++) {
+      g[0][x] = TILE.CLOUD;
+      g[10][x] = TILE.WALL;
+    }
+    for (let y = 0; y < 11; y++) {
+      g[y][0] = TILE.WALL;
+      g[y][19] = TILE.WALL;
+      g[y][10] = TILE.PATH;
+    }
+    for (let x = 1; x < 19; x++) g[8][x] = TILE.PATH;
+    for (let x = 2; x < 7; x++) g[2][x] = TILE.ROOF;
+    for (let x = 13; x < 18; x++) g[2][x] = TILE.ROOF;
+    g[3][4] = TILE.FLOOR;
+    g[3][15] = TILE.FLOOR;
+    g[0][10] = TILE.WIND;
+    g[10][10] = TILE.PATH;
+    return g;
+  }
+
+  function windArena() {
+    const g = grid(TILE.WOOD);
+    for (let x = 0; x < 20; x++) {
+      g[0][x] = TILE.WALL;
+      g[10][x] = TILE.WALL;
+    }
+    for (let y = 0; y < 11; y++) {
+      g[y][0] = TILE.WALL;
+      g[y][19] = TILE.WALL;
+    }
+    for (let y = 1; y < 10; y++) g[y][10] = TILE.PATH;
+    for (let x = 3; x < 18; x++) {
+      g[3][x] = TILE.PATH;
+      g[7][x] = TILE.PATH;
+    }
+    g[9][10] = TILE.CAVE;
+    return g;
+  }
+
+  function windTower() {
+    const g = grid(TILE.STONE);
+    for (let x = 0; x < 20; x++) {
+      g[0][x] = TILE.CLOUD;
+      g[10][x] = TILE.CLOUD;
+    }
+    for (let y = 0; y < 11; y++) {
+      g[y][0] = TILE.CLOUD;
+      g[y][19] = TILE.CLOUD;
+    }
+    for (let y = 1; y < 10; y++) g[y][10] = TILE.PATH;
+    for (let x = 2; x < 19; x++) {
+      g[8][x] = TILE.PATH;
+      g[5][x] = TILE.PATH;
+      g[2][x] = TILE.PATH;
+    }
+    for (let y = 2; y < 9; y++) {
+      g[y][3] = TILE.PATH;
+      g[y][16] = TILE.PATH;
+    }
+    g[1][10] = TILE.WIND;
+    g[9][10] = TILE.CAVE;
+    return g;
+  }
+
   const maps = {
     grass: {
       name: "はじまりの草原",
@@ -484,6 +552,14 @@ window.HQ0 = (() => {
           type: "world_sarina",
           name: "精霊の森サリナリア",
           special: "travelSarinalia",
+        },
+        {
+          id: "worldKatoshi",
+          x: 10,
+          y: 2,
+          type: "world_katoshi",
+          name: "風の街カトシア",
+          special: "travelKatoshi",
         },
       ],
       chests: [],
@@ -810,6 +886,113 @@ window.HQ0 = (() => {
         },
       ],
     },
+    katoshia: {
+      name: "風の街カトシア",
+      tiles: katoshia(),
+      start: [10, 9],
+      npcs: [
+        {
+          id: "kato",
+          x: 10,
+          y: 3,
+          type: "kato",
+          name: "風の剣士",
+          special: "kato",
+        },
+        {
+          id: "arenaGate",
+          x: 4,
+          y: 3,
+          type: "guard",
+          name: "剣術大会受付",
+          special: "arenaGate",
+        },
+        {
+          id: "windSage",
+          x: 15,
+          y: 3,
+          type: "elder",
+          name: "風読みの老人",
+          lines: ["風車が止まった夜から、塔の上で笑い声を凍らせる風が吹いている。"],
+        },
+      ],
+      chests: [
+        {
+          id: "katoshiDew",
+          x: 17,
+          y: 7,
+          item: "rainbowDew",
+          amount: 2,
+          text: "虹雫を2個見つけた！",
+        },
+      ],
+      enemies: [],
+    },
+    windarena: {
+      name: "カトシア風剣闘場",
+      tiles: windArena(),
+      start: [10, 9],
+      npcs: [
+        {
+          id: "arenaJudge",
+          x: 10,
+          y: 2,
+          type: "guard",
+          name: "大会審判",
+          special: "arenaJudge",
+        },
+      ],
+      chests: [],
+      enemies: [
+        { id: "arenaOne", x: 7, y: 5, kind: "windKnight", story: true },
+        { id: "arenaTwo", x: 13, y: 5, kind: "galeHawk", story: true },
+      ],
+    },
+    windtower: {
+      name: "天翔ける風の塔",
+      tiles: windTower(),
+      start: [10, 9],
+      npcs: [
+        {
+          id: "fanBlue",
+          x: 3,
+          y: 5,
+          type: "altar_blue",
+          name: "空色の風車",
+          special: "fanBlue",
+        },
+        {
+          id: "fanGold",
+          x: 16,
+          y: 5,
+          type: "altar_gold",
+          name: "金色の風車",
+          special: "fanGold",
+        },
+      ],
+      chests: [
+        {
+          id: "windBootsChest",
+          x: 3,
+          y: 8,
+          item: "windBoots",
+          amount: 1,
+          text: "装備品「疾風のブーツ」を手に入れた！",
+        },
+      ],
+      enemies: [
+        { id: "towerHawk", x: 7, y: 5, kind: "galeHawk" },
+        { id: "towerKnight", x: 13, y: 5, kind: "windKnight" },
+        {
+          id: "windBoss",
+          x: 10,
+          y: 1,
+          kind: "windBoss",
+          boss: true,
+          story: true,
+        },
+      ],
+    },
   };
   const enemies = {
     slime: {
@@ -915,6 +1098,37 @@ window.HQ0 = (() => {
       boss: true,
       weak: ["light", "fire"],
       resist: ["dark"],
+    },
+    windKnight: {
+      name: "ためらいの風剣士",
+      hp: 185,
+      atk: 29,
+      def: 14,
+      exp: 128,
+      gold: 82,
+      weak: ["light"],
+      resist: ["wind"],
+    },
+    galeHawk: {
+      name: "ささくれガルーダ",
+      hp: 168,
+      atk: 32,
+      def: 10,
+      exp: 135,
+      gold: 88,
+      weak: ["fire"],
+      resist: ["wind"],
+    },
+    windBoss: {
+      name: "静止公ノーゲイル",
+      hp: 360,
+      atk: 30,
+      def: 18,
+      exp: 760,
+      gold: 480,
+      boss: true,
+      weak: ["light"],
+      resist: ["wind"],
     },
   };
   const intro = [
@@ -1287,6 +1501,34 @@ window.HQ0 = (() => {
       "潮紗理菜が正式加入！　ハッピーオーラの欠片は3つになった。",
     ],
   ];
+  const chapter4Intro = [
+    ["モノローグ", "light", "四つ目の光は、空を巡る風車の街カトシアへ伸びていた。", "meadow"],
+    ["佐々木久美", "kumi", "風が止まってる。あの高い塔で、誰かが一人で戦ってる気がする。"],
+    ["主人公", "hero", "街の剣術大会へ。次の仲間と光を見つけましょう。"],
+  ];
+  const katoMeet = [
+    ["風の剣士", "kato", "私に近づくなら、まず剣で確かめさせて。記憶より、今の風を信じたいから。"],
+    ["主人公", "hero", "加藤史帆さん。速すぎるくらい仲間を思って走る人です。"],
+    ["風の剣士", "kato", "カトウ・シホ……胸の奥が、へにょっと温かくなった。大会で待ってる。"],
+    ["SYSTEM", "light", "剣術大会に挑み、二つの試合を勝ち抜こう！"],
+  ];
+  const katoGuest = [
+    ["大会審判", "guard", "二試合制覇！　だが風の塔から魔物が現れ、優勝杯を奪った！"],
+    ["風の剣士", "kato", "あの塔は私の速さを閉じ込めた場所。一緒に、止まった風を追い越そう。"],
+    ["SYSTEM", "light", "風の剣士がゲスト加入！　空色、金色の順に風車を回そう。"],
+  ];
+  const windBossIntro = [
+    ["静止公ノーゲイル", "windBoss", "急グカラ傷ツク。立チ止マレ。期待モ憧レモ、無風ナラ揺レヌ。"],
+    ["風の剣士", "kato", "転んでも進むよ。遅くても、へにょへにょでも、みんなのところへ走る！"],
+    ["佐々木久美", "kumi", "連撃で無風結界を崩す！　史帆、風を取り戻そう！"],
+  ];
+  const chapter4Ending = [
+    ["風の剣士", "kato", "思い出した。笑って、泣いて、それでもみんなと走った時間。"],
+    ["加藤史帆", "kato", "私は加藤史帆。日向坂46の一期生。待っててくれて、ありがとう。"],
+    ["主人公", "hero", "おかえりなさい、史帆さん。止まった風が、また動き始めました。"],
+    ["佐々木久美", "kumi", "四つ目の欠片だ。仲間が増えた分、前衛と待機を組み替えて進もう。"],
+    ["SYSTEM", "light", "加藤史帆が正式加入！　ハッピーオーラの欠片は4つになった。"],
+  ];
   const quests = {
     sunwheat: {
       title: "三つの陽だまり麦",
@@ -1318,6 +1560,16 @@ window.HQ0 = (() => {
       detail: "古祠の最深部で、精霊の声を奪う古根を倒す。",
       reward: "ハッピーオーラの欠片",
     },
+    windTournament: {
+      title: "風剣杯",
+      detail: "カトシアの剣術大会で二つの試合を勝ち抜く。",
+      reward: "風の剣士の加入 / 風の塔の開放",
+    },
+    stillWind: {
+      title: "止まった風の塔",
+      detail: "空色、金色の順に風車を回し、塔の主を倒す。",
+      reward: "ハッピーオーラの欠片",
+    },
   };
   return {
     TILE,
@@ -1339,5 +1591,10 @@ window.HQ0 = (() => {
     sarinaAwaken,
     rootBossIntro,
     chapter3Ending,
+    chapter4Intro,
+    katoMeet,
+    katoGuest,
+    windBossIntro,
+    chapter4Ending,
   };
 })();
