@@ -16,6 +16,8 @@ window.HQ0 = (() => {
     SAND: 12,
     ROOF: 13,
     LAVA: 14,
+    MOSS: 15,
+    ROOT: 16,
   };
   const grid = (fill) => Array.from({ length: 11 }, () => Array(20).fill(fill));
 
@@ -118,6 +120,7 @@ window.HQ0 = (() => {
       g[y][3] = TILE.PATH;
       g[y][16] = TILE.PATH;
     }
+    for (let y = 5; y < 10; y++) g[y][10] = TILE.PATH;
     for (let x = 7; x < 13; x++) g[2][x] = TILE.WATER;
     g[2][10] = TILE.BRIDGE;
     [
@@ -215,6 +218,112 @@ window.HQ0 = (() => {
       [13, 6],
       [14, 6],
     ].forEach(([x, y]) => (g[y][x] = TILE.LAVA));
+    g[1][10] = TILE.CRYSTAL;
+    g[9][10] = TILE.CAVE;
+    return g;
+  }
+
+  function sarinalia() {
+    const g = grid(TILE.GRASS);
+    for (let x = 0; x < 20; x++) {
+      g[0][x] = TILE.TREE;
+      g[10][x] = TILE.TREE;
+    }
+    for (let y = 0; y < 11; y++) {
+      g[y][0] = TILE.TREE;
+      g[y][19] = TILE.TREE;
+    }
+    for (let y = 0; y < 11; y++) g[y][10] = TILE.PATH;
+    for (let x = 1; x < 20; x++) g[5][x] = TILE.PATH;
+    for (let x = 2; x < 7; x++) {
+      g[2][x] = TILE.ROOF;
+      g[3][x] = TILE.ROOT;
+    }
+    for (let x = 13; x < 18; x++) {
+      g[2][x] = TILE.ROOF;
+      g[3][x] = TILE.ROOT;
+    }
+    g[3][4] = TILE.MOSS;
+    g[3][15] = TILE.MOSS;
+    for (let x = 2; x < 8; x++) g[8][x] = TILE.WATER;
+    g[8][5] = TILE.BRIDGE;
+    g[0][10] = TILE.CAVE;
+    g[10][10] = TILE.PATH;
+    g[5][19] = TILE.PATH;
+    [
+      [2, 5],
+      [3, 6],
+      [16, 5],
+      [17, 6],
+      [8, 3],
+      [12, 7],
+    ].forEach(([x, y]) => (g[y][x] = TILE.FLOWER));
+    return g;
+  }
+
+  function spiritGrove() {
+    const g = grid(TILE.MOSS);
+    for (let x = 0; x < 20; x++) {
+      g[0][x] = TILE.ROOT;
+      g[10][x] = TILE.ROOT;
+    }
+    for (let y = 0; y < 11; y++) {
+      g[y][0] = TILE.ROOT;
+      g[y][19] = TILE.ROOT;
+    }
+    g[5][0] = TILE.PATH;
+    for (let x = 1; x < 19; x++) g[5][x] = TILE.PATH;
+    for (let y = 1; y < 10; y++) {
+      g[y][6] = TILE.PATH;
+      g[y][12] = TILE.PATH;
+      g[y][17] = TILE.PATH;
+    }
+    for (let x = 2; x < 6; x++) g[2][x] = TILE.WATER;
+    g[2][4] = TILE.BRIDGE;
+    [
+      [8, 1],
+      [9, 1],
+      [14, 2],
+      [15, 2],
+      [2, 8],
+      [3, 8],
+      [9, 8],
+      [14, 8],
+      [15, 8],
+    ].forEach(([x, y]) => (g[y][x] = TILE.ROOT));
+    return g;
+  }
+
+  function rootShrine() {
+    const g = grid(TILE.STONE);
+    for (let x = 0; x < 20; x++) {
+      g[0][x] = TILE.ROOT;
+      g[10][x] = TILE.ROOT;
+    }
+    for (let y = 0; y < 11; y++) {
+      g[y][0] = TILE.ROOT;
+      g[y][19] = TILE.ROOT;
+    }
+    for (let y = 1; y < 10; y++) g[y][10] = TILE.MOSS;
+    for (let x = 2; x < 18; x++) {
+      g[8][x] = TILE.MOSS;
+      g[5][x] = TILE.MOSS;
+      g[2][x] = TILE.MOSS;
+    }
+    for (let y = 2; y < 9; y++) {
+      g[y][3] = TILE.MOSS;
+      g[y][16] = TILE.MOSS;
+    }
+    [
+      [6, 3],
+      [7, 3],
+      [13, 3],
+      [14, 3],
+      [6, 6],
+      [7, 6],
+      [13, 6],
+      [14, 6],
+    ].forEach(([x, y]) => (g[y][x] = TILE.CRYSTAL));
     g[1][10] = TILE.CRYSTAL;
     g[9][10] = TILE.CAVE;
     return g;
@@ -367,6 +476,14 @@ window.HQ0 = (() => {
           type: "world_mile",
           name: "パンの国ミレリア",
           special: "travelMilerea",
+        },
+        {
+          id: "worldSarina",
+          x: 10,
+          y: 8,
+          type: "world_sarina",
+          name: "精霊の森サリナリア",
+          special: "travelSarinalia",
         },
       ],
       chests: [],
@@ -526,6 +643,173 @@ window.HQ0 = (() => {
         },
       ],
     },
+    sarinalia: {
+      name: "精霊の森サリナリア",
+      tiles: sarinalia(),
+      start: [10, 9],
+      npcs: [
+        {
+          id: "sarina",
+          x: 10,
+          y: 3,
+          type: "sarina",
+          name: "鈴を持つ巫女",
+          special: "sarina",
+        },
+        {
+          id: "forestElder",
+          x: 4,
+          y: 4,
+          type: "elder",
+          name: "森守の長老",
+          lines: [
+            "精霊の音は、空色、金色、桃色の順に重なると虹になる。",
+            "東の静謐の森で、三つの祭壇に耳を澄ませておくれ。",
+          ],
+        },
+        {
+          id: "spiritShop",
+          x: 15,
+          y: 7,
+          type: "merchant",
+          name: "木漏れ日の道具屋",
+          lines: ["虹雫は、仲間みんなの心を潤す森の薬だよ。"],
+          shop: "sarinalia",
+        },
+        {
+          id: "spiritBoard",
+          x: 4,
+          y: 7,
+          type: "wisp",
+          name: "迷子精霊の立札",
+          special: "spiritBoard",
+        },
+        {
+          id: "forestChild",
+          x: 16,
+          y: 6,
+          type: "child",
+          name: "精霊と遊ぶ子",
+          lines: [
+            "鈴のお姉ちゃんは、声が小さくても精霊の気持ちをちゃんと見つけるんだ。",
+          ],
+        },
+      ],
+      chests: [
+        {
+          id: "sarinaDewChest",
+          x: 2,
+          y: 7,
+          item: "rainbowDew",
+          amount: 1,
+          text: "虹雫を手に入れた！",
+        },
+      ],
+      enemies: [],
+    },
+    spiritgrove: {
+      name: "静謐の精霊森",
+      tiles: spiritGrove(),
+      start: [1, 5],
+      npcs: [
+        {
+          id: "altarBlue",
+          x: 6,
+          y: 2,
+          type: "altar_blue",
+          name: "空色の祭壇",
+          special: "altarBlue",
+        },
+        {
+          id: "altarGold",
+          x: 12,
+          y: 7,
+          type: "altar_gold",
+          name: "金色の祭壇",
+          special: "altarGold",
+        },
+        {
+          id: "altarPink",
+          x: 17,
+          y: 3,
+          type: "altar_pink",
+          name: "桃色の祭壇",
+          special: "altarPink",
+        },
+      ],
+      chests: [
+        {
+          id: "groveDewChest",
+          x: 4,
+          y: 2,
+          item: "rainbowDew",
+          amount: 2,
+          text: "虹雫を2個見つけた！",
+        },
+        {
+          id: "groveHerbChest",
+          x: 15,
+          y: 8,
+          item: "herb",
+          amount: 3,
+          text: "薬草を3個見つけた！",
+        },
+      ],
+      enemies: [
+        { id: "gloomcap1", x: 5, y: 5, kind: "gloomcap" },
+        { id: "hushWisp1", x: 10, y: 4, kind: "hushWisp" },
+        { id: "gloomcap2", x: 14, y: 5, kind: "gloomcap" },
+        { id: "rootling1", x: 17, y: 7, kind: "rootling" },
+      ],
+    },
+    rootshrine: {
+      name: "虹根の古祠",
+      tiles: rootShrine(),
+      start: [10, 9],
+      npcs: [
+        {
+          id: "rootHint",
+          x: 9,
+          y: 8,
+          type: "wisp",
+          name: "虹根の精",
+          lines: [
+            "虚根の膜は、光の技か必殺技で打ち破れるよ。",
+            "静寂にハッピーゲージを奪われる前に、助け合って満たして。",
+          ],
+        },
+      ],
+      chests: [
+        {
+          id: "ribbonChest",
+          x: 3,
+          y: 5,
+          item: "spiritRibbon",
+          amount: 1,
+          text: "装備品「精霊のリボン」を手に入れた！",
+        },
+        {
+          id: "rootDewChest",
+          x: 16,
+          y: 5,
+          item: "rainbowDew",
+          amount: 2,
+          text: "虹雫を2個手に入れた！",
+        },
+      ],
+      enemies: [
+        { id: "rootWisp", x: 7, y: 5, kind: "hushWisp" },
+        { id: "rootGuard", x: 13, y: 5, kind: "rootling" },
+        {
+          id: "rootBoss",
+          x: 10,
+          y: 1,
+          kind: "rootBoss",
+          boss: true,
+          story: true,
+        },
+      ],
+    },
   };
   const enemies = {
     slime: {
@@ -590,6 +874,47 @@ window.HQ0 = (() => {
       boss: true,
       weak: ["wind", "light"],
       resist: ["fire"],
+    },
+    gloomcap: {
+      name: "うつむきキノコ",
+      hp: 118,
+      atk: 21,
+      def: 8,
+      exp: 82,
+      gold: 52,
+      weak: ["fire"],
+      resist: ["dark"],
+    },
+    hushWisp: {
+      name: "しじまの鬼火",
+      hp: 104,
+      atk: 23,
+      def: 7,
+      exp: 88,
+      gold: 56,
+      weak: ["light"],
+      resist: ["wind"],
+    },
+    rootling: {
+      name: "からまり根っこ",
+      hp: 148,
+      atk: 25,
+      def: 12,
+      exp: 105,
+      gold: 68,
+      weak: ["fire", "wind"],
+      resist: ["dark"],
+    },
+    rootBoss: {
+      name: "無響の古根サイレンス",
+      hp: 760,
+      atk: 30,
+      def: 15,
+      exp: 560,
+      gold: 360,
+      boss: true,
+      weak: ["light", "fire"],
+      resist: ["dark"],
     },
   };
   const intro = [
@@ -829,6 +1154,139 @@ window.HQ0 = (() => {
       "佐々木美玲が正式加入！　ハッピーオーラの欠片は2つになった。",
     ],
   ];
+  const chapter3Intro = [
+    [
+      "モノローグ",
+      "light",
+      "二つ目の欠片は、南の深緑に虹色の道を描いた――精霊の森サリナリア。",
+      "meadow",
+    ],
+    [
+      "佐々木美玲",
+      "mirei",
+      "パンの香りに、小さな鈴の音が混ざってる。懐かしくて優しい音……。",
+    ],
+    [
+      "佐々木久美",
+      "kumi",
+      "次の仲間が待ってる。声にならない気持ちも、今度こそ見落とさないよ。",
+    ],
+    [
+      "主人公",
+      "hero",
+      "精霊の森へ行きましょう。三つ目のハッピーオーラを迎えに。",
+    ],
+  ];
+  const sarinaMeet = [
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "森の精霊たちが、急に言葉を閉ざしたの。聞こえるのは、寂しい胸の音だけ……。",
+    ],
+    [
+      "主人公",
+      "hero",
+      "あなたは潮紗理菜さん。優しい鈴の音も、きっと忘れていません。",
+    ],
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "ウシオ・サリナ……胸の奥で、誰かが『なっちょ』って呼んだ気がする。",
+    ],
+    [
+      "佐々木久美",
+      "kumi",
+      "紗理菜。全部思い出せなくても大丈夫。私たちが一緒に見つけるから。",
+    ],
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "東の静謐の森に三つの祭壇があるの。空色、金色、桃色の順に音を重ねて。",
+    ],
+    [
+      "SYSTEM",
+      "light",
+      "メインクエスト「三つの精霊音」が始まった！　祭壇を正しい順番で調べよう。",
+    ],
+  ];
+  const sarinaAwaken = [
+    [
+      "モノローグ",
+      "light",
+      "三つの音が重なり、森を包む沈黙が虹色の旋律へ変わっていく。",
+    ],
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "聞こえる……精霊たちは怖くて黙っていただけ。消えてなんかいなかった。",
+    ],
+    ["佐々木美玲", "mirei", "小さな声を見つけられるの、やっぱり紗理菜だね。"],
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "北の古祠に、精霊の声を奪った古根がいる。私の鈴も一緒に連れていって。",
+    ],
+    [
+      "SYSTEM",
+      "light",
+      "紗理菜がゲスト加入！　光の精霊術と「虹色の祈り」が使えるようになった。",
+    ],
+  ];
+  const rootBossIntro = [
+    [
+      "無響の古根サイレンス",
+      "rootBoss",
+      "声ハ届カヌ。願イハ誤解ヲ生ム。黙スレバ、傷ツクコトモナイ。",
+    ],
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "言葉が足りなくても、そばにいて分かる気持ちはあるよ。",
+    ],
+    [
+      "佐々木久美",
+      "kumi",
+      "虚根の膜は光で破れる。紗理菜の鈴を守りながら一気に行こう！",
+    ],
+    [
+      "主人公",
+      "hero",
+      "助け合ってハッピーゲージを満たすんだ。みんなの声を、森へ返す！",
+    ],
+  ];
+  const chapter3Ending = [
+    [
+      "鈴を持つ巫女",
+      "sarina",
+      "虹の向こうに、みんなの笑顔が見える。たくさん話して、泣いて、また笑った日々……。",
+    ],
+    [
+      "潮紗理菜",
+      "sarina",
+      "思い出したよ。私は潮紗理菜。日向坂46の一期生――みんなと歩いてきた仲間。",
+    ],
+    ["主人公", "hero", "おかえりなさい、紗理菜さん。精霊にも届きました。"],
+    [
+      "潮紗理菜",
+      "sarina",
+      "ただいま。言葉にならない気持ちまで、これからも一緒に抱えていこうね。",
+    ],
+    [
+      "佐々木美玲",
+      "mirei",
+      "三人そろった！　次はみんなで食べられるパン、もっと焼かなくちゃ。",
+    ],
+    [
+      "佐々木久美",
+      "kumi",
+      "三つ目の欠片だ。次の光は、風車が並ぶ高い街を指してる。",
+    ],
+    [
+      "SYSTEM",
+      "light",
+      "潮紗理菜が正式加入！　ハッピーオーラの欠片は3つになった。",
+    ],
+  ];
   const quests = {
     sunwheat: {
       title: "三つの陽だまり麦",
@@ -843,6 +1301,21 @@ window.HQ0 = (() => {
     oven: {
       title: "忘れられた大窯",
       detail: "大窯の最深部で、笑顔を焦がす魔物を倒す。",
+      reward: "ハッピーオーラの欠片",
+    },
+    spiritTones: {
+      title: "三つの精霊音",
+      detail: "静謐の精霊森で、空色・金色・桃色の祭壇を順に鳴らす。",
+      reward: "紗理菜の加入 / 虹根の古祠の開放",
+    },
+    forestShadows: {
+      title: "迷子精霊の帰り道",
+      detail: "森を塞ぐ「うつむきキノコ」を2体倒す。",
+      reward: "120G / 虹雫×2",
+    },
+    silentRoot: {
+      title: "虹根の古祠",
+      detail: "古祠の最深部で、精霊の声を奪う古根を倒す。",
       reward: "ハッピーオーラの欠片",
     },
   };
@@ -861,5 +1334,10 @@ window.HQ0 = (() => {
     mireiBake,
     ovenBossIntro,
     chapter2Ending,
+    chapter3Intro,
+    sarinaMeet,
+    sarinaAwaken,
+    rootBossIntro,
+    chapter3Ending,
   };
 })();
