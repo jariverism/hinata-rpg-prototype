@@ -1114,7 +1114,7 @@
             .filter(Boolean)
             .map((z) => `<em>${z}</em>`)
             .join("");
-          return `<div class="member"><div><span>${p.name} ${states}</span><span>HP ${p.hp}/${p.maxHp}</span></div><div class="bar"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></div><div><span>MP</span><span>${p.mp}/${p.maxMp}</span></div><div class="bar mp"><i style="width:${(100 * p.mp) / p.maxMp}%"></i></div></div>`;
+          return `<div class="member"><div><span>${p.name} ${states}</span><span>HP ${p.hp}/${p.maxHp}</span></div><div class="bar"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></div><div><span>MP</span><span>${p.mp}/${p.maxMp}</span></div></div>`;
         })
         .join("");
   }
