@@ -127,7 +127,9 @@
     shake = 0,
     flash = 0,
     numbers = [],
-    audio = null;
+    audio = null,
+    padButtons = [],
+    padMoveAt = 0;
   const keys = new Set();
 
   function show(el, on = true) {
@@ -1705,10 +1707,15 @@
   function confirmKey() {
     if (mode === "dialog") advance();
     else if (mode === "map") interact();
+    else if (mode === "battle") {
+      const list = [...ui.commands.querySelectorAll("button:not(:disabled)")];
+      list[fight?.commandChoice || 0]?.click();
+    }
   }
   function cancelKey() {
     if (mode === "map") openMenu();
     else if (mode === "menu") closeMenu();
+    else if (mode === "battle") commands("root");
     else if (mode === "load" || mode === "name") setMode("title");
   }
   function keyDir(k) {
@@ -1716,6 +1723,30 @@
     if (k === "arrowdown" || k === "s") return "down";
     if (k === "arrowleft" || k === "a") return "left";
     if (k === "arrowright" || k === "d") return "right";
+  }
+  function pollGamepad(now) {
+    const pad = navigator.getGamepads?.()?.find(Boolean);
+    if (!pad) {
+      padButtons = [];
+      return;
+    }
+    const pressed = Array.from(pad.buttons, (button) => button.pressed);
+    const edge = (index) => pressed[index] && !padButtons[index];
+    if (edge(0)) confirmKey();
+    if (edge(1)) cancelKey();
+    if (edge(9) && mode === "map") openMenu();
+    let dir = null;
+    if (pressed[12] || pad.axes[1] < -0.55) dir = "up";
+    else if (pressed[13] || pad.axes[1] > 0.55) dir = "down";
+    else if (pressed[14] || pad.axes[0] < -0.55) dir = "left";
+    else if (pressed[15] || pad.axes[0] > 0.55) dir = "right";
+    if (dir && now - padMoveAt > 165) {
+      if (mode === "map") move(dir);
+      else if (mode === "battle")
+        focusBattle(dir === "up" || dir === "left" ? -1 : 1);
+      padMoveAt = now;
+    }
+    padButtons = pressed;
   }
 
   function rect(x, y, w, h, color) {
@@ -2417,6 +2448,7 @@
   function frame(now) {
     const dt = Math.min(40, now - last);
     last = now;
+    pollGamepad(now);
     if (mode === "map") {
       const held = [
         "arrowup",
@@ -2473,6 +2505,9 @@
   }
   window.__HQ0_TEST__ = {
     state: () => JSON.parse(JSON.stringify(s)),
+    gamepad(now = 1000) {
+      pollGamepad(now);
+    },
     settle() {
       const cb = fadeCb;
       fade = 0;
