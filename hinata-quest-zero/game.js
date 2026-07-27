@@ -45,9 +45,10 @@
       D.TILE.ROOF,
       D.TILE.LAVA,
       D.TILE.ROOT,
+      D.TILE.CLOUD,
     ]);
   const fresh = (name = "トシ") => ({
-    version: 3,
+    version: 4,
     name,
     chapter: 1,
     map: "grass",
@@ -73,6 +74,7 @@
       apron: 0,
       rainbowDew: 0,
       spiritRibbon: 0,
+      windBoots: 0,
     },
     equip: { weapon: null, charm: null },
     opened: {},
@@ -106,13 +108,24 @@
       chapter3Boss: false,
       sarinaJoined: false,
       chapter3Clear: false,
+      chapter4: false,
+      metKato: false,
+      tournamentStarted: false,
+      tournamentWon: false,
+      katoGuest: false,
+      windTowerOpen: false,
+      windBossIntro: false,
+      chapter4Boss: false,
+      katoJoined: false,
+      chapter4Clear: false,
       clear: false,
       fragment: 0,
     },
     kumi: { hp: 92, mp: 24, maxHp: 92, maxMp: 24, atk: 19, def: 13 },
     mirei: { hp: 78, mp: 38, maxHp: 78, maxMp: 38, atk: 14, def: 10 },
     sarina: { hp: 86, mp: 48, maxHp: 86, maxMp: 48, atk: 17, def: 12 },
-    active: { kumi: true, mirei: true, sarina: true },
+    kato: { hp: 112, mp: 42, maxHp: 112, maxMp: 42, atk: 31, def: 16, spd: 28 },
+    active: { kumi: true, mirei: true, sarina: true, kato: false },
     quests: {
       sunwheat: "locked",
       straw: "available",
@@ -120,6 +133,8 @@
       spiritTones: "locked",
       forestShadows: "available",
       silentRoot: "locked",
+      windTournament: "locked",
+      stillWind: "locked",
     },
     kills: {
       strawling: 0,
@@ -130,6 +145,7 @@
       rootling: 0,
     },
     spiritOrder: [],
+    windOrder: [],
     happy: 0,
     battles: 0,
     steps: 0,
@@ -230,7 +246,12 @@
     if (!s.flags.groveSolved)
       return `三つの精霊音を重ねよう ${s.spiritOrder.length}/3`;
     if (!s.flags.chapter3Boss) return "北の虹根の古祠を浄化しよう";
-    return "三つ目の光を見届けよう";
+    if (!s.flags.chapter4) return "北の風の街カトシアへ";
+    if (!s.flags.metKato) return "風の剣士に会おう";
+    if (!s.flags.tournamentWon) return "剣術大会で二試合を勝ち抜こう";
+    if (s.windOrder.length < 2) return `風の塔の風車を回そう ${s.windOrder.length}/2`;
+    if (!s.flags.chapter4Boss) return "塔頂で止まった風を解放しよう";
+    return "四つ目の光を見届けよう";
   }
   function hud() {
     ui.location.textContent = D.maps[s.map].name;
@@ -270,7 +291,7 @@
       const v = JSON.parse(
         localStorage.getItem(slot === "auto" ? AUTO : SAVE + slot),
       );
-      return v?.version >= 1 && v?.version <= 3 ? v : null;
+      return v?.version >= 1 && v?.version <= 4 ? v : null;
     } catch {
       return null;
     }
@@ -282,17 +303,19 @@
     s = {
       ...base,
       ...v,
-      version: 3,
+      version: 4,
       items: { ...base.items, ...v.items },
       equip: { ...base.equip, ...v.equip },
       flags: { ...base.flags, ...v.flags },
       kumi: { ...base.kumi, ...v.kumi },
       mirei: { ...base.mirei, ...v.mirei },
       sarina: { ...base.sarina, ...v.sarina },
+      kato: { ...base.kato, ...v.kato },
       active: { ...base.active, ...v.active },
       quests: { ...base.quests, ...v.quests },
       kills: { ...base.kills, ...v.kills },
       spiritOrder: Array.isArray(v.spiritOrder) ? [...v.spiritOrder] : [],
+      windOrder: Array.isArray(v.windOrder) ? [...v.windOrder] : [],
       started: Date.now(),
     };
     if (s.flags.boss) {
@@ -310,8 +333,15 @@
       s.flags.sarinaJoined = true;
       s.flags.fragment = Math.max(3, s.flags.fragment || 0);
     }
+    if (s.flags.chapter4Boss) {
+      s.flags.chapter4Clear = true;
+      s.flags.katoJoined = true;
+      s.flags.fragment = Math.max(4, s.flags.fragment || 0);
+    }
     if (!D.maps[s.map]) {
-      s.map = s.flags.chapter3
+      s.map = s.flags.chapter4
+        ? "katoshia"
+        : s.flags.chapter3
         ? "sarinalia"
         : s.flags.chapter2
           ? "milerea"
@@ -457,6 +487,14 @@
       changeMap("sarinalia", 10, 1, "down");
       return;
     }
+    if (s.map === "windarena" && s.x === 10 && s.y === 9 && dir === "down") {
+      changeMap("katoshia", 4, 4, "down");
+      return;
+    }
+    if (s.map === "windtower" && s.x === 10 && s.y === 9 && dir === "down") {
+      changeMap("katoshia", 10, 1, "down");
+      return;
+    }
     if (s.map === "grass" && x === 10 && y === 0 && !s.flags.cave) {
       toast("洞窟の入口は固く閉ざされている");
       beep("no");
@@ -509,6 +547,14 @@
         s.y = 1;
         toast("古祠の入口を虹色の根が閉ざしている");
         beep("no");
+      }
+    } else if (s.map === "katoshia" && s.x === 10 && s.y === 10)
+      changeMap("world", 10, 3, "down");
+    else if (s.map === "katoshia" && s.x === 10 && s.y === 0) {
+      if (s.flags.windTowerOpen) changeMap("windtower", 10, 9, "up");
+      else {
+        s.y = 1;
+        toast("風の塔は無風の結界に閉ざされている");
       }
     }
   }
@@ -579,12 +625,60 @@
       );
       return;
     }
+    if (n.special === "travelKatoshi") {
+      if (!s.flags.chapter4)
+        return dialogue([["SYSTEM", "light", "北へ続く風の道は、まだ閉ざされている。"]]);
+      dialogue([["SYSTEM", "light", "風の街カトシアへ移動します。"]], () =>
+        changeMap("katoshia", 10, 9, "up"),
+      );
+      return;
+    }
     if (n.special === "mirei") {
       mireiTalk();
       return;
     }
     if (n.special === "sarina") {
       sarinaTalk();
+      return;
+    }
+    if (n.special === "kato") {
+      katoTalk();
+      return;
+    }
+    if (n.special === "arenaGate") {
+      if (!s.flags.metKato)
+        return dialogue([["剣術大会受付", "guard", "出場には風の剣士の推薦が必要です。"]]);
+      s.flags.tournamentStarted = true;
+      s.quests.windTournament = "active";
+      dialogue([["剣術大会受付", "guard", "風剣杯を開始します。場内の二人の対戦相手に勝利してください！"]], () =>
+        changeMap("windarena", 10, 9, "up"),
+      );
+      return;
+    }
+    if (n.special === "arenaJudge") {
+      const wins = Number(!!s.defeated.arenaOne) + Number(!!s.defeated.arenaTwo);
+      if (wins < 2)
+        return dialogue([["大会審判", "guard", `現在${wins}勝。二人の対戦相手を倒してください。`]]);
+      if (!s.flags.tournamentWon) {
+        s.flags.tournamentWon = true;
+        s.flags.katoGuest = true;
+        s.active.kato = true;
+        if (["kumi", "mirei", "sarina"].filter((id) => s.active[id] !== false).length >= 3)
+          s.active.sarina = false;
+        s.flags.windTowerOpen = true;
+        s.quests.windTournament = "complete";
+        s.quests.stillWind = "active";
+        dialogue(D.katoGuest, () => {
+          setMode("map");
+          hud();
+          autosave();
+        });
+        return;
+      }
+      return dialogue([["大会審判", "guard", "風の塔へ！　優勝者たちの帰還を待っています。"]]);
+    }
+    if (n.special === "fanBlue" || n.special === "fanGold") {
+      windFan(n.special);
       return;
     }
     if (n.special?.startsWith("altar")) {
@@ -717,6 +811,43 @@
           : "古根が膜を張ったら、私の「聖なる鈴」で光を届けるね。",
       ],
     ]);
+  }
+  function katoTalk() {
+    if (!s.flags.metKato) {
+      s.flags.metKato = true;
+      s.quests.windTournament = "available";
+      dialogue(D.katoMeet, () => {
+        setMode("map");
+        hud();
+        autosave();
+      });
+      return;
+    }
+    dialogue([[
+      s.flags.katoJoined ? "加藤史帆" : "風の剣士",
+      "kato",
+      s.flags.chapter4Boss
+        ? "止まらずに行こう。みんなとなら、どんな向かい風も追い越せる。"
+        : s.flags.tournamentWon
+          ? "塔の風車は空色、金色の順。私の連撃なら無風結界を崩せるよ。"
+          : "大会で二つの試合に勝ったら、もう一度審判に話しかけて。",
+    ]]);
+  }
+  function windFan(special) {
+    const key = special === "fanBlue" ? "blue" : "gold";
+    const expected = ["blue", "gold"];
+    if (s.windOrder.length === 2)
+      return dialogue([["SYSTEM", "light", "二つの風車は空色の風を送り続けている。"]]);
+    if (key !== expected[s.windOrder.length]) {
+      s.windOrder = [];
+      return dialogue([["SYSTEM", "light", "風向きが乱れた。空色の風車から回し直そう。"]]);
+    }
+    s.windOrder.push(key);
+    dialogue([["SYSTEM", "light", s.windOrder.length === 2 ? "二つの風が重なり、塔頂の無風結界が弱まった！" : "空色の風が塔を駆け上がった。次は金色だ。"]], () => {
+      setMode("map");
+      hud();
+      autosave();
+    });
   }
   function spiritAltar(special) {
     if (!s.flags.metSarina) {
@@ -971,6 +1102,15 @@
   }
 
   function meetEnemy(e, ambush) {
+    if (e.id === "windBoss" && s.windOrder.length < 2) {
+      toast("二つの風車を正しい順に回そう");
+      return;
+    }
+    if (e.id === "windBoss" && !s.flags.windBossIntro) {
+      s.flags.windBossIntro = true;
+      dialogue(D.windBossIntro, () => startBattle(e, false));
+      return;
+    }
     if (e.id === "rootBoss" && !s.flags.rootBossIntro) {
       s.flags.rootBossIntro = true;
       dialogue(D.rootBossIntro, () => startBattle(e, false));
@@ -1049,6 +1189,22 @@
         buff: 0,
         status: { poison: 0, sleep: 0, auraDown: 0 },
       });
+    if ((s.flags.katoGuest || s.flags.katoJoined) && s.active.kato !== false)
+      a.push({
+        id: "kato",
+        name: "史帆",
+        hp: s.kato.hp,
+        mp: s.kato.mp,
+        maxHp: s.kato.maxHp,
+        maxMp: s.kato.maxMp,
+        atk: s.kato.atk,
+        def: s.kato.def + (s.items.windBoots ? 3 : 0),
+        spd: s.kato.spd,
+        evade: s.items.windBoots ? 0.18 : 0.1,
+        guard: false,
+        buff: 0,
+        status: { poison: 0, sleep: 0, auraDown: 0 },
+      });
     return a;
   }
   function sync() {
@@ -1071,6 +1227,11 @@
       s.sarina.hp = r.hp;
       s.sarina.mp = r.mp;
     }
+    const t = fight.party.find((v) => v.id === "kato");
+    if (t) {
+      s.kato.hp = t.hp;
+      s.kato.mp = t.mp;
+    }
     s.happy = Math.max(0, Math.min(100, fight.happy || 0));
   }
   function startBattle(src, ambush = false) {
@@ -1086,6 +1247,8 @@
       barrier: 0,
       happy: Math.max(0, Math.min(100, s.happy || 0)),
       warning: false,
+      windBarrier: base.kind === "windBoss" ? 3 : 0,
+      galeStep: 0,
       busy: true,
     };
     s.battles++;
@@ -1173,11 +1336,18 @@
           ["聖火フライパン MP5", panFire, p.mp < 5],
           ["もどる", () => commands("root")],
         ];
-      else
+      else if (p.id === "sarina")
         list = [
           ["聖なる鈴 MP4", holyBell, p.mp < 4],
           ["精霊の守り MP6", spiritWard, p.mp < 6],
           ["虹色の祈り MP8", rainbowPrayer, p.mp < 8],
+          ["もどる", () => commands("root")],
+        ];
+      else
+        list = [
+          ["へにょへにょ斬り MP4", flexSlash, p.mp < 4],
+          ["疾風のステップ MP5", galeStep, p.mp < 5],
+          ["かとしコンビネーション MP7", katoCombo, p.mp < 7],
           ["もどる", () => commands("root")],
         ];
     } else {
@@ -1268,6 +1438,11 @@
         notes.push("虚根の膜");
       }
     }
+    if (fight.windBarrier > 0) {
+      fight.windBarrier--;
+      multiplier *= 0.55;
+      notes.push(fight.windBarrier ? "無風結界" : "無風結界を破った！");
+    }
     return {
       value: damage(attackPower(p), fight.foe.def, power * multiplier),
       note: notes.length ? `　${notes.join(" ")}` : "",
@@ -1293,6 +1468,10 @@
     const p = fight.party[fight.actor];
     let n = damage(attackPower(p), fight.foe.def);
     if (fight.barrier > 0) n = Math.max(1, Math.floor(n * 0.55));
+    if (fight.windBarrier > 0) {
+      fight.windBarrier--;
+      n = Math.max(1, Math.floor(n * 0.55));
+    }
     fight.busy = true;
     fight.foe.hp = Math.max(0, fight.foe.hp - n);
     gainHappy(6);
@@ -1534,6 +1713,40 @@
     flash = 0.55;
     afterAction(900);
   }
+  function multiHit(p, hits, power, label, cost) {
+    fight.busy = true;
+    p.mp -= cost;
+    let total = 0;
+    for (let i = 0; i < hits; i++) {
+      let n = damage(attackPower(p), fight.foe.def, power);
+      if (fight.windBarrier > 0) {
+        fight.windBarrier--;
+        n = Math.max(1, Math.floor(n * 0.55));
+      }
+      total += n;
+      fight.foe.hp = Math.max(0, fight.foe.hp - n);
+    }
+    gainHappy(8 + hits * 2);
+    ui.battleLog.textContent = `史帆の「${label}」！\n${hits}連撃、合計 ${total} ダメージ！${fight.windBarrier === 0 && fight.foe.kind === "windBoss" ? "　無風結界を破った！" : ""}`;
+    hit("foe", total, "#9cf3ff");
+    afterAction(850);
+  }
+  function flexSlash() {
+    multiHit(fight.party[fight.actor], 2, 0.82, "へにょへにょ斬り", 4);
+  }
+  function galeStep() {
+    const p = fight.party[fight.actor];
+    fight.busy = true;
+    p.mp -= 5;
+    fight.galeStep = 3;
+    gainHappy(14);
+    ui.battleLog.textContent = "史帆の「疾風のステップ」！\n味方全員の回避率が3ターン上がった！";
+    beep("win");
+    afterAction(700);
+  }
+  function katoCombo() {
+    multiHit(fight.party[fight.actor], 3, 0.78, "かとしコンビネーション", 7);
+  }
   function finisher() {
     const p = fight.party[fight.actor],
       hadBarrier = fight.barrier > 0;
@@ -1563,7 +1776,7 @@
       });
       log =
         "美玲の必殺技「奇跡の食卓」！\n味方全体のHPと状態異常が大きく回復した！";
-    } else {
+    } else if (p.id === "sarina") {
       const n = damage(attackPower(p), fight.foe.def, 2.65);
       fight.foe.hp = Math.max(0, fight.foe.hp - n);
       fight.party.forEach((target) => {
@@ -1574,6 +1787,17 @@
       fight.spiritGuard = 4;
       log = `紗理菜の必殺技「サリマカシー」！\n虹の精霊が ${n} ダメージ。みんなの心を包み込んだ！`;
       hit("foe", n, "#f6a8ff");
+    } else {
+      let total = 0;
+      for (let i = 0; i < 5; i++) {
+        const n = damage(attackPower(p), fight.foe.def, 0.82);
+        total += n;
+        fight.foe.hp = Math.max(0, fight.foe.hp - n);
+      }
+      fight.windBarrier = 0;
+      fight.galeStep = 4;
+      log = `史帆の必殺技「天空の剣舞」！\n五つの風刃が合計 ${total} ダメージ。無風結界を切り裂いた！`;
+      hit("foe", total, "#b9f7ff");
     }
     if (hadBarrier) log += "\n必殺技が虚根の膜を打ち破った！";
     ui.battleLog.textContent = log;
@@ -1633,6 +1857,13 @@
       if (z === 0) return ["笑顔を焼く業火", "all", 1.28];
       return ["焦げつく炎", "one", 1.02];
     }
+    if (f.kind === "windBoss") {
+      const z = fight.turn % 4;
+      if (z === 2) return ["無風結界", "windBarrier", 0];
+      if (z === 3) return ["暴風予告", "prepareWind", 0];
+      if (z === 0) return ["逆巻く空圧", "all", 1.32];
+      return ["静止の刃", "one", 1.08];
+    }
     if (f.kind === "bat" && fight.turn % 3 === 0)
       return ["眠たい羽音", "sleep", 0.65];
     if (f.kind === "strawling" && fight.turn % 3 === 0)
@@ -1664,12 +1895,21 @@
                     ? "しじまの火"
                     : f.kind === "rootling"
                       ? "根っこパンチ"
+                      : f.kind === "galeHawk"
+                        ? "裂風の翼"
+                        : f.kind === "windKnight"
+                          ? "迷いの突き"
                       : "錆びた剣",
       "one",
       1,
     ];
   }
   function hurt(p, pow) {
+    const evade = (p.evade || 0) + (fight.galeStep ? 0.28 : 0);
+    if (Math.random() < evade) {
+      numbers.push({ text: "MISS", x: 250, y: 175, life: 1, color: "#b9f7ff" });
+      return 0;
+    }
     const n = Math.max(
       1,
       Math.floor(
@@ -1710,6 +1950,12 @@
       fight.warning = true;
       log += "\n魔窯が赤くふくらむ！　次のターンに強力な攻撃が来る！";
       flash = 0.5;
+    } else if (type === "prepareWind") {
+      fight.warning = true;
+      log += "\n風圧が渦を巻く！　次のターンに全体攻撃が来る！";
+    } else if (type === "windBarrier") {
+      fight.windBarrier = 3;
+      log += "\n三回の攻撃を弱める無風結界をまとった！　連撃で崩せ！";
     } else if (type === "debuff") {
       fight.party.forEach((p) => inflict(p, "auraDown", 3));
       log += "\n不安の霧で味方のオーラが下がった！";
@@ -1779,6 +2025,7 @@
       fight.actor = 0;
       fight.captain = Math.max(0, fight.captain - 1);
       fight.spiritGuard = Math.max(0, fight.spiritGuard - 1);
+      fight.galeStep = Math.max(0, fight.galeStep - 1);
       fight.party.forEach((p) => {
         p.guard = false;
         if (p.buff > 0) p.buff--;
@@ -1879,6 +2126,19 @@
         showClear();
         autosave();
       });
+    } else if (id === "windBoss") {
+      s.flags.chapter4Boss = true;
+      s.flags.chapter4Clear = true;
+      s.flags.katoGuest = false;
+      s.flags.katoJoined = true;
+      s.flags.fragment = 4;
+      s.flags.clear = true;
+      s.quests.stillWind = "complete";
+      dialogue(D.chapter4Ending, () => {
+        scene = "ending";
+        showClear();
+        autosave();
+      });
     } else {
       if (s.quests.straw === "active" && (s.kills.strawling || 0) >= 2)
         toast("依頼達成！　ミレリアのお願い掲示板へ戻ろう");
@@ -1899,10 +2159,14 @@
     s.mirei.mp = s.mirei.maxMp;
     s.sarina.hp = s.sarina.maxHp;
     s.sarina.mp = s.sarina.maxMp;
+    s.kato.hp = s.kato.maxHp;
+    s.kato.mp = s.kato.maxMp;
     setTimeout(() => {
       fight = null;
       scene = "map";
-      s.map = s.flags.chapter3
+      s.map = s.flags.chapter4
+        ? "katoshia"
+        : s.flags.chapter3
         ? "sarinalia"
         : s.flags.chapter2
           ? "milerea"
@@ -1951,6 +2215,10 @@
         companions.push(
           `<div class="card"><strong>${s.flags.sarinaJoined ? "潮紗理菜" : "鈴を持つ巫女"} Lv.6</strong><span>精霊術師 / HP ${s.sarina.hp}/${s.sarina.maxHp}</span><small>光属性・全体回復・精霊防壁</small></div>`,
         );
+      if (s.flags.katoGuest || s.flags.katoJoined)
+        companions.push(
+          `<div class="card"><strong>${s.flags.katoJoined ? "加藤史帆" : "風の剣士"} Lv.12</strong><span>スピードファイター / HP ${s.kato.hp}/${s.kato.maxHp}</span><small>風属性・回避・連撃 / SPD ${s.kato.spd}</small></div>`,
+        );
       ui.menuBody.innerHTML = `<div class="cards"><div class="card"><strong>${s.name} Lv.${s.lv}</strong><span>オーラナイト</span></div><div class="card"><strong>HP ${s.hp}/${heroMaxHp()}</strong><span>MP ${s.mp}/${s.maxMp}</span></div><div class="card"><strong>攻撃 ${heroAtk()} / 守備 ${heroDef()}</strong><span>次のLvまで ${s.lv * 40 - s.exp}EXP</span></div><div class="card"><strong>${s.gold}G</strong><span>欠片 ${s.flags.fragment}/7 / HAPPY ${s.happy}</span></div>${companions.join("") || `<div class="card"><strong>仲間</strong><span>まだ誰もいない</span></div>`}</div>`;
     } else if (tab === "party") {
       const members = [
@@ -1972,6 +2240,12 @@
           role: "回復・光属性",
           available: s.flags.sarinaGuest || s.flags.sarinaJoined,
         },
+        {
+          id: "kato",
+          name: s.flags.katoJoined ? "加藤史帆" : "風の剣士",
+          role: "素早さ・回避・連撃",
+          available: s.flags.katoGuest || s.flags.katoJoined,
+        },
       ].filter((m) => m.available);
       ui.menuBody.innerHTML = `<div class="party-head"><strong>前衛メンバー ${1 + members.filter((m) => s.active[m.id] !== false).length}/4</strong><span>主人公は固定。仲間はいつでも交代できます。</span></div><div class="list"><div class="item active-member"><div><strong>① ${s.name}</strong><span>オーラナイト / 固定</span></div><b>参加</b></div>${
         members
@@ -1985,7 +2259,15 @@
       ui.menuBody.querySelectorAll("[data-party]").forEach(
         (b) =>
           (b.onclick = () => {
-            s.active[b.dataset.party] = !(s.active[b.dataset.party] !== false);
+            const id = b.dataset.party;
+            const activating = s.active[id] === false;
+            const activeCount = members.filter((m) => s.active[m.id] !== false).length;
+            if (activating && activeCount >= 3) {
+              toast("前衛は主人公を含め4人まで");
+              beep("no");
+              return;
+            }
+            s.active[id] = activating;
             beep("save");
             autosave();
             menu();
@@ -2019,7 +2301,9 @@
         ((s.flags.mireiGuest || s.flags.mireiJoined) &&
           s.mirei.hp < s.mirei.maxHp) ||
         ((s.flags.sarinaGuest || s.flags.sarinaJoined) &&
-          s.sarina.hp < s.sarina.maxHp);
+          s.sarina.hp < s.sarina.maxHp) ||
+        ((s.flags.katoGuest || s.flags.katoJoined) &&
+          s.kato.hp < s.kato.maxHp);
       ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>薬草 ×${s.items.herb}</strong><span>主人公のHPを35回復</span></div><button id="use-herb"${!s.items.herb || s.hp >= heroMaxHp() ? " disabled" : ""}>使う</button></div><div class="item"><div><strong>毒消し草 ×${s.items.antidote}</strong><span>戦闘中の毒・眠り・オーラ低下を治す</span></div></div><div class="item"><div><strong>ハッピーブレッド ×${s.items.happyBread}</strong><span>仲間全員のHPを25回復</span></div><button id="use-bread"${!s.items.happyBread || !canBread ? " disabled" : ""}>分ける</button></div><div class="item"><div><strong>虹雫 ×${s.items.rainbowDew}</strong><span>仲間全員のHPを45回復</span></div><button id="use-dew"${!s.items.rainbowDew || !canBread ? " disabled" : ""}>使う</button></div>${s.items.sunwheat ? `<div class="item"><div><strong>陽だまり麦 ×${s.items.sunwheat}</strong><span>太陽のぬくもりを宿す小麦</span></div></div>` : ""}<div class="item"><div><strong>ハッピーオーラの欠片 ×${s.flags.fragment}</strong><span>温かな虹色の光</span></div></div></div>`;
       $("use-herb")?.addEventListener("click", () => {
         s.items.herb--;
@@ -2034,6 +2318,7 @@
         s.kumi.hp = Math.min(s.kumi.maxHp, s.kumi.hp + 25);
         s.mirei.hp = Math.min(s.mirei.maxHp, s.mirei.hp + 25);
         s.sarina.hp = Math.min(s.sarina.maxHp, s.sarina.hp + 25);
+        s.kato.hp = Math.min(s.kato.maxHp, s.kato.hp + 25);
         beep("heal");
         toast("仲間みんなのHPが回復した");
         menu();
@@ -2044,12 +2329,13 @@
         s.kumi.hp = Math.min(s.kumi.maxHp, s.kumi.hp + 45);
         s.mirei.hp = Math.min(s.mirei.maxHp, s.mirei.hp + 45);
         s.sarina.hp = Math.min(s.sarina.maxHp, s.sarina.hp + 45);
+        s.kato.hp = Math.min(s.kato.maxHp, s.kato.hp + 45);
         beep("win");
         toast("虹雫が仲間みんなを癒やした");
         menu();
       });
     } else if (tab === "equip") {
-      ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>主人公・武器：${s.equip.weapon === "sword" ? "青銅の剣" : "旅人の剣"}</strong><span>現在の攻撃力 ${heroAtk()}</span></div><button data-equip="sword"${!s.items.sword ? " disabled" : ""}>${s.equip.weapon === "sword" ? "外す" : "装備"}</button></div><div class="item"><div><strong>主人公・装飾：${s.equip.charm === "charm" ? "空色のお守り" : "なし"}</strong><span>現在の守備力 ${heroDef()}</span></div><button data-equip="charm"${!s.items.charm ? " disabled" : ""}>${s.equip.charm === "charm" ? "外す" : "装備"}</button></div>${s.items.apron ? `<div class="item active-member"><div><strong>美玲・防具：聖火のエプロン</strong><span>守備+4 / 魔窯の炎ダメージ軽減（自動装備）</span></div><b>装備中</b></div>` : ""}${s.items.spiritRibbon ? `<div class="item active-member"><div><strong>紗理菜・装飾：精霊のリボン</strong><span>守備+4 / 古根の攻撃を軽減（自動装備）</span></div><b>装備中</b></div>` : ""}</div>`;
+      ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>主人公・武器：${s.equip.weapon === "sword" ? "青銅の剣" : "旅人の剣"}</strong><span>現在の攻撃力 ${heroAtk()}</span></div><button data-equip="sword"${!s.items.sword ? " disabled" : ""}>${s.equip.weapon === "sword" ? "外す" : "装備"}</button></div><div class="item"><div><strong>主人公・装飾：${s.equip.charm === "charm" ? "空色のお守り" : "なし"}</strong><span>現在の守備力 ${heroDef()}</span></div><button data-equip="charm"${!s.items.charm ? " disabled" : ""}>${s.equip.charm === "charm" ? "外す" : "装備"}</button></div>${s.items.apron ? `<div class="item active-member"><div><strong>美玲・防具：聖火のエプロン</strong><span>守備+4 / 魔窯の炎ダメージ軽減（自動装備）</span></div><b>装備中</b></div>` : ""}${s.items.spiritRibbon ? `<div class="item active-member"><div><strong>紗理菜・装飾：精霊のリボン</strong><span>守備+4 / 古根の攻撃を軽減（自動装備）</span></div><b>装備中</b></div>` : ""}${s.items.windBoots ? `<div class="item active-member"><div><strong>史帆・装飾：疾風のブーツ</strong><span>守備+3 / 回避率+8%（自動装備）</span></div><b>装備中</b></div>` : ""}</div>`;
       ui.menuBody.querySelectorAll("[data-equip]").forEach(
         (b) =>
           (b.onclick = () => {
@@ -2093,25 +2379,32 @@
   }
   function showClear() {
     setMode("clear");
-    const chapter3 = s.flags.chapter3Clear,
+    const chapter4 = s.flags.chapter4Clear,
+      chapter3 = s.flags.chapter3Clear,
       chapter2 = s.flags.chapter2Clear;
-    ui.clearChapter.textContent = chapter3
+    ui.clearChapter.textContent = chapter4
+      ? "CHAPTER 4 COMPLETE"
+      : chapter3
       ? "CHAPTER 3 COMPLETE"
       : chapter2
         ? "CHAPTER 2 COMPLETE"
         : "CHAPTER 1 COMPLETE";
-    ui.clearTitle.textContent = chapter3
+    ui.clearTitle.textContent = chapter4
+      ? "疾風の風剣士"
+      : chapter3
       ? "虹色の精霊巫女"
       : chapter2
         ? "焼きたての聖女"
         : "空色の騎士団長";
-    ui.clearMessage.textContent = chapter3
+    ui.clearMessage.textContent = chapter4
+      ? "四つ目のハッピーオーラの欠片を手に入れた！"
+      : chapter3
       ? "三つ目のハッピーオーラの欠片を手に入れた！"
       : chapter2
         ? "二つ目のハッピーオーラの欠片を手に入れた！"
         : "ハッピーオーラの欠片を手に入れた！";
-    ui.clearNext.textContent = chapter2 ? "第三章へ進む" : "第二章へ進む";
-    show(ui.clearNext, !chapter3);
+    ui.clearNext.textContent = chapter3 ? "第四章へ進む" : chapter2 ? "第三章へ進む" : "第二章へ進む";
+    show(ui.clearNext, !chapter4);
     ui.clearInfo.textContent = `主人公 Lv.${s.lv}　戦闘 ${s.battles}回　${time(s.playTime + (Date.now() - s.started) / 1000)}`;
     beep("win");
   }
@@ -2185,8 +2478,34 @@
       toast("第三章　虹色の精霊巫女", 2600);
     });
   }
+  function beginChapter4() {
+    s.chapter = 4;
+    s.flags.chapter3Clear = true;
+    s.flags.chapter4 = true;
+    s.flags.clear = false;
+    s.hp = heroMaxHp();
+    s.mp = s.maxMp;
+    for (const id of ["kumi", "mirei", "sarina", "kato"]) {
+      s[id].hp = s[id].maxHp;
+      s[id].mp = s[id].maxMp;
+    }
+    dialogue(D.chapter4Intro, () => {
+      s.map = "world";
+      s.x = 10;
+      s.y = 3;
+      s.dir = "up";
+      scene = "map";
+      buildEnemies();
+      setMode("map");
+      hud();
+      autosave();
+      fadeIn();
+      toast("第四章　疾風の風剣士", 2600);
+    });
+  }
   function beginNextChapter() {
-    if (s.flags.chapter2Clear) beginChapter3();
+    if (s.flags.chapter3Clear) beginChapter4();
+    else if (s.flags.chapter2Clear) beginChapter3();
     else beginChapter2();
   }
   function title() {
@@ -2514,6 +2833,21 @@
       rect(x + 19, y + 4, 6, 28, "#75563a");
       rect(x + 9, y + 10, 14, 5, "#8a6842");
       rect(x, y + 27, 32, 5, "#102321");
+    } else if (type === z.CLOUD) {
+      rect(x, y, 32, 32, "#86cfe5");
+      rect(x + 2, y + 8, 20, 9, "#dff8fa");
+      rect(x + 10, y + 3, 19, 13, "#f5ffff");
+      rect(x, y + 23, 27, 7, "#b8e9f1");
+    } else if (type === z.WOOD) {
+      rect(x, y, 32, 32, "#8a5a39");
+      rect(x, y + 6, 32, 3, "#c69055");
+      rect(x, y + 22, 32, 3, "#543927");
+      rect(x + ((wx * 7) % 23), y + 12, 8, 2, "#d1a46c");
+    } else if (type === z.WIND) {
+      rect(x, y, 32, 32, "#8fd8e8");
+      rect(x + 3, y + 9, 25, 3, "#eaffff");
+      rect(x + 8, y + 17, 20, 3, "#c5f5f8");
+      rect(x + 3, y + 25, 15, 2, "#f7ffff");
     } else if (type === z.CAVE) {
       rect(x, y, 32, 32, "#53636b");
       rect(x + 2, y + 4, 28, 28, "#29333c");
@@ -2555,6 +2889,8 @@
       s.active.sarina !== false
     )
       followers.push("sarina");
+    if ((s.flags.katoGuest || s.flags.katoJoined) && s.active.kato !== false)
+      followers.push("kato");
     if (followers.length) {
       const [dx, dy] = delta(
           s.dir === "left"
@@ -2596,6 +2932,11 @@
       rect(x + 8, y + 3 - bob, 16, 7, "#f0a85b");
       rect(x + 12, y + 18 - bob, 8, 12, "#75482e");
       rect(x + 24, y + 4 - bob, 4, 15, "#e8ece2");
+    } else if (type === "world_katoshi") {
+      rect(x + 8, y + 7 - bob, 16, 23, "#eaf8f7");
+      rect(x + 13, y - 3 - bob, 6, 31, "#557a9a");
+      rect(x + 1, y + 7 - bob, 30, 3, "#f0cf69");
+      rect(x + 14, y - bob, 4, 17, "#8eeeff");
     } else {
       rect(x + 4, y + 12 - bob, 24, 18, "#2f6d55");
       rect(x + 8, y + 7 - bob, 16, 9, "#5aa875");
@@ -2655,6 +2996,14 @@
           "#eef7ee",
           "#78cfa7",
           "#f1cc68",
+        ],
+        kato: [
+          "#473632",
+          "#241d1c",
+          "#f1c5a2",
+          "#eef6f5",
+          "#6cc9e8",
+          "#e9ca68",
         ],
         guard: [
           "#4c4034",
@@ -2729,7 +3078,7 @@
       p(18, 12 + b, 2, 2, "#292332");
       p(14, 16 + b, 5, 1, "#c77f75");
     } else p(10, 10 + b, 12, 9, P[1]);
-    if (type === "kumi" || type === "mirei" || type === "sarina") {
+    if (type === "kumi" || type === "mirei" || type === "sarina" || type === "kato") {
       p(7, 8 + b, 4, 15, P[1]);
       p(21, 8 + b, 4, 15, P[1]);
     }
@@ -2863,6 +3212,23 @@
       rect(x + 11, y + 22 + b, 14, 4, "#17191d");
       rect(x, y + 27 + b, 10, 4, "#3d6d51");
       rect(x + 24, y + 27 + b, 10, 4, "#3d6d51");
+    } else if (kind === "galeHawk") {
+      rect(x + 11, y + 8 - b, 12, 18, "#d9f4f2");
+      rect(x + 1, y + 7 - b, 12, 8, "#75c9df");
+      rect(x + 22, y + 7 - b, 10, 8, "#75c9df");
+      rect(x + 14, y + 4 - b, 7, 7, "#f2cf68");
+      rect(x + 17, y + 10 - b, 2, 2, "#24344a");
+    } else if (kind === "windKnight") {
+      rect(x + 9, y + 5 + b, 15, 9, "#bcdbe0");
+      rect(x + 7, y + 13 + b, 19, 15, "#527a95");
+      rect(x + 13, y + 9 + b, 9, 2, "#182c3d");
+      rect(x + 25, y + 4 + b, 2, 25, "#e7c85f");
+    } else if (kind === "windBoss") {
+      rect(x + 4, y + 6 + b, 25, 24, "#29405e");
+      rect(x + 1, y + 2 + b, 8, 19, "#b7eef1");
+      rect(x + 24, y + 1 + b, 8, 20, "#b7eef1");
+      rect(x + 10, y + 12 + b, 4, 4, "#f2d066");
+      rect(x + 21, y + 12 + b, 4, 4, "#f2d066");
     } else {
       rect(x + 6, y + 7 + b, 20, 21, "#332648");
       rect(x + 10, y + 3 + b, 5, 7, "#553c6c");
@@ -2890,6 +3256,8 @@
           ? "#582a24"
           : type === "rootBoss"
             ? "#233d35"
+            : type === "windBoss"
+              ? "#29405e"
             : "#6fcbe1",
     );
     if (type === "boss") {
@@ -2921,6 +3289,14 @@
       r(58, 72, 25, 8, "#3e7557");
       return;
     }
+    if (type === "windBoss") {
+      r(10, 18, 64, 66, "#29405e");
+      r(5, 4, 20, 48, "#b7eef1");
+      r(59, 4, 20, 48, "#b7eef1");
+      r(24, 37, 9, 8, "#f2d066");
+      r(52, 37, 9, 8, "#f2d066");
+      return;
+    }
     if (type === "light" || type === "chest") {
       for (let i = 0; i < 7; i++)
         r(
@@ -2936,12 +3312,15 @@
     const k = type === "kumi",
       m = type === "mirei",
       saria = type === "sarina",
+      kato = type === "kato",
       hair = k
         ? "#53382f"
         : m
           ? "#704532"
           : saria
             ? "#3f302d"
+            : kato
+              ? "#473632"
             : type === "guard"
               ? "#6d5a47"
               : type === "elder"
@@ -2959,6 +3338,8 @@
           ? "#3f2922"
           : saria
             ? "#251d1d"
+            : kato
+              ? "#241d1c"
             : type === "elder"
               ? "#9aa8ad"
               : "#1a1920",
@@ -2969,6 +3350,8 @@
           ? "#f4eee0"
           : saria
             ? "#eef7ee"
+            : kato
+              ? "#eef6f5"
             : type === "guard"
               ? "#9fafba"
               : type === "child"
@@ -2980,6 +3363,8 @@
           ? "#f0b85e"
           : saria
             ? "#78cfa7"
+            : kato
+              ? "#6cc9e8"
             : type === "child"
               ? "#60c9e3"
               : "#71d9ef";
@@ -3084,6 +3469,11 @@
       rect(404, 48, 151, 3, "#b78ae8");
       rect(395, 54, 169, 2, "#77ddcf");
       rect(398, 159, 164, 3, "#b78ae8");
+    }
+    if (fight.windBarrier) {
+      rect(397, 52, 168, 3, "#b9f7ff");
+      rect(409, 47, 144, 2, "#f7ffff");
+      rect(402, 161, 158, 3, "#72cce5");
     }
     rect(375, 16, 225, 24, "#03152bd9");
     rect(382, 25, 212, 9, "#151827");
@@ -3285,6 +3675,26 @@
   }
   window.__HQ0_TEST__ = {
     state: () => JSON.parse(JSON.stringify(s)),
+    fight: () => (fight ? JSON.parse(JSON.stringify(fight)) : null),
+    ready() {
+      if (!fight) return;
+      fight.busy = false;
+      commands("root");
+    },
+    weakenFoe() {
+      if (fight) fight.foe.hp = 1;
+    },
+    actor(id) {
+      if (!fight) return;
+      fight.actor = Math.max(0, fight.party.findIndex((p) => p.id === id));
+      fight.busy = false;
+      commands("root");
+    },
+    win() {
+      if (!fight) return;
+      fight.foe.hp = 0;
+      victory();
+    },
     happy(value) {
       if (!fight) return;
       fight.happy = Math.max(0, Math.min(100, Number(value) || 0));
@@ -3500,6 +3910,53 @@
         s.mirei.mp = s.mirei.maxMp;
         s.sarina.hp = s.sarina.maxHp;
         s.sarina.mp = s.sarina.maxMp;
+        s.happy = 100;
+      } else if (x === "katoshia") {
+        s.flags.chapter3Boss = true;
+        s.flags.chapter3Clear = true;
+        s.flags.sarinaJoined = true;
+        s.flags.chapter4 = true;
+        s.flags.clear = false;
+        s.flags.fragment = 3;
+        s.chapter = 4;
+        s.map = "katoshia";
+        s.x = 10;
+        s.y = 4;
+        s.dir = "up";
+      } else if (x === "arena") {
+        s.flags.chapter4 = true;
+        s.flags.metKato = true;
+        s.flags.tournamentStarted = true;
+        s.quests.windTournament = "active";
+        s.map = "windarena";
+        s.x = 10;
+        s.y = 8;
+        s.dir = "up";
+      } else if (x === "windBoss") {
+        s.flags.chapter4 = true;
+        s.flags.metKato = true;
+        s.flags.tournamentStarted = true;
+        s.flags.tournamentWon = true;
+        s.flags.katoGuest = true;
+        s.flags.windTowerOpen = true;
+        s.active.kato = true;
+        s.active.sarina = false;
+        s.windOrder = ["blue", "gold"];
+        s.quests.windTournament = "complete";
+        s.quests.stillWind = "active";
+        s.map = "windtower";
+        s.x = 10;
+        s.y = 2;
+        s.dir = "up";
+        s.lv = 13;
+        s.maxHp = 180;
+        s.maxMp = 54;
+        s.atk = 49;
+        s.def = 31;
+        s.hp = heroMaxHp();
+        s.mp = s.maxMp;
+        s.kato.hp = s.kato.maxHp;
+        s.kato.mp = s.kato.maxMp;
         s.happy = 100;
       }
       fade = 0;
