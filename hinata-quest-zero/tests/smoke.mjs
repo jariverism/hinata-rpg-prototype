@@ -209,7 +209,19 @@ test("タイトルから第二章終了、セーブ・ロードまでの進行",
   assert.equal(state.flags.chapter2, true);
   assert.equal(state.map, "world");
 
-  for (let i = 0; i < 12; i += 1) pressDirection(document, "right");
+  const pad = {
+    buttons: Array.from({ length: 16 }, () => ({ pressed: false })),
+    axes: [1, 0],
+  };
+  Object.defineProperty(window.navigator, "getGamepads", {
+    configurable: true,
+    value: () => [pad],
+  });
+  window.__HQ0_TEST__.gamepad(1000);
+  assert.equal(window.__HQ0_TEST__.state().x, 5);
+  pad.axes = [0, 0];
+  window.__HQ0_TEST__.gamepad(1200);
+  for (let i = 0; i < 11; i += 1) pressDirection(document, "right");
   pressDirection(document, "up");
   pressA(document);
   assert.equal(document.querySelector("#speaker").textContent, "SYSTEM");
