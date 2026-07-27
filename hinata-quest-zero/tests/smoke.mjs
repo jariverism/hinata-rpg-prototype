@@ -35,7 +35,7 @@ function command(document, label) {
   button.click();
 }
 
-test("タイトルから第二章終了、セーブ・ロードまでの進行", async () => {
+test("タイトルから第三章終了、セーブ・ロードまでの進行", async () => {
   const window = new Window({ url: "http://localhost/" });
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   window.document.write(html);
@@ -342,7 +342,11 @@ test("タイトルから第二章終了、セーブ・ロードまでの進行",
   assert.equal(state.flags.mireiJoined, true);
   assert.equal(state.flags.fragment, 2);
   assert.equal(visible(document.querySelector("#clear")), true);
-  assert.equal(visible(document.querySelector("#clear-next")), false);
+  assert.equal(visible(document.querySelector("#clear-next")), true);
+  assert.equal(
+    document.querySelector("#clear-next").textContent,
+    "第三章へ進む",
+  );
 
   document.querySelector("#clear-save").click();
   document.querySelector("#clear-title").click();
@@ -350,6 +354,174 @@ test("タイトルから第二章終了、セーブ・ロードまでの進行",
   document.querySelector('[data-load="1"]').click();
   assert.equal(visible(document.querySelector("#clear")), true);
   assert.equal(window.__HQ0_TEST__.state().flags.chapter2Clear, true);
+
+  document.querySelector("#clear-next").click();
+  assert.equal(visible(document.querySelector("#dialogue")), true);
+  for (let i = 0; i < 4; i += 1) document.querySelector("#dialogue").click();
+  window.__HQ0_TEST__.settle();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.chapter3, true);
+  assert.equal(state.map, "world");
+
+  for (let i = 0; i < 5; i += 1) pressDirection(document, "left");
+  for (let i = 0; i < 3; i += 1) pressDirection(document, "down");
+  pressA(document);
+  assert.equal(document.querySelector("#speaker").textContent, "SYSTEM");
+  document.querySelector("#dialogue").click();
+  window.__HQ0_TEST__.settle();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.map, "sarinalia");
+
+  for (let i = 0; i < 6; i += 1) pressDirection(document, "up");
+  pressA(document);
+  assert.equal(document.querySelector("#speaker").textContent, "鈴を持つ巫女");
+  for (let i = 0; i < 6; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.metSarina, true);
+  assert.equal(state.quests.spiritTones, "active");
+
+  window.__HQ0_TEST__.step("altarGold");
+  pressA(document);
+  for (let i = 0; i < 2; i += 1) document.querySelector("#dialogue").click();
+  assert.deepEqual(window.__HQ0_TEST__.state().spiritOrder, []);
+
+  for (const [altar, expected] of [
+    ["altarBlue", ["blue"]],
+    ["altarGold", ["blue", "gold"]],
+  ]) {
+    window.__HQ0_TEST__.step(altar);
+    pressA(document);
+    document.querySelector("#dialogue").click();
+    assert.deepEqual(window.__HQ0_TEST__.state().spiritOrder, expected);
+  }
+  window.__HQ0_TEST__.step("altarPink");
+  pressA(document);
+  for (let i = 0; i < 5; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.groveSolved, true);
+  assert.equal(state.flags.rootOpen, true);
+  assert.equal(state.flags.sarinaGuest, true);
+  assert.equal(state.quests.spiritTones, "complete");
+
+  document.querySelector("#touch-menu").onpointerdown({ preventDefault() {} });
+  document.querySelector('[data-tab="party"]').click();
+  assert.match(
+    document.querySelector("#menu-body").textContent,
+    /鈴を持つ巫女/,
+  );
+  const sarinaToggle = document.querySelector('[data-party="sarina"]');
+  assert.ok(sarinaToggle);
+  sarinaToggle.click();
+  assert.equal(window.__HQ0_TEST__.state().active.sarina, false);
+  sarinaToggle.click();
+  assert.equal(window.__HQ0_TEST__.state().active.sarina, true);
+  document.querySelector("#menu-close").click();
+
+  window.__HQ0_TEST__.step("rootBoss");
+  pressA(document);
+  for (let i = 0; i < 4; i += 1) document.querySelector("#dialogue").click();
+  assert.equal(visible(document.querySelector("#battle")), true);
+  assert.match(document.querySelector("#party").textContent, /HAPPY100\/100/);
+  command(document, "必殺技");
+  assert.equal(window.__HQ0_TEST__.state().happy, 0);
+
+  let sarinaSkillUsed = false;
+  let rootCaptainUsed = false;
+  const finishers = new Set(["hero"]);
+  for (
+    let i = 0;
+    i < 320 && visible(document.querySelector("#battle"));
+    i += 1
+  ) {
+    const log = document.querySelector("#battle-log").textContent;
+    const available = [...document.querySelectorAll("#commands button")];
+    if (log.includes("久美の行動") && !finishers.has("kumi")) {
+      window.__HQ0_TEST__.happy(100);
+      command(document, "必殺技");
+      finishers.add("kumi");
+    } else if (log.includes("美玲の行動") && !finishers.has("mirei")) {
+      window.__HQ0_TEST__.happy(100);
+      command(document, "必殺技");
+      finishers.add("mirei");
+    } else if (log.includes("紗理菜の行動") && !finishers.has("sarina")) {
+      window.__HQ0_TEST__.happy(100);
+      command(document, "必殺技");
+      finishers.add("sarina");
+    } else if (
+      available.some(
+        (button) => button.textContent === "必殺技" && !button.disabled,
+      )
+    ) {
+      command(document, "必殺技");
+    } else if (log.includes("久美の行動") && !rootCaptainUsed) {
+      command(document, "スキル");
+      command(document, "キャプテンコール MP4");
+      rootCaptainUsed = true;
+    } else if (log.includes("久美の行動")) {
+      command(document, "スキル");
+      const skill = [...document.querySelectorAll("#commands button")].find(
+        (button) => button.textContent === "蒼天突き MP5" && !button.disabled,
+      );
+      if (skill) skill.click();
+      else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else if (log.includes("美玲の行動")) {
+      command(document, "スキル");
+      const heal = [...document.querySelectorAll("#commands button")].find(
+        (button) =>
+          button.textContent === "ハッピーブレッド MP7" && !button.disabled,
+      );
+      if (heal) heal.click();
+      else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else if (log.includes("紗理菜の行動")) {
+      command(document, "スキル");
+      const bell = [...document.querySelectorAll("#commands button")].find(
+        (button) => button.textContent === "聖なる鈴 MP4" && !button.disabled,
+      );
+      if (bell) {
+        bell.click();
+        sarinaSkillUsed = true;
+      } else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else if (log.includes("テストの行動")) {
+      command(document, "スキル");
+      const aura = [...document.querySelectorAll("#commands button")].find(
+        (button) =>
+          button.textContent === "オーラブレード MP4" && !button.disabled,
+      );
+      if (aura) aura.click();
+      else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else {
+      command(document, "たたかう");
+    }
+  }
+  assert.equal(sarinaSkillUsed, true);
+  assert.deepEqual([...finishers].sort(), ["hero", "kumi", "mirei", "sarina"]);
+  for (let i = 0; i < 7; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.chapter3Boss, true);
+  assert.equal(state.flags.chapter3Clear, true);
+  assert.equal(state.flags.sarinaJoined, true);
+  assert.equal(state.flags.fragment, 3);
+  assert.equal(visible(document.querySelector("#clear")), true);
+  assert.equal(visible(document.querySelector("#clear-next")), false);
+
+  document.querySelector("#clear-save").click();
+  document.querySelector("#clear-title").click();
+  document.querySelector('[data-title="load"]').click();
+  document.querySelector('[data-load="1"]').click();
+  assert.equal(visible(document.querySelector("#clear")), true);
+  assert.equal(window.__HQ0_TEST__.state().flags.chapter3Clear, true);
 
   window.localStorage.setItem(
     "hq0-save-2",
@@ -395,17 +567,64 @@ test("タイトルから第二章終了、セーブ・ロードまでの進行",
   document.querySelector('[data-title="load"]').click();
   document.querySelector('[data-load="2"]').click();
   state = window.__HQ0_TEST__.state();
-  assert.equal(state.version, 2);
+  assert.equal(state.version, 3);
   assert.equal(state.name, "旧記録");
   assert.equal(state.flags.chapter1Clear, true);
   assert.equal(state.flags.fragment, 1);
-  assert.deepEqual(state.active, { kumi: true, mirei: true });
+  assert.deepEqual(state.active, { kumi: true, mirei: true, sarina: true });
+
+  window.localStorage.setItem(
+    "hq0-save-3",
+    JSON.stringify({
+      version: 2,
+      name: "第二章記録",
+      chapter: 2,
+      map: "oven",
+      x: 10,
+      y: 2,
+      lv: 7,
+      flags: {
+        boss: true,
+        joined: true,
+        chapter1Clear: true,
+        chapter2: true,
+        chapter2Boss: true,
+        mireiJoined: true,
+        clear: true,
+        fragment: 2,
+      },
+      items: {},
+      equip: {},
+      active: { kumi: true, mirei: true },
+      quests: {},
+      kills: {},
+      playTime: 1800,
+      started: Date.now(),
+    }),
+  );
+  document.querySelector("#clear-title").click();
+  document.querySelector('[data-title="load"]').click();
+  document.querySelector('[data-load="3"]').click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.version, 3);
+  assert.equal(state.flags.chapter2Clear, true);
+  assert.equal(state.flags.fragment, 2);
+  assert.equal(state.flags.chapter3, false);
+  assert.equal(state.sarina.maxMp, 48);
+  assert.equal(state.active.sarina, true);
 });
 
 test("全マップの必須地点に進行可能な経路がある", async () => {
   const window = globalThis.window;
   const { maps, TILE } = window.HQ0;
-  const blocked = new Set([TILE.TREE, TILE.WATER, TILE.WALL]);
+  const blocked = new Set([
+    TILE.TREE,
+    TILE.WATER,
+    TILE.WALL,
+    TILE.ROOF,
+    TILE.LAVA,
+    TILE.ROOT,
+  ]);
 
   function reachable(map, start, goal) {
     const queue = [start];
@@ -446,6 +665,7 @@ test("全マップの必須地点に進行可能な経路がある", async () =>
   assert.equal(reachable(maps.cave, maps.cave.start, [10, 1]), true);
   assert.equal(reachable(maps.world, maps.world.start, [3, 4]), true);
   assert.equal(reachable(maps.world, maps.world.start, [16, 4]), true);
+  assert.equal(reachable(maps.world, maps.world.start, [10, 8]), true);
   assert.equal(reachable(maps.milerea, maps.milerea.start, [10, 3]), true);
   assert.equal(reachable(maps.milerea, maps.milerea.start, [4, 7]), true);
   assert.equal(reachable(maps.milerea, maps.milerea.start, [19, 5]), true);
@@ -461,4 +681,28 @@ test("全マップの必須地点に進行可能な経路がある", async () =>
   assert.equal(reachable(maps.oven, maps.oven.start, [3, 5]), true);
   assert.equal(reachable(maps.oven, maps.oven.start, [16, 5]), true);
   assert.equal(reachable(maps.oven, maps.oven.start, [10, 1]), true);
+  assert.equal(reachable(maps.sarinalia, maps.sarinalia.start, [10, 3]), true);
+  assert.equal(reachable(maps.sarinalia, maps.sarinalia.start, [19, 5]), true);
+  assert.equal(reachable(maps.sarinalia, maps.sarinalia.start, [10, 0]), true);
+  assert.equal(
+    reachable(maps.spiritgrove, maps.spiritgrove.start, [6, 2]),
+    true,
+  );
+  assert.equal(
+    reachable(maps.spiritgrove, maps.spiritgrove.start, [12, 7]),
+    true,
+  );
+  assert.equal(
+    reachable(maps.spiritgrove, maps.spiritgrove.start, [17, 3]),
+    true,
+  );
+  assert.equal(reachable(maps.rootshrine, maps.rootshrine.start, [3, 5]), true);
+  assert.equal(
+    reachable(maps.rootshrine, maps.rootshrine.start, [16, 5]),
+    true,
+  );
+  assert.equal(
+    reachable(maps.rootshrine, maps.rootshrine.start, [10, 1]),
+    true,
+  );
 });
