@@ -35,7 +35,7 @@ function command(document, label) {
   button.click();
 }
 
-test("タイトルから第一章終了、セーブ・ロードまでの進行", async () => {
+test("タイトルから第二章終了、セーブ・ロードまでの進行", async () => {
   const window = new Window({ url: "http://localhost/" });
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   window.document.write(html);
@@ -107,7 +107,10 @@ test("タイトルから第一章終了、セーブ・ロードまでの進行",
   window.__HQ0_TEST__.step("city");
   pressDirection(document, "up");
   pressA(document);
-  assert.equal(document.querySelector("#speaker").textContent, "空色の騎士団長");
+  assert.equal(
+    document.querySelector("#speaker").textContent,
+    "空色の騎士団長",
+  );
   for (let i = 0; i < 6; i += 1) document.querySelector("#dialogue").click();
   state = window.__HQ0_TEST__.state();
   assert.equal(state.flags.raid, true);
@@ -117,7 +120,11 @@ test("タイトルから第一章終了、セーブ・ロードまでの進行",
   pressDirection(document, "right");
   assert.equal(visible(document.querySelector("#battle")), true);
   let captainUsed = false;
-  for (let i = 0; i < 30 && visible(document.querySelector("#battle")); i += 1) {
+  for (
+    let i = 0;
+    i < 30 && visible(document.querySelector("#battle"));
+    i += 1
+  ) {
     const log = document.querySelector("#battle-log").textContent;
     if (log.includes("久美の行動") && !captainUsed) {
       command(document, "スキル");
@@ -138,7 +145,11 @@ test("タイトルから第一章終了、セーブ・ロードまでの進行",
   assert.equal(visible(document.querySelector("#battle")), true);
 
   captainUsed = false;
-  for (let i = 0; i < 80 && visible(document.querySelector("#battle")); i += 1) {
+  for (
+    let i = 0;
+    i < 80 && visible(document.querySelector("#battle"));
+    i += 1
+  ) {
     const log = document.querySelector("#battle-log").textContent;
     if (log.includes("久美の行動") && !captainUsed) {
       command(document, "スキル");
@@ -150,7 +161,8 @@ test("タイトルから第一章終了、セーブ・ロードまでの進行",
       );
       skill?.click();
       const aura = [...document.querySelectorAll("#commands button")].find(
-        (button) => button.textContent === "オーラブレード MP4" && !button.disabled,
+        (button) =>
+          button.textContent === "オーラブレード MP4" && !button.disabled,
       );
       if (aura) aura.click();
       else {
@@ -188,6 +200,137 @@ test("タイトルから第一章終了、セーブ・ロードまでの進行",
   assert.ok(loadButton);
   loadButton.click();
   assert.equal(visible(document.querySelector("#clear")), true);
+
+  document.querySelector("#clear-next").click();
+  assert.equal(visible(document.querySelector("#dialogue")), true);
+  for (let i = 0; i < 3; i += 1) document.querySelector("#dialogue").click();
+  window.__HQ0_TEST__.settle();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.chapter2, true);
+  assert.equal(state.map, "world");
+
+  window.__HQ0_TEST__.step("milerea");
+  pressDirection(document, "up");
+  pressA(document);
+  assert.equal(
+    document.querySelector("#speaker").textContent,
+    "パン職人の少女",
+  );
+  for (let i = 0; i < 6; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.metMirei, true);
+  assert.equal(state.quests.sunwheat, "active");
+
+  document.querySelector("#touch-menu").onpointerdown({ preventDefault() {} });
+  document.querySelector('[data-tab="quests"]').click();
+  assert.match(
+    document.querySelector("#menu-body").textContent,
+    /三つの陽だまり麦/,
+  );
+  document.querySelector("#menu-close").click();
+
+  window.__HQ0_TEST__.step("bake");
+  pressDirection(document, "up");
+  pressA(document);
+  for (let i = 0; i < 6; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.mireiGuest, true);
+  assert.equal(state.flags.ovenOpen, true);
+  assert.equal(state.quests.sunwheat, "complete");
+
+  document.querySelector("#touch-menu").onpointerdown({ preventDefault() {} });
+  document.querySelector('[data-tab="party"]').click();
+  assert.match(
+    document.querySelector("#menu-body").textContent,
+    /パン職人の少女/,
+  );
+  const mireiToggle = document.querySelector('[data-party="mirei"]');
+  assert.ok(mireiToggle);
+  mireiToggle.click();
+  assert.equal(window.__HQ0_TEST__.state().active.mirei, false);
+  mireiToggle.click();
+  assert.equal(window.__HQ0_TEST__.state().active.mirei, true);
+  document.querySelector("#menu-close").click();
+
+  window.__HQ0_TEST__.step("ovenBoss");
+  pressDirection(document, "up");
+  pressA(document);
+  for (let i = 0; i < 4; i += 1) document.querySelector("#dialogue").click();
+  assert.equal(visible(document.querySelector("#battle")), true);
+
+  let chapter2Captain = false;
+  let mireiSkillUsed = false;
+  for (
+    let i = 0;
+    i < 180 && visible(document.querySelector("#battle"));
+    i += 1
+  ) {
+    const log = document.querySelector("#battle-log").textContent;
+    if (log.includes("テストの行動")) {
+      command(document, "スキル");
+      const aura = [...document.querySelectorAll("#commands button")].find(
+        (button) =>
+          button.textContent === "オーラブレード MP4" && !button.disabled,
+      );
+      if (aura) aura.click();
+      else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else if (log.includes("久美の行動") && !chapter2Captain) {
+      command(document, "スキル");
+      command(document, "キャプテンコール MP4");
+      chapter2Captain = true;
+    } else if (log.includes("久美の行動")) {
+      command(document, "スキル");
+      const thrust = [...document.querySelectorAll("#commands button")].find(
+        (button) => button.textContent === "蒼天突き MP5" && !button.disabled,
+      );
+      if (thrust) thrust.click();
+      else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else if (log.includes("美玲の行動") && !mireiSkillUsed) {
+      command(document, "スキル");
+      assert.ok(
+        [...document.querySelectorAll("#commands button")].some(
+          (button) => button.textContent === "焼きたてヒール MP4",
+        ),
+      );
+      command(document, "ハッピーブレッド MP7");
+      mireiSkillUsed = true;
+    } else if (log.includes("美玲の行動")) {
+      command(document, "スキル");
+      const heal = [...document.querySelectorAll("#commands button")].find(
+        (button) =>
+          button.textContent === "焼きたてヒール MP4" && !button.disabled,
+      );
+      if (heal) heal.click();
+      else {
+        command(document, "もどる");
+        command(document, "たたかう");
+      }
+    } else {
+      command(document, "たたかう");
+    }
+  }
+  assert.equal(mireiSkillUsed, true);
+  for (let i = 0; i < 6; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.chapter2Boss, true);
+  assert.equal(state.flags.chapter2Clear, true);
+  assert.equal(state.flags.mireiJoined, true);
+  assert.equal(state.flags.fragment, 2);
+  assert.equal(visible(document.querySelector("#clear")), true);
+  assert.equal(visible(document.querySelector("#clear-next")), false);
+
+  document.querySelector("#clear-save").click();
+  document.querySelector("#clear-title").click();
+  document.querySelector('[data-title="load"]').click();
+  document.querySelector('[data-load="1"]').click();
+  assert.equal(visible(document.querySelector("#clear")), true);
+  assert.equal(window.__HQ0_TEST__.state().flags.chapter2Clear, true);
 });
 
 test("全マップの必須地点に進行可能な経路がある", async () => {
@@ -201,7 +344,12 @@ test("全マップの必須地点に進行可能な経路がある", async () =>
     while (queue.length) {
       const [x, y] = queue.shift();
       if (Math.abs(x - goal[0]) + Math.abs(y - goal[1]) <= 1) return true;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const nx = x + dx;
         const ny = y + dy;
         const id = `${nx},${ny}`;
@@ -227,4 +375,21 @@ test("全マップの必須地点に進行可能な経路がある", async () =>
   assert.equal(reachable(maps.cave, maps.cave.start, [3, 5]), true);
   assert.equal(reachable(maps.cave, maps.cave.start, [16, 5]), true);
   assert.equal(reachable(maps.cave, maps.cave.start, [10, 1]), true);
+  assert.equal(reachable(maps.world, maps.world.start, [3, 4]), true);
+  assert.equal(reachable(maps.world, maps.world.start, [16, 4]), true);
+  assert.equal(reachable(maps.milerea, maps.milerea.start, [10, 3]), true);
+  assert.equal(reachable(maps.milerea, maps.milerea.start, [4, 7]), true);
+  assert.equal(reachable(maps.milerea, maps.milerea.start, [19, 5]), true);
+  assert.equal(reachable(maps.wheatfield, maps.wheatfield.start, [6, 2]), true);
+  assert.equal(
+    reachable(maps.wheatfield, maps.wheatfield.start, [12, 7]),
+    true,
+  );
+  assert.equal(
+    reachable(maps.wheatfield, maps.wheatfield.start, [17, 3]),
+    true,
+  );
+  assert.equal(reachable(maps.oven, maps.oven.start, [3, 5]), true);
+  assert.equal(reachable(maps.oven, maps.oven.start, [16, 5]), true);
+  assert.equal(reachable(maps.oven, maps.oven.start, [10, 1]), true);
 });
