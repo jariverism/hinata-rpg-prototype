@@ -35,7 +35,7 @@ function command(document, label) {
   button.click();
 }
 
-test("タイトルから第三章終了、セーブ・ロードまでの進行", async () => {
+test("タイトルから第四章終了、セーブ・ロードまでの進行", async () => {
   const window = new Window({ url: "http://localhost/" });
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   window.document.write(html);
@@ -70,6 +70,11 @@ test("タイトルから第三章終了、セーブ・ロードまでの進行",
   globalThis.requestAnimationFrame = noop;
   globalThis.addEventListener = window.addEventListener.bind(window);
   globalThis.clearTimeout = noop;
+  window.clearTimeout = noop;
+  window.setTimeout = (callback) => {
+    callback();
+    return 0;
+  };
   globalThis.setTimeout = (callback) => {
     callback();
     return 0;
@@ -514,6 +519,42 @@ test("タイトルから第三章終了、セーブ・ロードまでの進行",
   assert.equal(state.flags.sarinaJoined, true);
   assert.equal(state.flags.fragment, 3);
   assert.equal(visible(document.querySelector("#clear")), true);
+  assert.equal(visible(document.querySelector("#clear-next")), true);
+
+  document.querySelector("#clear-next").click();
+  for (let i = 0; i < 3; i += 1) document.querySelector("#dialogue").click();
+  window.__HQ0_TEST__.settle();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.chapter4, true);
+  assert.equal(state.map, "world");
+
+  window.__HQ0_TEST__.step("katoshia");
+  pressA(document);
+  assert.equal(document.querySelector("#speaker").textContent, "風の剣士");
+  for (let i = 0; i < 4; i += 1) document.querySelector("#dialogue").click();
+  assert.equal(window.__HQ0_TEST__.state().flags.metKato, true);
+
+  window.__HQ0_TEST__.step("windBoss");
+  pressDirection(document, "up");
+  for (let i = 0; i < 3; i += 1) document.querySelector("#dialogue").click();
+  assert.equal(visible(document.querySelector("#battle")), true);
+  window.__HQ0_TEST__.actor("kato");
+  const beforeCombo = window.__HQ0_TEST__.fight().foe.hp;
+  command(document, "スキル");
+  command(document, "かとしコンビネーション MP7");
+  assert.ok(window.__HQ0_TEST__.fight().foe.hp < beforeCombo);
+  window.__HQ0_TEST__.actor("kato");
+  window.__HQ0_TEST__.happy(100);
+  const beforeFinisher = window.__HQ0_TEST__.fight().foe.hp;
+  command(document, "必殺技");
+  assert.ok(window.__HQ0_TEST__.fight().foe.hp < beforeFinisher);
+  window.__HQ0_TEST__.win();
+  for (let i = 0; i < 5; i += 1) document.querySelector("#dialogue").click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.flags.chapter4Boss, true, `${document.querySelector("#battle-log").textContent} ${JSON.stringify(window.__HQ0_TEST__.fight())}`);
+  assert.equal(state.flags.chapter4Clear, true);
+  assert.equal(state.flags.katoJoined, true);
+  assert.equal(state.flags.fragment, 4);
   assert.equal(visible(document.querySelector("#clear-next")), false);
 
   document.querySelector("#clear-save").click();
@@ -521,7 +562,7 @@ test("タイトルから第三章終了、セーブ・ロードまでの進行",
   document.querySelector('[data-title="load"]').click();
   document.querySelector('[data-load="1"]').click();
   assert.equal(visible(document.querySelector("#clear")), true);
-  assert.equal(window.__HQ0_TEST__.state().flags.chapter3Clear, true);
+  assert.equal(window.__HQ0_TEST__.state().flags.chapter4Clear, true);
 
   window.localStorage.setItem(
     "hq0-save-2",
@@ -567,11 +608,11 @@ test("タイトルから第三章終了、セーブ・ロードまでの進行",
   document.querySelector('[data-title="load"]').click();
   document.querySelector('[data-load="2"]').click();
   state = window.__HQ0_TEST__.state();
-  assert.equal(state.version, 3);
+  assert.equal(state.version, 4);
   assert.equal(state.name, "旧記録");
   assert.equal(state.flags.chapter1Clear, true);
   assert.equal(state.flags.fragment, 1);
-  assert.deepEqual(state.active, { kumi: true, mirei: true, sarina: true });
+  assert.deepEqual(state.active, { kumi: true, mirei: true, sarina: true, kato: false });
 
   window.localStorage.setItem(
     "hq0-save-3",
@@ -606,12 +647,13 @@ test("タイトルから第三章終了、セーブ・ロードまでの進行",
   document.querySelector('[data-title="load"]').click();
   document.querySelector('[data-load="3"]').click();
   state = window.__HQ0_TEST__.state();
-  assert.equal(state.version, 3);
+  assert.equal(state.version, 4);
   assert.equal(state.flags.chapter2Clear, true);
   assert.equal(state.flags.fragment, 2);
   assert.equal(state.flags.chapter3, false);
   assert.equal(state.sarina.maxMp, 48);
   assert.equal(state.active.sarina, true);
+  assert.equal(state.active.kato, false);
 });
 
 test("全マップの必須地点に進行可能な経路がある", async () => {
@@ -624,6 +666,7 @@ test("全マップの必須地点に進行可能な経路がある", async () =>
     TILE.ROOF,
     TILE.LAVA,
     TILE.ROOT,
+    TILE.CLOUD,
   ]);
 
   function reachable(map, start, goal) {
@@ -705,4 +748,12 @@ test("全マップの必須地点に進行可能な経路がある", async () =>
     reachable(maps.rootshrine, maps.rootshrine.start, [10, 1]),
     true,
   );
+  assert.equal(reachable(maps.world, maps.world.start, [10, 2]), true);
+  assert.equal(reachable(maps.katoshia, maps.katoshia.start, [10, 3]), true);
+  assert.equal(reachable(maps.katoshia, maps.katoshia.start, [4, 3]), true);
+  assert.equal(reachable(maps.windarena, maps.windarena.start, [7, 5]), true);
+  assert.equal(reachable(maps.windarena, maps.windarena.start, [13, 5]), true);
+  assert.equal(reachable(maps.windtower, maps.windtower.start, [3, 5]), true);
+  assert.equal(reachable(maps.windtower, maps.windtower.start, [16, 5]), true);
+  assert.equal(reachable(maps.windtower, maps.windtower.start, [10, 1]), true);
 });
