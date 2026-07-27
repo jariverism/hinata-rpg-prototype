@@ -44,9 +44,10 @@
       D.TILE.WALL,
       D.TILE.ROOF,
       D.TILE.LAVA,
+      D.TILE.ROOT,
     ]);
   const fresh = (name = "トシ") => ({
-    version: 2,
+    version: 3,
     name,
     chapter: 1,
     map: "grass",
@@ -70,6 +71,8 @@
       sword: 0,
       charm: 0,
       apron: 0,
+      rainbowDew: 0,
+      spiritRibbon: 0,
     },
     equip: { weapon: null, charm: null },
     opened: {},
@@ -94,14 +97,40 @@
       ovenBossIntro: false,
       chapter2Boss: false,
       chapter2Clear: false,
+      chapter3: false,
+      metSarina: false,
+      groveSolved: false,
+      sarinaGuest: false,
+      rootOpen: false,
+      rootBossIntro: false,
+      chapter3Boss: false,
+      sarinaJoined: false,
+      chapter3Clear: false,
       clear: false,
       fragment: 0,
     },
     kumi: { hp: 92, mp: 24, maxHp: 92, maxMp: 24, atk: 19, def: 13 },
     mirei: { hp: 78, mp: 38, maxHp: 78, maxMp: 38, atk: 14, def: 10 },
-    active: { kumi: true, mirei: true },
-    quests: { sunwheat: "locked", straw: "available", oven: "locked" },
-    kills: { strawling: 0, ember: 0, scarecrow: 0 },
+    sarina: { hp: 86, mp: 48, maxHp: 86, maxMp: 48, atk: 17, def: 12 },
+    active: { kumi: true, mirei: true, sarina: true },
+    quests: {
+      sunwheat: "locked",
+      straw: "available",
+      oven: "locked",
+      spiritTones: "locked",
+      forestShadows: "available",
+      silentRoot: "locked",
+    },
+    kills: {
+      strawling: 0,
+      ember: 0,
+      scarecrow: 0,
+      gloomcap: 0,
+      hushWisp: 0,
+      rootling: 0,
+    },
+    spiritOrder: [],
+    happy: 0,
     battles: 0,
     steps: 0,
     playTime: 0,
@@ -196,7 +225,12 @@
     if (!s.flags.ovenOpen)
       return `陽だまり麦を集めよう ${Math.min(3, s.items.sunwheat || 0)}/3`;
     if (!s.flags.chapter2Boss) return "忘れられた大窯を浄化しよう";
-    return "二つ目の光を見届けよう";
+    if (!s.flags.chapter3) return "南の精霊の森サリナリアへ";
+    if (!s.flags.metSarina) return "サリナリアの鈴を持つ巫女に会おう";
+    if (!s.flags.groveSolved)
+      return `三つの精霊音を重ねよう ${s.spiritOrder.length}/3`;
+    if (!s.flags.chapter3Boss) return "北の虹根の古祠を浄化しよう";
+    return "三つ目の光を見届けよう";
   }
   function hud() {
     ui.location.textContent = D.maps[s.map].name;
@@ -236,7 +270,7 @@
       const v = JSON.parse(
         localStorage.getItem(slot === "auto" ? AUTO : SAVE + slot),
       );
-      return v?.version >= 1 && v?.version <= 2 ? v : null;
+      return v?.version >= 1 && v?.version <= 3 ? v : null;
     } catch {
       return null;
     }
@@ -248,15 +282,17 @@
     s = {
       ...base,
       ...v,
-      version: 2,
+      version: 3,
       items: { ...base.items, ...v.items },
       equip: { ...base.equip, ...v.equip },
       flags: { ...base.flags, ...v.flags },
       kumi: { ...base.kumi, ...v.kumi },
       mirei: { ...base.mirei, ...v.mirei },
+      sarina: { ...base.sarina, ...v.sarina },
       active: { ...base.active, ...v.active },
       quests: { ...base.quests, ...v.quests },
       kills: { ...base.kills, ...v.kills },
+      spiritOrder: Array.isArray(v.spiritOrder) ? [...v.spiritOrder] : [],
       started: Date.now(),
     };
     if (s.flags.boss) {
@@ -269,8 +305,17 @@
       s.flags.mireiJoined = true;
       s.flags.fragment = Math.max(2, s.flags.fragment || 0);
     }
+    if (s.flags.chapter3Boss) {
+      s.flags.chapter3Clear = true;
+      s.flags.sarinaJoined = true;
+      s.flags.fragment = Math.max(3, s.flags.fragment || 0);
+    }
     if (!D.maps[s.map]) {
-      s.map = s.flags.chapter2 ? "milerea" : "grass";
+      s.map = s.flags.chapter3
+        ? "sarinalia"
+        : s.flags.chapter2
+          ? "milerea"
+          : "grass";
       [s.x, s.y] = D.maps[s.map].start;
     }
     s.hp = Math.min(s.hp, heroMaxHp());
@@ -408,6 +453,10 @@
       changeMap("milerea", 10, 1, "down");
       return;
     }
+    if (s.map === "rootshrine" && s.x === 10 && s.y === 9 && dir === "down") {
+      changeMap("sarinalia", 10, 1, "down");
+      return;
+    }
     if (s.map === "grass" && x === 10 && y === 0 && !s.flags.cave) {
       toast("洞窟の入口は固く閉ざされている");
       beep("no");
@@ -446,6 +495,19 @@
       else {
         s.y = 1;
         toast("大窯の扉は冷たく閉ざされている");
+        beep("no");
+      }
+    } else if (s.map === "sarinalia" && s.x === 10 && s.y === 10)
+      changeMap("world", 10, 7, "up");
+    else if (s.map === "sarinalia" && s.x === 19 && s.y === 5)
+      changeMap("spiritgrove", 1, 5, "right");
+    else if (s.map === "spiritgrove" && s.x === 0 && s.y === 5)
+      changeMap("sarinalia", 18, 5, "left");
+    else if (s.map === "sarinalia" && s.x === 10 && s.y === 0) {
+      if (s.flags.rootOpen) changeMap("rootshrine", 10, 9, "up");
+      else {
+        s.y = 1;
+        toast("古祠の入口を虹色の根が閉ざしている");
         beep("no");
       }
     }
@@ -501,12 +563,40 @@
       );
       return;
     }
+    if (n.special === "travelSarinalia") {
+      if (!s.flags.chapter3) {
+        dialogue([
+          [
+            "SYSTEM",
+            "light",
+            "南へ続く虹色の道は、まだ深い霧に閉ざされている。",
+          ],
+        ]);
+        return;
+      }
+      dialogue([["SYSTEM", "light", "精霊の森サリナリアへ移動します。"]], () =>
+        changeMap("sarinalia", 10, 9, "up"),
+      );
+      return;
+    }
     if (n.special === "mirei") {
       mireiTalk();
       return;
     }
+    if (n.special === "sarina") {
+      sarinaTalk();
+      return;
+    }
+    if (n.special?.startsWith("altar")) {
+      spiritAltar(n.special);
+      return;
+    }
     if (n.special === "questBoard") {
       questBoard();
+      return;
+    }
+    if (n.special === "spiritBoard") {
+      spiritBoard();
       return;
     }
     if (n.special === "kumi") {
@@ -596,6 +686,113 @@
       ],
     ]);
   }
+  function sarinaTalk() {
+    if (!s.flags.metSarina) {
+      s.flags.metSarina = true;
+      s.quests.spiritTones = "active";
+      dialogue(D.sarinaMeet, () => {
+        setMode("map");
+        hud();
+        autosave();
+        toast("東の静謐の精霊森へ向かおう！");
+      });
+      return;
+    }
+    if (!s.flags.groveSolved) {
+      dialogue([
+        [
+          "鈴を持つ巫女",
+          "sarina",
+          `祭壇は空色、金色、桃色の順。今は${s.spiritOrder.length}つの音が重なっているよ。`,
+        ],
+      ]);
+      return;
+    }
+    dialogue([
+      [
+        s.flags.sarinaJoined ? "潮紗理菜" : "鈴を持つ巫女",
+        "sarina",
+        s.flags.chapter3Boss
+          ? "精霊たちも笑ってる。次の街でも、みんなの小さな声を見つけようね。"
+          : "古根が膜を張ったら、私の「聖なる鈴」で光を届けるね。",
+      ],
+    ]);
+  }
+  function spiritAltar(special) {
+    if (!s.flags.metSarina) {
+      dialogue([
+        [
+          "SYSTEM",
+          "light",
+          "祭壇は眠っている。森の巫女なら意味を知っていそうだ。",
+        ],
+      ]);
+      return;
+    }
+    if (s.flags.groveSolved) {
+      dialogue([["SYSTEM", "light", "三つの祭壇は虹色の旋律を奏でている。"]]);
+      return;
+    }
+    const key = {
+        altarBlue: "blue",
+        altarGold: "gold",
+        altarPink: "pink",
+      }[special],
+      expected = ["blue", "gold", "pink"],
+      labels = { blue: "空色", gold: "金色", pink: "桃色" },
+      next = expected[s.spiritOrder.length];
+    if (key !== next) {
+      s.spiritOrder = [];
+      dialogue(
+        [
+          ["SYSTEM", "light", `${labels[key]}の祭壇が低く濁った音を返した……。`],
+          [
+            "潮紗理菜の声",
+            "sarina",
+            "音がほどけちゃった。空色から、もう一度重ねよう。",
+          ],
+        ],
+        () => {
+          setMode("map");
+          hud();
+          autosave();
+        },
+      );
+      return;
+    }
+    s.spiritOrder.push(key);
+    if (s.spiritOrder.length < 3) {
+      const nextLabel = labels[expected[s.spiritOrder.length]];
+      dialogue(
+        [
+          [
+            "SYSTEM",
+            "light",
+            `${labels[key]}の精霊音が響いた！　次は${nextLabel}の祭壇だ。`,
+          ],
+        ],
+        () => {
+          setMode("map");
+          hud();
+          autosave();
+        },
+      );
+      return;
+    }
+    s.flags.groveSolved = true;
+    s.flags.sarinaGuest = true;
+    s.flags.rootOpen = true;
+    s.quests.spiritTones = "complete";
+    s.quests.silentRoot = "active";
+    s.sarina.hp = s.sarina.maxHp;
+    s.sarina.mp = s.sarina.maxMp;
+    dialogue(D.sarinaAwaken, () => {
+      setMode("map");
+      hud();
+      autosave();
+      toast("北の「虹根の古祠」へ！");
+    });
+  }
   function questBoard() {
     const state = s.quests.straw;
     if (state === "available") {
@@ -648,6 +845,58 @@
     }
     dialogue([["お願い掲示板", "farmer", "「麦畑の困りもの」――達成済み。"]]);
   }
+  function spiritBoard() {
+    const state = s.quests.forestShadows;
+    if (state === "available") {
+      dialogue(
+        [
+          [
+            "迷子精霊の立札",
+            "wisp",
+            "お願い：帰り道を塞ぐ「うつむきキノコ」を2体、森から追い払ってください。",
+          ],
+          ["SYSTEM", "light", "サブクエスト「迷子精霊の帰り道」を受注した！"],
+        ],
+        () => {
+          s.quests.forestShadows = "active";
+          setMode("map");
+          autosave();
+        },
+      );
+      return;
+    }
+    if (state === "active" && (s.kills.gloomcap || 0) >= 2) {
+      dialogue(
+        [
+          [
+            "小さな精霊たち",
+            "wisp",
+            "帰れるよ！　森の道を明るくしてくれてありがとう！",
+          ],
+          ["SYSTEM", "light", "報酬として120Gと虹雫2個を受け取った！"],
+        ],
+        () => {
+          s.quests.forestShadows = "complete";
+          s.gold += 120;
+          s.items.rainbowDew += 2;
+          setMode("map");
+          autosave();
+        },
+      );
+      return;
+    }
+    if (state === "active") {
+      dialogue([
+        [
+          "迷子精霊の立札",
+          "wisp",
+          `うつむきキノコの退治数：${Math.min(2, s.kills.gloomcap || 0)}/2`,
+        ],
+      ]);
+      return;
+    }
+    dialogue([["迷子精霊の立札", "wisp", "精霊たちは無事に家へ帰りました。"]]);
+  }
   function chest(h) {
     s.opened[h.id] = true;
     s.items[h.item] = (s.items[h.item] || 0) + h.amount;
@@ -656,7 +905,9 @@
       [
         {
           speaker: "SYSTEM",
-          portrait: ["charm", "apron", "sunwheat"].includes(h.item)
+          portrait: ["charm", "apron", "sunwheat", "spiritRibbon"].includes(
+            h.item,
+          )
             ? "light"
             : "chest",
           text: h.text,
@@ -677,16 +928,22 @@
   }
   function shop(kind = "sora") {
     const catalog =
-      kind === "milerea"
+      kind === "sarinalia"
         ? [
             ["herb", "薬草", "HP35回復", 15],
-            ["antidote", "毒消し草", "毒・眠りを治す", 18],
-            ["happyBread", "ハッピーブレッド", "味方全体HP25回復", 38],
+            ["antidote", "毒消し草", "状態異常を治す", 18],
+            ["rainbowDew", "虹雫", "味方全体HP45回復", 55],
           ]
-        : [
-            ["herb", "薬草", "HP35回復", 15],
-            ["sword", "青銅の剣", "攻撃+5", 45],
-          ];
+        : kind === "milerea"
+          ? [
+              ["herb", "薬草", "HP35回復", 15],
+              ["antidote", "毒消し草", "毒・眠りを治す", 18],
+              ["happyBread", "ハッピーブレッド", "味方全体HP25回復", 38],
+            ]
+          : [
+              ["herb", "薬草", "HP35回復", 15],
+              ["sword", "青銅の剣", "攻撃+5", 45],
+            ];
     setMode("menu");
     ui.menu.querySelector("nav").classList.add("hidden");
     ui.menuBody.innerHTML = `<div class="list">${catalog
@@ -714,6 +971,11 @@
   }
 
   function meetEnemy(e, ambush) {
+    if (e.id === "rootBoss" && !s.flags.rootBossIntro) {
+      s.flags.rootBossIntro = true;
+      dialogue(D.rootBossIntro, () => startBattle(e, false));
+      return;
+    }
     if (e.id === "ovenBoss" && !s.flags.ovenBossIntro) {
       s.flags.ovenBossIntro = true;
       dialogue(D.ovenBossIntro, () => startBattle(e, false));
@@ -770,6 +1032,23 @@
         buff: 0,
         status: { poison: 0, sleep: 0, auraDown: 0 },
       });
+    if (
+      (s.flags.sarinaGuest || s.flags.sarinaJoined) &&
+      s.active.sarina !== false
+    )
+      a.push({
+        id: "sarina",
+        name: "紗理菜",
+        hp: s.sarina.hp,
+        mp: s.sarina.mp,
+        maxHp: s.sarina.maxHp,
+        maxMp: s.sarina.maxMp,
+        atk: s.sarina.atk,
+        def: s.sarina.def + (s.items.spiritRibbon ? 4 : 0),
+        guard: false,
+        buff: 0,
+        status: { poison: 0, sleep: 0, auraDown: 0 },
+      });
     return a;
   }
   function sync() {
@@ -787,6 +1066,12 @@
       s.mirei.hp = m.hp;
       s.mirei.mp = m.mp;
     }
+    const r = fight.party.find((v) => v.id === "sarina");
+    if (r) {
+      s.sarina.hp = r.hp;
+      s.sarina.mp = r.mp;
+    }
+    s.happy = Math.max(0, Math.min(100, fight.happy || 0));
   }
   function startBattle(src, ambush = false) {
     const base = D.enemies[src.kind];
@@ -797,6 +1082,9 @@
       actor: 0,
       turn: 1,
       captain: 0,
+      spiritGuard: 0,
+      barrier: 0,
+      happy: Math.max(0, Math.min(100, s.happy || 0)),
       warning: false,
       busy: true,
     };
@@ -812,19 +1100,23 @@
   }
   function battleUi() {
     if (!fight) return;
-    ui.party.innerHTML = fight.party
-      .map((p) => {
-        const states = [
-          p.status.poison > 0 ? "毒" : "",
-          p.status.sleep > 0 ? "眠" : "",
-          p.status.auraDown > 0 ? "オーラ↓" : "",
-        ]
-          .filter(Boolean)
-          .map((z) => `<em>${z}</em>`)
-          .join("");
-        return `<div class="member"><div><span>${p.name} ${states}</span><span>HP ${p.hp}/${p.maxHp}</span></div><div class="bar"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></div><div><span>MP</span><span>${p.mp}/${p.maxMp}</span></div><div class="bar mp"><i style="width:${(100 * p.mp) / p.maxMp}%"></i></div></div>`;
-      })
-      .join("");
+    ui.party.innerHTML =
+      `<div class="happy-meter"><div><strong>HAPPY</strong><span>${Math.floor(
+        fight.happy,
+      )}/100</span></div><div class="bar happy"><i style="width:${fight.happy}%"></i></div></div>` +
+      fight.party
+        .map((p) => {
+          const states = [
+            p.status.poison > 0 ? "毒" : "",
+            p.status.sleep > 0 ? "眠" : "",
+            p.status.auraDown > 0 ? "オーラ↓" : "",
+          ]
+            .filter(Boolean)
+            .map((z) => `<em>${z}</em>`)
+            .join("");
+          return `<div class="member"><div><span>${p.name} ${states}</span><span>HP ${p.hp}/${p.maxHp}</span></div><div class="bar"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></div><div><span>MP</span><span>${p.mp}/${p.maxMp}</span></div><div class="bar mp"><i style="width:${(100 * p.mp) / p.maxMp}%"></i></div></div>`;
+        })
+        .join("");
   }
   function actorTurn() {
     if (!fight) return;
@@ -855,6 +1147,7 @@
       list = [
         ["たたかう", attack],
         ["スキル", () => commands("skill")],
+        ["必殺技", finisher, fight.happy < 100],
         ["アイテム", () => commands("item")],
         ["ぼうぎょ", guard],
       ];
@@ -872,12 +1165,19 @@
           ["蒼天突き MP5", thrust, p.mp < 5],
           ["もどる", () => commands("root")],
         ];
-      else
+      else if (p.id === "mirei")
         list = [
           ["焼きたてヒール MP4", warmHeal, p.mp < 4],
           ["ハッピーブレッド MP7", happyFeast, p.mp < 7],
           ["みーぱんスマイル MP5", smileCure, p.mp < 5],
           ["聖火フライパン MP5", panFire, p.mp < 5],
+          ["もどる", () => commands("root")],
+        ];
+      else
+        list = [
+          ["聖なる鈴 MP4", holyBell, p.mp < 4],
+          ["精霊の守り MP6", spiritWard, p.mp < 6],
+          ["虹色の祈り MP8", rainbowPrayer, p.mp < 8],
           ["もどる", () => commands("root")],
         ];
     } else {
@@ -899,6 +1199,12 @@
         `ハッピーブレッド ×${s.items.happyBread}`,
         breadItem,
         !s.items.happyBread ||
+          !fight.party.some((z) => z.hp > 0 && z.hp < z.maxHp),
+      ]);
+      list.push([
+        `虹雫 ×${s.items.rainbowDew}`,
+        rainbowDew,
+        !s.items.rainbowDew ||
           !fight.party.some((z) => z.hp > 0 && z.hp < z.maxHp),
       ]);
       list.push(["もどる", () => commands("root")]);
@@ -937,19 +1243,35 @@
   function attackPower(p, bonus = 0) {
     return p.atk + p.buff + bonus - (p.status.auraDown > 0 ? 5 : 0);
   }
+  function gainHappy(amount) {
+    if (!fight) return;
+    fight.happy = Math.max(0, Math.min(100, fight.happy + amount));
+    s.happy = fight.happy;
+  }
   function elementDamage(p, power, element) {
     let multiplier = 1;
-    let note = "";
+    const notes = [];
     if (fight.foe.weak?.includes(element)) {
       multiplier = 1.5;
-      note = "　弱点！";
+      notes.push("弱点！");
     } else if (fight.foe.resist?.includes(element)) {
       multiplier = 0.62;
-      note = "　耐性";
+      notes.push("耐性");
+    }
+    if (fight.barrier > 0) {
+      if (element === "light") {
+        fight.barrier = 0;
+        multiplier *= 1.2;
+        notes.push("虚根の膜を破った！");
+      } else {
+        multiplier *= 0.55;
+        notes.push("虚根の膜");
+      }
     }
     return {
       value: damage(attackPower(p), fight.foe.def, power * multiplier),
-      note,
+      note: notes.length ? `　${notes.join(" ")}` : "",
+      weak: notes.includes("弱点！"),
     };
   }
   function hit(target, n, color = "#fff0a0") {
@@ -962,15 +1284,19 @@
           ? [125, 175]
           : target === "kumi"
             ? [220, 175]
-            : [315, 175];
+            : target === "mirei"
+              ? [315, 175]
+              : [375, 175];
     numbers.push({ text: String(n), x: p[0], y: p[1], life: 1, color });
   }
   function attack() {
-    const p = fight.party[fight.actor],
-      n = damage(attackPower(p), fight.foe.def);
+    const p = fight.party[fight.actor];
+    let n = damage(attackPower(p), fight.foe.def);
+    if (fight.barrier > 0) n = Math.max(1, Math.floor(n * 0.55));
     fight.busy = true;
     fight.foe.hp = Math.max(0, fight.foe.hp - n);
-    ui.battleLog.textContent = `${p.name}の攻撃！\n${fight.foe.name}に ${n} ダメージ！`;
+    gainHappy(6);
+    ui.battleLog.textContent = `${p.name}の攻撃！\n${fight.foe.name}に ${n} ダメージ！${fight.barrier ? "　虚根の膜" : ""}`;
     hit("foe", n);
     afterAction();
   }
@@ -982,6 +1308,7 @@
     fight.busy = true;
     p.mp -= 3;
     target.buff = Math.max(target.buff, 7);
+    gainHappy(12);
     ui.battleLog.textContent = `${p.name}の「推しの声援」！\n${target.name}の攻撃力が上がった！`;
     beep("heal");
     afterAction(700);
@@ -993,6 +1320,7 @@
     fight.busy = true;
     p.mp -= 4;
     fight.foe.hp = Math.max(0, fight.foe.hp - n);
+    gainHappy(result.weak ? 12 : 8);
     ui.battleLog.textContent = `${p.name}の「オーラブレード」！\n空色の光が ${n} ダメージ！${result.note}`;
     flash = 0.5;
     hit("foe", n, "#9cf3ff");
@@ -1004,6 +1332,7 @@
     p.mp -= 4;
     fight.captain = 3;
     fight.party.forEach((v) => (v.buff = Math.max(v.buff, 4)));
+    gainHappy(14);
     ui.battleLog.textContent =
       "久美の「キャプテンコール」！\n味方全員の攻撃と守りが上がった！";
     beep("win");
@@ -1017,6 +1346,7 @@
     fight.busy = true;
     p.mp -= 5;
     fight.foe.hp = Math.max(0, fight.foe.hp - n);
+    gainHappy(result.weak ? 12 : 8);
     ui.battleLog.textContent = `久美の「蒼天突き」！\n${fight.foe.name}に ${n} ダメージ！${result.note}`;
     hit("foe", n, "#ffe074");
     afterAction(750);
@@ -1027,6 +1357,7 @@
     fight.busy = true;
     s.items.herb--;
     target.hp += n;
+    gainHappy(8);
     ui.battleLog.textContent = `${p.name}は薬草を使った。\n${target.name}のHPが ${n} 回復！`;
     beep("heal");
     numbers.push({
@@ -1043,6 +1374,7 @@
     fight.busy = true;
     s.items.antidote--;
     target.status = { poison: 0, sleep: 0, auraDown: 0 };
+    gainHappy(10);
     ui.battleLog.textContent = `${p.name}は毒消し草を使った。\n${target.name}の状態異常が治った！`;
     beep("heal");
     afterAction(650);
@@ -1058,6 +1390,7 @@
       target.hp += n;
       total += n;
     });
+    gainHappy(total > 0 ? 12 : 4);
     ui.battleLog.textContent = `${p.name}はハッピーブレッドを分け合った。\n味方全体のHPが回復！`;
     beep("heal");
     numbers.push({
@@ -1069,6 +1402,23 @@
     });
     afterAction(700);
   }
+  function rainbowDew() {
+    const p = fight.party[fight.actor];
+    fight.busy = true;
+    s.items.rainbowDew--;
+    let total = 0;
+    fight.party.forEach((target) => {
+      if (target.hp <= 0) return;
+      const n = Math.min(45, target.maxHp - target.hp);
+      target.hp += n;
+      total += n;
+    });
+    gainHappy(total > 0 ? 16 : 5);
+    ui.battleLog.textContent = `${p.name}は虹雫を使った。\n味方全体のHPが回復し、虹の光が満ちた！`;
+    beep("win");
+    flash = 0.35;
+    afterAction(760);
+  }
   function warmHeal() {
     const p = fight.party[fight.actor],
       target = fight.party
@@ -1078,11 +1428,19 @@
     fight.busy = true;
     p.mp -= 4;
     target.hp += n;
+    gainHappy(n > 0 ? 13 : 5);
     ui.battleLog.textContent = `美玲の「焼きたてヒール」！\n${target.name}のHPが ${n} 回復！`;
     beep("heal");
     numbers.push({
       text: `+${n}`,
-      x: target.id === "hero" ? 125 : target.id === "kumi" ? 220 : 315,
+      x:
+        target.id === "hero"
+          ? 125
+          : target.id === "kumi"
+            ? 220
+            : target.id === "mirei"
+              ? 305
+              : 375,
       y: 175,
       life: 1,
       color: "#a8f4aa",
@@ -1098,6 +1456,7 @@
       target.hp = Math.min(target.maxHp, target.hp + 30);
       target.status.poison = 0;
     });
+    gainHappy(18);
     ui.battleLog.textContent =
       "美玲の「ハッピーブレッド」！\n味方全体のHPが回復し、毒が消えた！";
     beep("win");
@@ -1112,6 +1471,7 @@
       target.status = { poison: 0, sleep: 0, auraDown: 0 };
       target.buff = Math.max(target.buff, 3);
     });
+    gainHappy(16);
     ui.battleLog.textContent =
       "美玲の「みーぱんスマイル」！\n状態異常が消え、みんなに元気が戻った！";
     beep("win");
@@ -1124,15 +1484,108 @@
     fight.busy = true;
     p.mp -= 5;
     fight.foe.hp = Math.max(0, fight.foe.hp - n);
+    gainHappy(result.weak ? 12 : 8);
     ui.battleLog.textContent = `美玲の「聖火フライパン」！\n${fight.foe.name}に ${n} ダメージ！${result.note}`;
     hit("foe", n, "#ffae69");
     flash = 0.45;
     afterAction(780);
   }
+  function holyBell() {
+    const p = fight.party[fight.actor],
+      result = elementDamage(p, 1.68, "light"),
+      n = result.value;
+    fight.busy = true;
+    p.mp -= 4;
+    fight.foe.hp = Math.max(0, fight.foe.hp - n);
+    gainHappy(result.weak ? 14 : 9);
+    ui.battleLog.textContent = `紗理菜の「聖なる鈴」！\n澄んだ光が ${n} ダメージ！${result.note}`;
+    hit("foe", n, "#c8fff5");
+    flash = 0.5;
+    afterAction(780);
+  }
+  function spiritWard() {
+    const p = fight.party[fight.actor];
+    fight.busy = true;
+    p.mp -= 6;
+    fight.spiritGuard = 3;
+    gainHappy(15);
+    ui.battleLog.textContent =
+      "紗理菜の「精霊の守り」！\n精霊の輪が味方全体へのダメージを軽くする！";
+    beep("win");
+    flash = 0.35;
+    afterAction(820);
+  }
+  function rainbowPrayer() {
+    const p = fight.party[fight.actor];
+    fight.busy = true;
+    p.mp -= 8;
+    let total = 0;
+    fight.party.forEach((target) => {
+      if (target.hp <= 0) return;
+      const n = Math.min(38, target.maxHp - target.hp);
+      target.hp += n;
+      total += n;
+      target.status = { poison: 0, sleep: 0, auraDown: 0 };
+    });
+    gainHappy(total > 0 ? 20 : 12);
+    ui.battleLog.textContent =
+      "紗理菜の「虹色の祈り」！\n味方全体のHPと状態異常が癒やされた！";
+    beep("win");
+    flash = 0.55;
+    afterAction(900);
+  }
+  function finisher() {
+    const p = fight.party[fight.actor],
+      hadBarrier = fight.barrier > 0;
+    fight.busy = true;
+    fight.happy = 0;
+    s.happy = 0;
+    fight.barrier = 0;
+    let log = "";
+    if (p.id === "hero") {
+      const n = damage(attackPower(p), fight.foe.def, 2.55);
+      fight.foe.hp = Math.max(0, fight.foe.hp - n);
+      fight.party.forEach((target) => (target.buff = Math.max(target.buff, 7)));
+      log = `${p.name}の必殺技「コール＆レスポンス」！\n声援の光が ${n} ダメージ。味方全員の力が高まった！`;
+      hit("foe", n, "#fff18a");
+    } else if (p.id === "kumi") {
+      const n = damage(attackPower(p), fight.foe.def, 2.9);
+      fight.foe.hp = Math.max(0, fight.foe.hp - n);
+      fight.captain = 4;
+      fight.party.forEach((target) => (target.buff = Math.max(target.buff, 8)));
+      log = `久美の必殺技「未来への号令」！\n蒼天の一閃が ${n} ダメージ。全員の守りが固まった！`;
+      hit("foe", n, "#8eeeff");
+    } else if (p.id === "mirei") {
+      fight.party.forEach((target) => {
+        if (target.hp <= 0) return;
+        target.hp = Math.min(target.maxHp, target.hp + 72);
+        target.status = { poison: 0, sleep: 0, auraDown: 0 };
+      });
+      log =
+        "美玲の必殺技「奇跡の食卓」！\n味方全体のHPと状態異常が大きく回復した！";
+    } else {
+      const n = damage(attackPower(p), fight.foe.def, 2.65);
+      fight.foe.hp = Math.max(0, fight.foe.hp - n);
+      fight.party.forEach((target) => {
+        if (target.hp <= 0) return;
+        target.hp = Math.min(target.maxHp, target.hp + 45);
+        target.status = { poison: 0, sleep: 0, auraDown: 0 };
+      });
+      fight.spiritGuard = 4;
+      log = `紗理菜の必殺技「サリマカシー」！\n虹の精霊が ${n} ダメージ。みんなの心を包み込んだ！`;
+      hit("foe", n, "#f6a8ff");
+    }
+    if (hadBarrier) log += "\n必殺技が虚根の膜を打ち破った！";
+    ui.battleLog.textContent = log;
+    beep("win");
+    flash = 0.9;
+    afterAction(1100);
+  }
   function guard() {
     const p = fight.party[fight.actor];
     fight.busy = true;
     p.guard = true;
+    gainHappy(4);
     ui.battleLog.textContent = `${p.name}は身を守っている。`;
     afterAction(500);
   }
@@ -1165,6 +1618,14 @@
       if (z === 0) return ["暗黒のつぶやき", "all", 0.82];
       return ["ため息", "one", 1];
     }
+    if (f.kind === "rootBoss") {
+      const z = fight.turn % 5;
+      if (z === 2) return ["声を閉ざす静寂", "happyDrain", 0];
+      if (z === 3) return ["虚根の膜", "barrier", 0];
+      if (z === 4) return ["まどろみの花粉", "sleep", 0.78];
+      if (z === 0) return ["根界崩し", "all", 1.18];
+      return ["からまり根の鞭", "one", 1.05];
+    }
     if (f.kind === "ovenBoss") {
       const z = fight.turn % 4;
       if (z === 2) return ["灰かぶり毒煙", "poison", 0.58];
@@ -1180,6 +1641,12 @@
       return ["すすの毒火", "poisonOne", 0.82];
     if (f.kind === "scarecrow" && fight.turn % 3 === 0)
       return ["まどろみの藁", "sleep", 0.72];
+    if (f.kind === "gloomcap" && fight.turn % 3 === 0)
+      return ["弱気の胞子", "auraDown", 0.78];
+    if (f.kind === "hushWisp" && fight.turn % 3 === 0)
+      return ["静かな眠り火", "sleep", 0.74];
+    if (f.kind === "rootling" && fight.turn % 3 === 0)
+      return ["しびれ根の毒", "poisonOne", 0.86];
     return [
       f.kind === "slime"
         ? "しょんぼり泡"
@@ -1191,7 +1658,13 @@
               ? "火の粉"
               : f.kind === "scarecrow"
                 ? "からっぽの鎌"
-                : "錆びた剣",
+                : f.kind === "gloomcap"
+                  ? "うつむき頭突き"
+                  : f.kind === "hushWisp"
+                    ? "しじまの火"
+                    : f.kind === "rootling"
+                      ? "根っこパンチ"
+                      : "錆びた剣",
       "one",
       1,
     ];
@@ -1202,10 +1675,15 @@
       Math.floor(
         damage(fight.foe.atk, p.def, pow) *
           (fight.captain ? 0.58 : 1) *
+          (fight.spiritGuard ? 0.68 : 1) *
           (p.guard ? 0.48 : 1) *
           (fight.foe.kind === "ovenBoss" && p.id === "mirei" && s.items.apron
             ? 0.72
-            : 1),
+            : fight.foe.kind === "rootBoss" &&
+                p.id === "sarina" &&
+                s.items.spiritRibbon
+              ? 0.72
+              : 1),
       ),
     );
     p.hp = Math.max(0, p.hp - n);
@@ -1236,6 +1714,16 @@
       fight.party.forEach((p) => inflict(p, "auraDown", 3));
       log += "\n不安の霧で味方のオーラが下がった！";
       flash = 0.3;
+    } else if (type === "happyDrain") {
+      const drained = Math.min(32, fight.happy);
+      gainHappy(-32);
+      fight.party.forEach((p) => inflict(p, "auraDown", 2));
+      log += `\n静寂がハッピーゲージを${drained}奪い、味方のオーラを下げた！`;
+      flash = 0.45;
+    } else if (type === "barrier") {
+      fight.barrier = 1;
+      log += "\n光以外の攻撃を弱める「虚根の膜」をまとった！";
+      flash = 0.4;
     } else if (type === "drain") {
       const n = hurt(targets[0], pow);
       fight.foe.hp = Math.min(fight.foe.maxHp, fight.foe.hp + Math.ceil(n / 2));
@@ -1290,6 +1778,7 @@
       fight.turn++;
       fight.actor = 0;
       fight.captain = Math.max(0, fight.captain - 1);
+      fight.spiritGuard = Math.max(0, fight.spiritGuard - 1);
       fight.party.forEach((p) => {
         p.guard = false;
         if (p.buff > 0) p.buff--;
@@ -1305,6 +1794,7 @@
     s.gold += f.gold;
     s.exp += f.exp;
     if (s.kills[f.kind] !== undefined) s.kills[f.kind]++;
+    gainHappy(15);
     sync();
     let up = "";
     while (s.exp >= s.lv * 40) {
@@ -1376,9 +1866,24 @@
         showClear();
         autosave();
       });
+    } else if (id === "rootBoss") {
+      s.flags.chapter3Boss = true;
+      s.flags.chapter3Clear = true;
+      s.flags.sarinaGuest = false;
+      s.flags.sarinaJoined = true;
+      s.flags.fragment = 3;
+      s.flags.clear = true;
+      s.quests.silentRoot = "complete";
+      dialogue(D.chapter3Ending, () => {
+        scene = "ending";
+        showClear();
+        autosave();
+      });
     } else {
       if (s.quests.straw === "active" && (s.kills.strawling || 0) >= 2)
         toast("依頼達成！　ミレリアのお願い掲示板へ戻ろう");
+      if (s.quests.forestShadows === "active" && (s.kills.gloomcap || 0) >= 2)
+        toast("依頼達成！　サリナリアの立札へ戻ろう");
       autosave();
     }
   }
@@ -1392,10 +1897,18 @@
     s.kumi.mp = s.kumi.maxMp;
     s.mirei.hp = s.mirei.maxHp;
     s.mirei.mp = s.mirei.maxMp;
+    s.sarina.hp = s.sarina.maxHp;
+    s.sarina.mp = s.sarina.maxMp;
     setTimeout(() => {
       fight = null;
       scene = "map";
-      s.map = s.flags.chapter2 ? "milerea" : s.flags.metKumi ? "city" : "grass";
+      s.map = s.flags.chapter3
+        ? "sarinalia"
+        : s.flags.chapter2
+          ? "milerea"
+          : s.flags.metKumi
+            ? "city"
+            : "grass";
       s.x = s.map === "grass" ? 2 : 10;
       s.y = s.map === "grass" ? 5 : 9;
       buildEnemies();
@@ -1434,7 +1947,11 @@
         companions.push(
           `<div class="card"><strong>${s.flags.mireiJoined ? "佐々木美玲" : "パン職人の少女"} Lv.4</strong><span>ヒーラー / HP ${s.mirei.hp}/${s.mirei.maxHp}</span><small>炎属性・回復・状態異常治療</small></div>`,
         );
-      ui.menuBody.innerHTML = `<div class="cards"><div class="card"><strong>${s.name} Lv.${s.lv}</strong><span>オーラナイト</span></div><div class="card"><strong>HP ${s.hp}/${heroMaxHp()}</strong><span>MP ${s.mp}/${s.maxMp}</span></div><div class="card"><strong>攻撃 ${heroAtk()} / 守備 ${heroDef()}</strong><span>次のLvまで ${s.lv * 40 - s.exp}EXP</span></div><div class="card"><strong>${s.gold}G</strong><span>欠片 ${s.flags.fragment}/7</span></div>${companions.join("") || `<div class="card"><strong>仲間</strong><span>まだ誰もいない</span></div>`}</div>`;
+      if (s.flags.sarinaGuest || s.flags.sarinaJoined)
+        companions.push(
+          `<div class="card"><strong>${s.flags.sarinaJoined ? "潮紗理菜" : "鈴を持つ巫女"} Lv.6</strong><span>精霊術師 / HP ${s.sarina.hp}/${s.sarina.maxHp}</span><small>光属性・全体回復・精霊防壁</small></div>`,
+        );
+      ui.menuBody.innerHTML = `<div class="cards"><div class="card"><strong>${s.name} Lv.${s.lv}</strong><span>オーラナイト</span></div><div class="card"><strong>HP ${s.hp}/${heroMaxHp()}</strong><span>MP ${s.mp}/${s.maxMp}</span></div><div class="card"><strong>攻撃 ${heroAtk()} / 守備 ${heroDef()}</strong><span>次のLvまで ${s.lv * 40 - s.exp}EXP</span></div><div class="card"><strong>${s.gold}G</strong><span>欠片 ${s.flags.fragment}/7 / HAPPY ${s.happy}</span></div>${companions.join("") || `<div class="card"><strong>仲間</strong><span>まだ誰もいない</span></div>`}</div>`;
     } else if (tab === "party") {
       const members = [
         {
@@ -1448,6 +1965,12 @@
           name: s.flags.mireiJoined ? "佐々木美玲" : "パン職人の少女",
           role: "回復・炎属性",
           available: s.flags.mireiGuest || s.flags.mireiJoined,
+        },
+        {
+          id: "sarina",
+          name: s.flags.sarinaJoined ? "潮紗理菜" : "鈴を持つ巫女",
+          role: "回復・光属性",
+          available: s.flags.sarinaGuest || s.flags.sarinaJoined,
         },
       ].filter((m) => m.available);
       ui.menuBody.innerHTML = `<div class="party-head"><strong>前衛メンバー ${1 + members.filter((m) => s.active[m.id] !== false).length}/4</strong><span>主人公は固定。仲間はいつでも交代できます。</span></div><div class="list"><div class="item active-member"><div><strong>① ${s.name}</strong><span>オーラナイト / 固定</span></div><b>参加</b></div>${
@@ -1482,6 +2005,10 @@
             progress = `陽だまり麦 ${Math.min(3, s.items.sunwheat || 0)}/3`;
           if (id === "straw" && s.quests[id] === "active")
             progress = `くよくよ麦わら ${Math.min(2, s.kills.strawling || 0)}/2`;
+          if (id === "spiritTones" && s.quests[id] === "active")
+            progress = `精霊音 ${s.spiritOrder.length}/3（空色→金色→桃色）`;
+          if (id === "forestShadows" && s.quests[id] === "active")
+            progress = `うつむきキノコ ${Math.min(2, s.kills.gloomcap || 0)}/2`;
           return `<div class="quest-card ${s.quests[id]}"><div><strong>${quest.title}</strong><em>${statusLabel[s.quests[id]]}</em></div><span>${progress}</span><small>報酬：${quest.reward}</small></div>`;
         });
       ui.menuBody.innerHTML = `<div class="list">${rows.join("") || `<div class="card"><strong>受注中のクエストはありません</strong><span>町の人や掲示板に話しかけてみましょう。</span></div>`}</div>`;
@@ -1490,8 +2017,10 @@
         s.hp < heroMaxHp() ||
         ((s.flags.kumi || s.flags.joined) && s.kumi.hp < s.kumi.maxHp) ||
         ((s.flags.mireiGuest || s.flags.mireiJoined) &&
-          s.mirei.hp < s.mirei.maxHp);
-      ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>薬草 ×${s.items.herb}</strong><span>主人公のHPを35回復</span></div><button id="use-herb"${!s.items.herb || s.hp >= heroMaxHp() ? " disabled" : ""}>使う</button></div><div class="item"><div><strong>毒消し草 ×${s.items.antidote}</strong><span>戦闘中の毒・眠り・オーラ低下を治す</span></div></div><div class="item"><div><strong>ハッピーブレッド ×${s.items.happyBread}</strong><span>仲間全員のHPを25回復</span></div><button id="use-bread"${!s.items.happyBread || !canBread ? " disabled" : ""}>分ける</button></div>${s.items.sunwheat ? `<div class="item"><div><strong>陽だまり麦 ×${s.items.sunwheat}</strong><span>太陽のぬくもりを宿す小麦</span></div></div>` : ""}<div class="item"><div><strong>ハッピーオーラの欠片 ×${s.flags.fragment}</strong><span>温かな虹色の光</span></div></div></div>`;
+          s.mirei.hp < s.mirei.maxHp) ||
+        ((s.flags.sarinaGuest || s.flags.sarinaJoined) &&
+          s.sarina.hp < s.sarina.maxHp);
+      ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>薬草 ×${s.items.herb}</strong><span>主人公のHPを35回復</span></div><button id="use-herb"${!s.items.herb || s.hp >= heroMaxHp() ? " disabled" : ""}>使う</button></div><div class="item"><div><strong>毒消し草 ×${s.items.antidote}</strong><span>戦闘中の毒・眠り・オーラ低下を治す</span></div></div><div class="item"><div><strong>ハッピーブレッド ×${s.items.happyBread}</strong><span>仲間全員のHPを25回復</span></div><button id="use-bread"${!s.items.happyBread || !canBread ? " disabled" : ""}>分ける</button></div><div class="item"><div><strong>虹雫 ×${s.items.rainbowDew}</strong><span>仲間全員のHPを45回復</span></div><button id="use-dew"${!s.items.rainbowDew || !canBread ? " disabled" : ""}>使う</button></div>${s.items.sunwheat ? `<div class="item"><div><strong>陽だまり麦 ×${s.items.sunwheat}</strong><span>太陽のぬくもりを宿す小麦</span></div></div>` : ""}<div class="item"><div><strong>ハッピーオーラの欠片 ×${s.flags.fragment}</strong><span>温かな虹色の光</span></div></div></div>`;
       $("use-herb")?.addEventListener("click", () => {
         s.items.herb--;
         s.hp = Math.min(heroMaxHp(), s.hp + 35);
@@ -1504,12 +2033,23 @@
         s.hp = Math.min(heroMaxHp(), s.hp + 25);
         s.kumi.hp = Math.min(s.kumi.maxHp, s.kumi.hp + 25);
         s.mirei.hp = Math.min(s.mirei.maxHp, s.mirei.hp + 25);
+        s.sarina.hp = Math.min(s.sarina.maxHp, s.sarina.hp + 25);
         beep("heal");
         toast("仲間みんなのHPが回復した");
         menu();
       });
+      $("use-dew")?.addEventListener("click", () => {
+        s.items.rainbowDew--;
+        s.hp = Math.min(heroMaxHp(), s.hp + 45);
+        s.kumi.hp = Math.min(s.kumi.maxHp, s.kumi.hp + 45);
+        s.mirei.hp = Math.min(s.mirei.maxHp, s.mirei.hp + 45);
+        s.sarina.hp = Math.min(s.sarina.maxHp, s.sarina.hp + 45);
+        beep("win");
+        toast("虹雫が仲間みんなを癒やした");
+        menu();
+      });
     } else if (tab === "equip") {
-      ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>主人公・武器：${s.equip.weapon === "sword" ? "青銅の剣" : "旅人の剣"}</strong><span>現在の攻撃力 ${heroAtk()}</span></div><button data-equip="sword"${!s.items.sword ? " disabled" : ""}>${s.equip.weapon === "sword" ? "外す" : "装備"}</button></div><div class="item"><div><strong>主人公・装飾：${s.equip.charm === "charm" ? "空色のお守り" : "なし"}</strong><span>現在の守備力 ${heroDef()}</span></div><button data-equip="charm"${!s.items.charm ? " disabled" : ""}>${s.equip.charm === "charm" ? "外す" : "装備"}</button></div>${s.items.apron ? `<div class="item active-member"><div><strong>美玲・防具：聖火のエプロン</strong><span>守備+4 / 魔窯の炎ダメージ軽減（自動装備）</span></div><b>装備中</b></div>` : ""}</div>`;
+      ui.menuBody.innerHTML = `<div class="list"><div class="item"><div><strong>主人公・武器：${s.equip.weapon === "sword" ? "青銅の剣" : "旅人の剣"}</strong><span>現在の攻撃力 ${heroAtk()}</span></div><button data-equip="sword"${!s.items.sword ? " disabled" : ""}>${s.equip.weapon === "sword" ? "外す" : "装備"}</button></div><div class="item"><div><strong>主人公・装飾：${s.equip.charm === "charm" ? "空色のお守り" : "なし"}</strong><span>現在の守備力 ${heroDef()}</span></div><button data-equip="charm"${!s.items.charm ? " disabled" : ""}>${s.equip.charm === "charm" ? "外す" : "装備"}</button></div>${s.items.apron ? `<div class="item active-member"><div><strong>美玲・防具：聖火のエプロン</strong><span>守備+4 / 魔窯の炎ダメージ軽減（自動装備）</span></div><b>装備中</b></div>` : ""}${s.items.spiritRibbon ? `<div class="item active-member"><div><strong>紗理菜・装飾：精霊のリボン</strong><span>守備+4 / 古根の攻撃を軽減（自動装備）</span></div><b>装備中</b></div>` : ""}</div>`;
       ui.menuBody.querySelectorAll("[data-equip]").forEach(
         (b) =>
           (b.onclick = () => {
@@ -1553,15 +2093,25 @@
   }
   function showClear() {
     setMode("clear");
-    const chapter2 = s.flags.chapter2Clear;
-    ui.clearChapter.textContent = chapter2
-      ? "CHAPTER 2 COMPLETE"
-      : "CHAPTER 1 COMPLETE";
-    ui.clearTitle.textContent = chapter2 ? "焼きたての聖女" : "空色の騎士団長";
-    ui.clearMessage.textContent = chapter2
-      ? "二つ目のハッピーオーラの欠片を手に入れた！"
-      : "ハッピーオーラの欠片を手に入れた！";
-    show(ui.clearNext, !chapter2);
+    const chapter3 = s.flags.chapter3Clear,
+      chapter2 = s.flags.chapter2Clear;
+    ui.clearChapter.textContent = chapter3
+      ? "CHAPTER 3 COMPLETE"
+      : chapter2
+        ? "CHAPTER 2 COMPLETE"
+        : "CHAPTER 1 COMPLETE";
+    ui.clearTitle.textContent = chapter3
+      ? "虹色の精霊巫女"
+      : chapter2
+        ? "焼きたての聖女"
+        : "空色の騎士団長";
+    ui.clearMessage.textContent = chapter3
+      ? "三つ目のハッピーオーラの欠片を手に入れた！"
+      : chapter2
+        ? "二つ目のハッピーオーラの欠片を手に入れた！"
+        : "ハッピーオーラの欠片を手に入れた！";
+    ui.clearNext.textContent = chapter2 ? "第三章へ進む" : "第二章へ進む";
+    show(ui.clearNext, !chapter3);
     ui.clearInfo.textContent = `主人公 Lv.${s.lv}　戦闘 ${s.battles}回　${time(s.playTime + (Date.now() - s.started) / 1000)}`;
     beep("win");
   }
@@ -1588,6 +2138,56 @@
       fadeIn();
       toast("第二章　焼きたての聖女", 2600);
     });
+  }
+  function beginChapter3() {
+    s.chapter = 3;
+    s.flags.chapter2Clear = true;
+    s.flags.chapter3 = true;
+    s.flags.clear = false;
+    s.hp = heroMaxHp();
+    s.mp = s.maxMp;
+    Object.assign(s.kumi, {
+      maxHp: Math.max(118, s.kumi.maxHp),
+      maxMp: Math.max(32, s.kumi.maxMp),
+      atk: Math.max(26, s.kumi.atk),
+      def: Math.max(18, s.kumi.def),
+    });
+    Object.assign(s.mirei, {
+      maxHp: Math.max(102, s.mirei.maxHp),
+      maxMp: Math.max(50, s.mirei.maxMp),
+      atk: Math.max(20, s.mirei.atk),
+      def: Math.max(15, s.mirei.def),
+    });
+    Object.assign(s.sarina, {
+      maxHp: Math.max(106, s.sarina.maxHp),
+      maxMp: Math.max(56, s.sarina.maxMp),
+      atk: Math.max(23, s.sarina.atk),
+      def: Math.max(16, s.sarina.def),
+    });
+    s.kumi.hp = s.kumi.maxHp;
+    s.kumi.mp = s.kumi.maxMp;
+    s.mirei.hp = s.mirei.maxHp;
+    s.mirei.mp = s.mirei.maxMp;
+    s.sarina.hp = s.sarina.maxHp;
+    s.sarina.mp = s.sarina.maxMp;
+    scene = "meadow";
+    dialogue(D.chapter3Intro, () => {
+      s.map = "world";
+      s.x = 15;
+      s.y = 5;
+      s.dir = "left";
+      scene = "map";
+      buildEnemies();
+      setMode("map");
+      hud();
+      autosave();
+      fadeIn();
+      toast("第三章　虹色の精霊巫女", 2600);
+    });
+  }
+  function beginNextChapter() {
+    if (s.flags.chapter2Clear) beginChapter3();
+    else beginChapter2();
   }
   function title() {
     fight = null;
@@ -1625,7 +2225,7 @@
     $("menu-close").onclick = closeMenu;
     $("load-back").onclick = () => setMode("title");
     $("clear-save").onclick = () => save(1);
-    $("clear-next").onclick = beginChapter2;
+    $("clear-next").onclick = beginNextChapter;
     $("clear-title").onclick = title;
     ui.dialog.onclick = advance;
     document.querySelectorAll("[data-tab]").forEach(
@@ -1901,6 +2501,19 @@
       rect(x, y + 6, 19, 5, "#f07835");
       rect(x + 11, y + 19, 21, 6, "#ffb341");
       rect(x + 4, y + 12, 7, 3, "#ffd66c");
+    } else if (type === z.MOSS) {
+      rect(x, y, 32, 32, "#315d51");
+      rect(x, y + 26, 32, 6, "#25483f");
+      rect(x + ((wx * 9) % 23), y + 7, 7, 3, "#5b9a70");
+      rect(x + 5, y + ((wy * 7) % 20), 3, 5, "#80bd85");
+      if ((wx + wy) % 4 === 0) rect(x + 22, y + 18, 3, 3, "#8ee7d1");
+    } else if (type === z.ROOT) {
+      rect(x, y, 32, 32, "#172f2c");
+      rect(x + 3, y + 2, 26, 28, "#294a3c");
+      rect(x + 5, y, 7, 32, "#5e4932");
+      rect(x + 19, y + 4, 6, 28, "#75563a");
+      rect(x + 9, y + 10, 14, 5, "#8a6842");
+      rect(x, y + 27, 32, 5, "#102321");
     } else if (type === z.CAVE) {
       rect(x, y, 32, 32, "#53636b");
       rect(x + 2, y + 4, 28, 28, "#29333c");
@@ -1925,6 +2538,8 @@
     m.npcs.forEach((n) => {
       if (n.type?.startsWith("world_"))
         worldLandmark(n.type, n.x * T, n.y * T, now);
+      else if (n.type?.startsWith("altar_"))
+        drawAltar(n.type, n.x * T, n.y * T, now);
       else
         character(n.type, n.x * T, n.y * T, "down", Math.floor(now / 650) % 2);
     });
@@ -1935,6 +2550,11 @@
       followers.push("kumi");
     if ((s.flags.mireiGuest || s.flags.mireiJoined) && s.active.mirei !== false)
       followers.push("mirei");
+    if (
+      (s.flags.sarinaGuest || s.flags.sarinaJoined) &&
+      s.active.sarina !== false
+    )
+      followers.push("sarina");
     if (followers.length) {
       const [dx, dy] = delta(
           s.dir === "left"
@@ -1954,6 +2574,12 @@
         if (sx >= 0 && sy >= 0 && sx < 20 && sy < 11)
           character(followers[1], sx * T, sy * T, s.dir, walk % 2);
       }
+      if (followers[2]) {
+        const sx = s.x - (dy || 1),
+          sy = s.y - (dx || 0);
+        if (sx >= 0 && sy >= 0 && sx < 20 && sy < 11)
+          character(followers[2], sx * T, sy * T, s.dir, walk % 2);
+      }
     }
   }
   function worldLandmark(type, x, y, now) {
@@ -1964,13 +2590,35 @@
       rect(x + 12, y + 17 - bob, 8, 13, "#24425d");
       rect(x + 9, y - bob, 14, 5, "#5bc9e6");
       rect(x + 14, y - 7 - bob, 2, 8, "#f0cf69");
-    } else {
+    } else if (type === "world_mile") {
       rect(x + 2, y + 13 - bob, 28, 17, "#f3d081");
       rect(x + 5, y + 8 - bob, 22, 7, "#c87946");
       rect(x + 8, y + 3 - bob, 16, 7, "#f0a85b");
       rect(x + 12, y + 18 - bob, 8, 12, "#75482e");
       rect(x + 24, y + 4 - bob, 4, 15, "#e8ece2");
+    } else {
+      rect(x + 4, y + 12 - bob, 24, 18, "#2f6d55");
+      rect(x + 8, y + 7 - bob, 16, 9, "#5aa875");
+      rect(x + 13, y - 2 - bob, 6, 24, "#8b6740");
+      rect(x + 7, y + 1 - bob, 18, 8, "#376f53");
+      rect(x + 10, y - 5 - bob, 12, 7, "#58a978");
+      rect(x + 14, y - 10 - bob, 3, 7, "#f0cf69");
     }
+  }
+  function drawAltar(type, x, y, now) {
+    const bob = Math.floor(now / 420) % 2,
+      color =
+        type === "altar_blue"
+          ? "#75e8f4"
+          : type === "altar_gold"
+            ? "#f5d56c"
+            : "#f4a1bd";
+    rect(x + 4, y + 22, 24, 8, "#263f3b");
+    rect(x + 7, y + 16, 18, 8, "#557164");
+    rect(x + 11, y + 5 - bob, 10, 13, color);
+    rect(x + 14, y - bob, 4, 8, "#f2ffff");
+    rect(x + 8, y + 10 - bob, 4, 4, color);
+    rect(x + 20, y + 10 - bob, 4, 4, color);
   }
   function character(type, x, y, dir = "down", frame = 0, scale = 1) {
     const p = (a, b, w, h, col) =>
@@ -1999,6 +2647,14 @@
           "#f4eee0",
           "#f0b85e",
           "#75d7df",
+        ],
+        sarina: [
+          "#3f302d",
+          "#251d1d",
+          "#f1c7a4",
+          "#eef7ee",
+          "#78cfa7",
+          "#f1cc68",
         ],
         guard: [
           "#4c4034",
@@ -2073,7 +2729,7 @@
       p(18, 12 + b, 2, 2, "#292332");
       p(14, 16 + b, 5, 1, "#c77f75");
     } else p(10, 10 + b, 12, 9, P[1]);
-    if (type === "kumi" || type === "mirei") {
+    if (type === "kumi" || type === "mirei" || type === "sarina") {
       p(7, 8 + b, 4, 15, P[1]);
       p(21, 8 + b, 4, 15, P[1]);
     }
@@ -2096,6 +2752,12 @@
       p(24, 17 + b, 3, 12, "#6d4c34");
       p(25, 25 + b, 6, 3, "#a87042");
       p(5, 21 + b, 4, 7, "#f7d374");
+    }
+    if (type === "sarina") {
+      p(24, 16 + b, 2, 13, "#d6eadf");
+      p(26, 17 + b, 4, 4, "#f1cc68");
+      p(5, 18 + b, 5, 6, "#7de0c4");
+      p(6, 23 + b, 3, 5, "#f0d16e");
     }
     if (type === "child") {
       p(8, 3 + b, 16, 4, P[4]);
@@ -2162,6 +2824,29 @@
       rect(x + 11, y + 10 + b, 3, 3, "#3f2c27");
       rect(x + 20, y + 10 + b, 3, 3, "#3f2c27");
       rect(x + 7, y + 20 + b, 20, 8, "#687d42");
+    } else if (kind === "gloomcap") {
+      rect(x + 10, y + 15 + b, 14, 14, "#d7c39b");
+      rect(x + 5, y + 7 + b, 24, 12, "#765185");
+      rect(x + 9, y + 4 + b, 16, 7, "#9a68a3");
+      rect(x + 12, y + 19 + b, 3, 3, "#3e3340");
+      rect(x + 20, y + 19 + b, 3, 3, "#3e3340");
+      rect(x + 6, y + 8 + b, 4, 3, "#dba5c9");
+      rect(x + 24, y + 11 + b, 3, 3, "#dba5c9");
+    } else if (kind === "hushWisp") {
+      rect(x + 8, y + 8 - b, 18, 17, "#3c5972");
+      rect(x + 12, y + 3 - b, 11, 8, "#6f9db0");
+      rect(x + 10, y + 23 - b, 14, 5, "#263b55");
+      rect(x + 13, y + 14 - b, 3, 3, "#9ff4e9");
+      rect(x + 21, y + 14 - b, 3, 3, "#9ff4e9");
+      rect(x + 15, y + 28 - b, 6, 3, "#85d6c9");
+    } else if (kind === "rootling") {
+      rect(x + 7, y + 8 + b, 20, 19, "#73543b");
+      rect(x + 4, y + 3 + b, 7, 14, "#4d7a53");
+      rect(x + 23, y + 2 + b, 7, 15, "#4d7a53");
+      rect(x + 11, y + 14 + b, 3, 3, "#f0c86a");
+      rect(x + 21, y + 14 + b, 3, 3, "#f0c86a");
+      rect(x + 4, y + 25 + b, 9, 6, "#5f4633");
+      rect(x + 22, y + 25 + b, 9, 6, "#5f4633");
     } else if (kind === "ovenBoss") {
       rect(x + 4, y + 8 + b, 25, 22, "#5d312c");
       rect(x + 8, y + 3 + b, 17, 7, "#8d4932");
@@ -2169,6 +2854,15 @@
       rect(x + 11, y + 20 + b, 11, 5, "#f16d32");
       rect(x + 8, y + 1 + b, 4, 6, "#d2a446");
       rect(x + 22, y + 1 + b, 4, 6, "#d2a446");
+    } else if (kind === "rootBoss") {
+      rect(x + 4, y + 5 + b, 25, 25, "#41352f");
+      rect(x + 2, y + 1 + b, 7, 19, "#66503a");
+      rect(x + 24, y + b, 7, 20, "#66503a");
+      rect(x + 10, y + 11 + b, 4, 4, "#d77aa2");
+      rect(x + 21, y + 11 + b, 4, 4, "#d77aa2");
+      rect(x + 11, y + 22 + b, 14, 4, "#17191d");
+      rect(x, y + 27 + b, 10, 4, "#3d6d51");
+      rect(x + 24, y + 27 + b, 10, 4, "#3d6d51");
     } else {
       rect(x + 6, y + 7 + b, 20, 21, "#332648");
       rect(x + 10, y + 3 + b, 5, 7, "#553c6c");
@@ -2190,7 +2884,13 @@
       0,
       84,
       84,
-      type === "boss" ? "#271d3e" : type === "ovenBoss" ? "#582a24" : "#6fcbe1",
+      type === "boss"
+        ? "#271d3e"
+        : type === "ovenBoss"
+          ? "#582a24"
+          : type === "rootBoss"
+            ? "#233d35"
+            : "#6fcbe1",
     );
     if (type === "boss") {
       r(12, 24, 60, 60, "#21192f");
@@ -2210,6 +2910,17 @@
       r(56, 2, 10, 13, "#e0ac49");
       return;
     }
+    if (type === "rootBoss") {
+      r(10, 17, 64, 67, "#3e342f");
+      r(7, 4, 17, 48, "#67513a");
+      r(60, 3, 17, 49, "#67513a");
+      r(23, 34, 10, 8, "#dd7da7");
+      r(52, 34, 10, 8, "#dd7da7");
+      r(27, 57, 32, 8, "#11151a");
+      r(2, 72, 25, 8, "#3e7557");
+      r(58, 72, 25, 8, "#3e7557");
+      return;
+    }
     if (type === "light" || type === "chest") {
       for (let i = 0; i < 7; i++)
         r(
@@ -2224,45 +2935,54 @@
     }
     const k = type === "kumi",
       m = type === "mirei",
+      saria = type === "sarina",
       hair = k
         ? "#53382f"
         : m
           ? "#704532"
-          : type === "guard"
-            ? "#6d5a47"
-            : type === "elder"
-              ? "#d1d8dc"
-              : type === "child"
-                ? "#49352e"
-                : type === "merchant"
-                  ? "#9a693b"
-                  : type === "farmer"
-                    ? "#80603b"
-                    : "#2c2933",
+          : saria
+            ? "#3f302d"
+            : type === "guard"
+              ? "#6d5a47"
+              : type === "elder"
+                ? "#d1d8dc"
+                : type === "child"
+                  ? "#49352e"
+                  : type === "merchant"
+                    ? "#9a693b"
+                    : type === "farmer"
+                      ? "#80603b"
+                      : "#2c2933",
       dark = k
         ? "#34241f"
         : m
           ? "#3f2922"
-          : type === "elder"
-            ? "#9aa8ad"
-            : "#1a1920",
+          : saria
+            ? "#251d1d"
+            : type === "elder"
+              ? "#9aa8ad"
+              : "#1a1920",
       skin = type === "elder" ? "#ddb38e" : "#f0c7a5",
       cloth = k
         ? "#e7f4f3"
         : m
           ? "#f4eee0"
-          : type === "guard"
-            ? "#9fafba"
-            : type === "child"
-              ? "#f0d47b"
-              : "#245f87",
+          : saria
+            ? "#eef7ee"
+            : type === "guard"
+              ? "#9fafba"
+              : type === "child"
+                ? "#f0d47b"
+                : "#245f87",
       accent = k
         ? "#58bddf"
         : m
           ? "#f0b85e"
-          : type === "child"
-            ? "#60c9e3"
-            : "#71d9ef";
+          : saria
+            ? "#78cfa7"
+            : type === "child"
+              ? "#60c9e3"
+              : "#71d9ef";
     r(17, 9, 52, 29, hair);
     r(11, 26, 15, 43, dark);
     r(58, 25, 15, 45, dark);
@@ -2273,7 +2993,7 @@
     r(37, 53, 12, 3, "#c87872");
     r(17, 62, 51, 22, cloth);
     r(22, 64, 42, 7, accent);
-    if (k || m) {
+    if (k || m || saria) {
       r(14, 10, 10, 24, dark);
       r(61, 10, 10, 24, dark);
     }
@@ -2281,13 +3001,21 @@
       r(61, 61, 17, 6, "#8b5d39");
       r(67, 51, 6, 18, "#62432e");
     }
+    if (saria) {
+      r(64, 58, 5, 20, "#d6eadf");
+      r(68, 61, 9, 8, "#f0cd68");
+      r(9, 58, 12, 8, "#76d7b8");
+      r(11, 66, 7, 10, "#f0cd68");
+    }
   }
   function renderBattle(now) {
     const cave = s.map === "cave",
       oven = s.map === "oven",
-      field = s.map === "wheatfield" || s.map === "milerea";
-    rect(0, 0, W, H, cave || oven ? "#16182a" : "#72cada");
-    if (cave || oven) {
+      root = s.map === "rootshrine",
+      field = s.map === "wheatfield" || s.map === "milerea",
+      forest = s.map === "sarinalia" || s.map === "spiritgrove";
+    rect(0, 0, W, H, cave || oven || root ? "#16182a" : "#72cada");
+    if (cave || oven || root) {
       for (let y = 0; y < 230; y += 32)
         for (let x = 0; x < W; x += 48) {
           rect(
@@ -2295,17 +3023,17 @@
             y,
             44,
             28,
-            oven ? "#3d292c" : "#242d3d",
+            oven ? "#3d292c" : root ? "#1f3935" : "#242d3d",
           );
           rect(
             x + 4 + ((y / 32) % 2) * 18,
             y + 4,
             36,
             4,
-            oven ? "#6b3a30" : "#354153",
+            oven ? "#6b3a30" : root ? "#3f6651" : "#354153",
           );
         }
-      rect(0, 228, W, 132, oven ? "#4a2a26" : "#262438");
+      rect(0, 228, W, 132, oven ? "#4a2a26" : root ? "#263d35" : "#262438");
       if (oven) {
         rect(0, 218, W, 8, "#e86632");
         for (let x = 0; x < W; x += 70)
@@ -2315,11 +3043,17 @@
       rect(0, 0, W, 120, "#70cce0");
       cloud(40, 45, 0.75);
       cloud(480, 28, 0.8);
-      rect(0, 120, W, 110, field ? "#c49a45" : "#4b956d");
-      rect(0, 220, W, 140, field ? "#9a7435" : "#3b795c");
+      rect(0, 120, W, 110, field ? "#c49a45" : forest ? "#39755a" : "#4b956d");
+      rect(0, 220, W, 140, field ? "#9a7435" : forest ? "#244f45" : "#3b795c");
       if (field)
         for (let x = 0; x < W; x += 24)
           rect(x, 145 + ((x / 24) % 2) * 8, 3, 76, "#efd064");
+      if (forest)
+        for (let x = 0; x < W; x += 56) {
+          rect(x + 8, 115, 13, 111, "#5d4933");
+          rect(x, 105, 31, 32, "#2d664c");
+          rect(x + 12, 97, 25, 28, "#438260");
+        }
     }
     if (!fight) return;
     bigEnemy(fight.foe.kind, 470, 65, now);
@@ -2330,7 +3064,10 @@
       character("kumi", 195, 142, "right", Math.floor(now / 520) % 2, 2);
     const m = fight.party.find((v) => v.id === "mirei");
     if (m?.hp > 0)
-      character("mirei", 295, 144, "right", Math.floor(now / 540) % 2, 2);
+      character("mirei", 285, 144, "right", Math.floor(now / 540) % 2, 2);
+    const r = fight.party.find((v) => v.id === "sarina");
+    if (r?.hp > 0)
+      character("sarina", 355, 143, "right", Math.floor(now / 560) % 2, 2);
     if (fight.captain) {
       rect(75, 135, 310, 4, "#f5d86f");
       rect(84, 132, 292, 2, "#88e7f2");
@@ -2338,6 +3075,15 @@
     if (fight.warning && Math.floor(now / 160) % 2) {
       rect(390, 47, 190, 4, "#ff7749");
       rect(410, 53, 150, 3, "#ffd167");
+    }
+    if (fight.spiritGuard) {
+      rect(76, 129, 350, 3, "#8ff3cf");
+      rect(90, 125, 322, 2, "#e8fff2");
+    }
+    if (fight.barrier) {
+      rect(404, 48, 151, 3, "#b78ae8");
+      rect(395, 54, 169, 2, "#77ddcf");
+      rect(398, 159, 164, 3, "#b78ae8");
     }
     rect(375, 16, 225, 24, "#03152bd9");
     rect(382, 25, 212, 9, "#151827");
@@ -2392,6 +3138,17 @@
       rect(x - 21, y + 18 + b, 42, 16, "#ffbd4c");
       rect(x - 78, y + 32 + b, 17, 52, "#6e372d");
       rect(x + 61, y + 32 + b, 17, 52, "#6e372d");
+    } else if (kind === "rootBoss") {
+      rect(x - 67, y - 49 + b, 134, 128, "#3d332e");
+      rect(x - 79, y - 76 + b, 28, 105, "#674f38");
+      rect(x + 51, y - 79 + b, 28, 108, "#674f38");
+      rect(x - 72, y - 86 + b, 40, 31, "#3e7856");
+      rect(x + 35, y - 91 + b, 42, 34, "#3e7856");
+      rect(x - 39, y - 19 + b, 15, 13, "#df7da9");
+      rect(x + 24, y - 19 + b, 15, 13, "#df7da9");
+      rect(x - 27, y + 26 + b, 54, 13, "#101419");
+      rect(x - 95, y + 61 + b, 51, 16, "#376b4e");
+      rect(x + 44, y + 61 + b, 51, 16, "#376b4e");
     } else if (kind === "strawling") {
       rect(x - 42, y - 19 + b, 84, 78, "#c8963d");
       rect(x - 57, y - 31 + b, 114, 18, "#e9bf56");
@@ -2413,6 +3170,29 @@
       rect(x - 28, y - 39 + b, 10, 10, "#392a25");
       rect(x + 20, y - 39 + b, 10, 10, "#392a25");
       rect(x - 55, y + 10 + b, 110, 55, "#647941");
+    } else if (kind === "gloomcap") {
+      rect(x - 39, y + 4 + b, 78, 75, "#d8c39b");
+      rect(x - 67, y - 39 + b, 134, 57, "#745083");
+      rect(x - 46, y - 62 + b, 92, 31, "#9867a1");
+      rect(x - 25, y + 27 + b, 10, 10, "#3e3340");
+      rect(x + 17, y + 27 + b, 10, 10, "#3e3340");
+      rect(x - 55, y - 25 + b, 16, 10, "#dba5c9");
+      rect(x + 38, y - 10 + b, 14, 10, "#dba5c9");
+    } else if (kind === "hushWisp") {
+      rect(x - 48, y - 33 + b, 96, 98, "#3d5972");
+      rect(x - 27, y - 64 + b, 58, 39, "#6f9caf");
+      rect(x - 38, y + 54 + b, 78, 25, "#263b55");
+      rect(x - 24, y + b, 10, 10, "#a0f5e9");
+      rect(x + 18, y + b, 10, 10, "#a0f5e9");
+      rect(x - 13, y + 76 + b, 28, 11, "#84d7ca");
+    } else if (kind === "rootling") {
+      rect(x - 50, y - 38 + b, 100, 112, "#72543b");
+      rect(x - 69, y - 72 + b, 33, 76, "#4c7953");
+      rect(x + 36, y - 77 + b, 33, 80, "#4c7953");
+      rect(x - 30, y - 6 + b, 12, 12, "#f0c86b");
+      rect(x + 20, y - 6 + b, 12, 12, "#f0c86b");
+      rect(x - 73, y + 59 + b, 42, 26, "#5f4633");
+      rect(x + 31, y + 59 + b, 42, 26, "#5f4633");
     } else if (kind === "hound") {
       rect(x - 62, y + 15 + b, 92, 40, "#454c62");
       rect(x + 12, y - 5 + b, 45, 42, "#5c647b");
@@ -2505,6 +3285,13 @@
   }
   window.__HQ0_TEST__ = {
     state: () => JSON.parse(JSON.stringify(s)),
+    happy(value) {
+      if (!fight) return;
+      fight.happy = Math.max(0, Math.min(100, Number(value) || 0));
+      s.happy = fight.happy;
+      battleUi();
+      if (!fight.busy) commands("root");
+    },
     gamepad(now = 1000) {
       pollGamepad(now);
     },
@@ -2640,6 +3427,80 @@
         s.kumi.mp = s.kumi.maxMp;
         s.mirei.hp = s.mirei.maxHp;
         s.mirei.mp = s.mirei.maxMp;
+      } else if (x === "sarinalia") {
+        s.flags.boss = true;
+        s.flags.joined = true;
+        s.flags.chapter1Clear = true;
+        s.flags.chapter2 = true;
+        s.flags.chapter2Boss = true;
+        s.flags.chapter2Clear = true;
+        s.flags.mireiJoined = true;
+        s.flags.chapter3 = true;
+        s.flags.clear = false;
+        s.flags.fragment = 2;
+        s.chapter = 3;
+        s.map = "sarinalia";
+        s.x = 10;
+        s.y = 4;
+        s.dir = "up";
+      } else if (x === "altarBlue" || x === "altarGold" || x === "altarPink") {
+        s.flags.boss = true;
+        s.flags.joined = true;
+        s.flags.chapter1Clear = true;
+        s.flags.chapter2 = true;
+        s.flags.chapter2Boss = true;
+        s.flags.chapter2Clear = true;
+        s.flags.mireiJoined = true;
+        s.flags.chapter3 = true;
+        s.flags.metSarina = true;
+        s.flags.clear = false;
+        s.flags.fragment = 2;
+        s.quests.spiritTones = "active";
+        s.chapter = 3;
+        s.map = "spiritgrove";
+        const positions = {
+          altarBlue: [6, 3],
+          altarGold: [12, 8],
+          altarPink: [17, 4],
+        };
+        [s.x, s.y] = positions[x];
+        s.dir = "up";
+      } else if (x === "rootBoss") {
+        s.flags.boss = true;
+        s.flags.joined = true;
+        s.flags.chapter1Clear = true;
+        s.flags.chapter2 = true;
+        s.flags.chapter2Boss = true;
+        s.flags.chapter2Clear = true;
+        s.flags.mireiJoined = true;
+        s.flags.chapter3 = true;
+        s.flags.metSarina = true;
+        s.flags.groveSolved = true;
+        s.flags.sarinaGuest = true;
+        s.flags.rootOpen = true;
+        s.flags.clear = false;
+        s.flags.fragment = 2;
+        s.quests.spiritTones = "complete";
+        s.quests.silentRoot = "active";
+        s.chapter = 3;
+        s.map = "rootshrine";
+        s.x = 10;
+        s.y = 2;
+        s.dir = "up";
+        s.lv = 10;
+        s.maxHp = 153;
+        s.maxMp = 45;
+        s.atk = 40;
+        s.def = 25;
+        s.hp = heroMaxHp();
+        s.mp = s.maxMp;
+        s.kumi.hp = s.kumi.maxHp;
+        s.kumi.mp = s.kumi.maxMp;
+        s.mirei.hp = s.mirei.maxHp;
+        s.mirei.mp = s.mirei.maxMp;
+        s.sarina.hp = s.sarina.maxHp;
+        s.sarina.mp = s.sarina.maxMp;
+        s.happy = 100;
       }
       fade = 0;
       fadeDir = 0;
