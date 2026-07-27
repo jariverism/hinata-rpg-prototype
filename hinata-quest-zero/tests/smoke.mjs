@@ -331,6 +331,56 @@ test("タイトルから第二章終了、セーブ・ロードまでの進行",
   document.querySelector('[data-load="1"]').click();
   assert.equal(visible(document.querySelector("#clear")), true);
   assert.equal(window.__HQ0_TEST__.state().flags.chapter2Clear, true);
+
+  window.localStorage.setItem(
+    "hq0-save-2",
+    JSON.stringify({
+      version: 1,
+      name: "旧記録",
+      map: "cave",
+      x: 10,
+      y: 2,
+      dir: "up",
+      lv: 4,
+      exp: 0,
+      hp: 90,
+      mp: 20,
+      maxHp: 93,
+      maxMp: 27,
+      atk: 22,
+      def: 13,
+      gold: 120,
+      items: { herb: 1 },
+      equip: { weapon: null, charm: null },
+      opened: {},
+      defeated: { boss: true },
+      visited: {},
+      flags: {
+        tutorial: true,
+        metKumi: true,
+        raidWon: true,
+        cave: true,
+        boss: true,
+        joined: true,
+        clear: true,
+        fragment: 1,
+      },
+      kumi: { hp: 92, mp: 24, maxHp: 92, maxMp: 24, atk: 19, def: 13 },
+      battles: 4,
+      steps: 80,
+      playTime: 900,
+      started: Date.now(),
+    }),
+  );
+  document.querySelector("#clear-title").click();
+  document.querySelector('[data-title="load"]').click();
+  document.querySelector('[data-load="2"]').click();
+  state = window.__HQ0_TEST__.state();
+  assert.equal(state.version, 2);
+  assert.equal(state.name, "旧記録");
+  assert.equal(state.flags.chapter1Clear, true);
+  assert.equal(state.flags.fragment, 1);
+  assert.deepEqual(state.active, { kumi: true, mirei: true });
 });
 
 test("全マップの必須地点に進行可能な経路がある", async () => {
