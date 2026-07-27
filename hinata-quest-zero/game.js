@@ -302,6 +302,7 @@
       s.dir = dir;
       scene = "map";
       buildEnemies();
+      setMode("map");
       hud();
       autosave();
     });
@@ -2473,9 +2474,13 @@
   window.__HQ0_TEST__ = {
     state: () => JSON.parse(JSON.stringify(s)),
     settle() {
+      const cb = fadeCb;
       fade = 0;
       fadeDir = 0;
       fadeCb = null;
+      if (cb) cb();
+      fade = 0;
+      fadeDir = 0;
     },
     step(x) {
       if (x === "city") {
