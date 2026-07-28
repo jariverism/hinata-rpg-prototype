@@ -6,8 +6,12 @@
       name="viewport"
       content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
     />
-    <meta name="theme-color" content="#07172c" />
-    <title>日向坂クエスト0｜ハッピーオーラを求めて</title>
+    <meta name="theme-color" content="#071528" />
+    <meta
+      name="description"
+      content="町で噂を集め、装備を整え、自分の判断で冒険するオリジナル2DブラウザJRPG。"
+    />
+    <title>日向坂クエスト0 Re:build｜ハッピーオーラを求めて</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
@@ -15,126 +19,219 @@
       <section id="stage" aria-label="日向坂クエスト0 ゲーム画面">
         <canvas id="game" width="640" height="360"></canvas>
 
-        <div id="hud" class="hud hidden">
-          <div>
-            <small>HINATIA</small><strong id="location">はじまりの草原</strong>
+        <header id="field-hud" class="field-hud hidden" aria-live="polite">
+          <div class="location-block">
+            <small>HINATIA</small>
+            <strong id="location">ソラシド近郊</strong>
           </div>
-          <div class="goal">
-            <small>NEXT</small><strong id="objective">王都を目指そう</strong>
+          <div class="hud-party" id="hud-party"></div>
+          <div class="hud-gold">
+            <small>GOLD</small>
+            <strong><span id="hud-gold">0</span> G</strong>
           </div>
+        </header>
+
+        <div id="area-card" class="area-card hidden">
+          <small>NOW ENTERING</small>
+          <strong id="area-name">ソラシド近郊</strong>
         </div>
 
-        <section id="title" class="title-screen">
-          <p class="eyebrow">HINATIA CHRONICLE</p>
-          <h1>
-            日向坂クエスト<span>0</span><small>ハッピーオーラを求めて</small>
-          </h1>
-          <div class="title-menu">
-            <button data-title="new" class="selected">はじめから</button>
-            <button data-title="load">つづきから</button>
+        <div id="interact-prompt" class="interact-prompt hidden">
+          <span>A</span><strong id="interact-label">話す</strong>
+        </div>
+
+        <section id="title-screen" class="title-screen">
+          <div class="title-copy">
+            <p class="eyebrow">A CLASSIC HINATIA CHRONICLE</p>
+            <h1>
+              <span class="title-prefix">日向坂クエスト</span>
+              <em>0</em>
+              <small>ハッピーオーラを求めて</small>
+            </h1>
+            <p class="rebuild">RE:BUILD — 空色の騎士団長</p>
           </div>
+          <nav class="title-menu" aria-label="タイトルメニュー">
+            <button data-title="new" class="selected">
+              <span>▶</span> はじめから
+            </button>
+            <button data-title="continue"><span>◆</span> つづきから</button>
+          </nav>
+          <p class="title-tip">町の噂を聞き、旅支度を整え、進む道を選ぼう。</p>
           <p class="notice">
-            本作品は非公式のファンメイド作品です。<br />実在の人物・団体・作品とは公式な関係はありません。
+            本作品は非公式のファンメイド作品です。<br />
+            実在の人物・団体・作品とは公式な関係はありません。
           </p>
         </section>
 
-        <section id="name-modal" class="overlay hidden">
-          <div class="window name-window">
-            <p class="eyebrow">PLAYER NAME</p>
-            <h2>あなたの名前を教えてください</h2>
-            <input
-              id="name-input"
-              maxlength="8"
-              value="トシ"
-              autocomplete="off"
-            />
-            <div class="row">
-              <button id="name-back">もどる</button
-              ><button id="name-ok" class="primary">冒険をはじめる</button>
+        <section id="setup-screen" class="overlay hidden" aria-modal="true">
+          <div class="window setup-window">
+            <p class="eyebrow">BEGIN YOUR JOURNEY</p>
+            <h2>冒険者の名</h2>
+            <label class="name-label">
+              <span>なまえ</span>
+              <input
+                id="name-input"
+                maxlength="8"
+                value="トシ"
+                inputmode="text"
+                autocomplete="off"
+              />
+            </label>
+            <fieldset class="guide-choice">
+              <legend>旅の手引き</legend>
+              <label>
+                <input type="radio" name="hint" value="classic" />
+                <span><strong>クラシック</strong><small>会話と地形だけを頼りに旅する</small></span>
+              </label>
+              <label>
+                <input type="radio" name="hint" value="standard" checked />
+                <span><strong>スタンダード</strong><small>新しい噂と調べられる物を知らせる</small></span>
+              </label>
+              <label>
+                <input type="radio" name="hint" value="guided" />
+                <span><strong>ガイド</strong><small>旅の記録に推奨の行き先も表示する</small></span>
+              </label>
+            </fieldset>
+            <div class="button-row">
+              <button id="setup-back">もどる</button>
+              <button id="setup-start" class="primary">この名で旅立つ</button>
             </div>
           </div>
         </section>
 
-        <section id="dialogue" class="dialogue hidden">
+        <section id="dialogue" class="dialogue hidden" aria-live="polite">
           <canvas id="portrait" width="84" height="84"></canvas>
-          <div>
+          <div class="dialogue-copy">
             <strong id="speaker">？？？</strong>
-            <p id="text"></p>
-            <i>▼</i>
+            <p id="dialogue-text"></p>
+            <div id="dialogue-choices" class="dialogue-choices hidden"></div>
+            <i id="dialogue-next">▼</i>
           </div>
         </section>
 
-        <section id="battle" class="battle-ui hidden">
-          <div id="battle-log" class="battle-log"></div>
-          <div id="party" class="party"></div>
-          <div id="commands" class="commands"></div>
+        <section id="battle-ui" class="battle-ui hidden" aria-label="戦闘">
+          <header class="battle-header">
+            <span id="battle-state">COMMAND</span>
+            <strong id="battle-message">コマンドを選んでください</strong>
+            <div class="happy-meter" title="ハッピーゲージ">
+              <span>HAPPY</span>
+              <div><i id="happy-fill"></i></div>
+              <b id="happy-value">0</b>
+            </div>
+          </header>
+          <div id="enemy-labels" class="enemy-labels"></div>
+          <div id="battle-party" class="battle-party"></div>
+          <div class="battle-console">
+            <div id="battle-log" class="battle-log"></div>
+            <nav id="battle-commands" class="battle-commands"></nav>
+          </div>
         </section>
 
-        <section id="menu" class="overlay hidden">
+        <section id="menu-screen" class="overlay hidden" aria-modal="true">
           <div class="window menu-window">
-            <header>
+            <header class="window-header">
               <div>
-                <p class="eyebrow">ADVENTURE MENU</p>
+                <p class="eyebrow">TRAVEL RECORD</p>
                 <h2>旅の記録</h2>
               </div>
-              <button id="menu-close" class="close">×</button>
+              <div class="menu-summary">
+                <span id="menu-playtime">00:00</span>
+                <strong id="menu-gold">0 G</strong>
+              </div>
+              <button id="menu-close" class="icon-button" aria-label="閉じる">×</button>
             </header>
-            <div id="menu-body"></div>
-            <nav>
-              <button data-tab="status">能力</button
-              ><button data-tab="party">編成</button
-              ><button data-tab="quests">クエスト</button
-              ><button data-tab="items">道具</button
-              ><button data-tab="equip">装備</button
-              ><button data-tab="save">記録</button>
+            <nav id="menu-tabs" class="menu-tabs">
+              <button data-tab="party">なかま</button>
+              <button data-tab="rumors">うわさ</button>
+              <button data-tab="items">どうぐ</button>
+              <button data-tab="equip">そうび</button>
+              <button data-tab="map">ちず</button>
+              <button data-tab="save">きろく</button>
+              <button data-tab="settings">設定</button>
             </nav>
+            <div id="menu-body" class="menu-body"></div>
           </div>
         </section>
 
-        <section id="load-modal" class="overlay hidden">
+        <section id="panel-screen" class="overlay hidden" aria-modal="true">
+          <div class="window panel-window">
+            <header class="window-header">
+              <div>
+                <p id="panel-eyebrow" class="eyebrow">SHOP</p>
+                <h2 id="panel-title">旅支度の店</h2>
+              </div>
+              <strong id="panel-gold"></strong>
+              <button id="panel-close" class="icon-button" aria-label="閉じる">×</button>
+            </header>
+            <div id="panel-body" class="panel-body"></div>
+          </div>
+        </section>
+
+        <section id="load-screen" class="overlay hidden" aria-modal="true">
           <div class="window load-window">
-            <p class="eyebrow">CONTINUE</p>
-            <h2>冒険の書</h2>
-            <div id="load-slots"></div>
-            <button id="load-back">もどる</button>
+            <header class="window-header">
+              <div>
+                <p class="eyebrow">ADVENTURE LOG</p>
+                <h2>冒険の書</h2>
+              </div>
+              <button id="load-close" class="icon-button" aria-label="閉じる">×</button>
+            </header>
+            <div id="load-slots" class="load-slots"></div>
           </div>
         </section>
 
-        <section id="clear" class="overlay hidden">
-          <div class="clear-card">
-            <p id="clear-chapter">CHAPTER 1 COMPLETE</p>
-            <h2 id="clear-title-text">空色の騎士団長</h2>
-            <div class="fragment">✦</div>
-            <strong id="clear-message"
-              >ハッピーオーラの欠片を手に入れた！</strong
-            ><span id="clear-info"></span>
-            <div class="row">
-              <button id="clear-save" class="primary">冒険の書に記録</button
-              ><button id="clear-next">第二章へ進む</button
-              ><button id="clear-title">タイトルへ</button>
+        <section id="chapter-clear" class="overlay hidden" aria-modal="true">
+          <div class="clear-window">
+            <p>CHAPTER I COMPLETE</p>
+            <h2>空色の騎士団長</h2>
+            <div class="fragment" aria-hidden="true">
+              <span>✦</span>
+            </div>
+            <strong>ハッピーオーラの欠片を手に入れた！</strong>
+            <p id="clear-summary"></p>
+            <div class="button-row">
+              <button id="clear-save" class="primary">冒険の書に記録</button>
+              <button id="clear-explore">第一章の世界を旅する</button>
+              <button id="clear-title">タイトルへ</button>
             </div>
           </div>
         </section>
 
-        <div id="toast" class="toast hidden"></div>
-
-        <div id="touch" class="touch hidden">
-          <div class="dpad">
-            <button data-dir="up">▲</button><button data-dir="left">◀</button>
-            <button data-dir="right">▶</button
-            ><button data-dir="down">▼</button>
+        <section id="game-over" class="overlay game-over hidden" aria-modal="true">
+          <div>
+            <small>THE LIGHT HAS FADED</small>
+            <h2>旅は、まだ終わらない</h2>
+            <p>最後に休んだ場所から再出発できます。</p>
+            <button id="retry" class="primary">立ち上がる</button>
+            <button id="gameover-title">タイトルへ</button>
           </div>
-          <div class="actions">
-            <button id="touch-menu">MENU</button><button id="touch-b">B</button
-            ><button id="touch-a" class="primary">A</button>
+        </section>
+
+        <div id="toast" class="toast hidden" aria-live="polite"></div>
+
+        <div id="touch-controls" class="touch-controls hidden">
+          <div class="dpad" aria-label="移動">
+            <button data-dir="up" aria-label="上">▲</button>
+            <button data-dir="left" aria-label="左">◀</button>
+            <button data-dir="right" aria-label="右">▶</button>
+            <button data-dir="down" aria-label="下">▼</button>
+          </div>
+          <div class="touch-actions">
+            <button id="touch-menu">MENU</button>
+            <button id="touch-b" class="round-button sub">B</button>
+            <button id="touch-a" class="round-button primary">A</button>
           </div>
         </div>
+
+        <div class="rotate-message">
+          <strong>画面を横向きにすると遊びやすくなります</strong>
+          <span>縦向きでもそのままプレイできます</span>
+        </div>
       </section>
-      <p class="help">
-        移動：矢印 / WASD　決定：Enter / Z / Space　メニュー：Esc / X / M
-      </p>
+      <footer class="help">
+        移動：矢印 / WASD　決定：Enter / Z / Space　戻る：Esc / X　メニュー：M
+      </footer>
     </main>
-    <script type="module" src="./data.js"></script>
-    <script type="module" src="./game.js"></script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
