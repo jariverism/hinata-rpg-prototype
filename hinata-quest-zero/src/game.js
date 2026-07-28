@@ -659,10 +659,13 @@ export class HinatiaGame {
     for (const enemy of candidates) {
       const distance = Math.abs(enemy.x - this.state.x) + Math.abs(enemy.y - this.state.y);
       if (distance > (enemy.awareness || 3)) {
-        enemy.alert = Math.max(0, enemy.alert - 1);
+        enemy.alert = 0;
         continue;
       }
-      enemy.alert = 2;
+      if (!enemy.alert) {
+        enemy.alert = 2;
+        continue;
+      }
       const dx = Math.sign(this.state.x - enemy.x);
       const dy = Math.sign(this.state.y - enemy.y);
       const axes =
@@ -675,7 +678,7 @@ export class HinatiaGame {
         const ny = enemy.y + my;
         enemy.dir = mx < 0 ? "left" : mx > 0 ? "right" : my < 0 ? "up" : "down";
         if (nx === this.state.x && ny === this.state.y) {
-          this.startSymbolBattle(enemy, { ambush: true });
+          this.startSymbolBattle(enemy, { ambush: enemy.dir === this.state.dir });
           return;
         }
         const occupied = this.mapEnemies.some(
@@ -720,20 +723,35 @@ export class HinatiaGame {
   refreshInteractPrompt() {
     if (this.mode !== "map") return;
     const interaction = this.findInteraction();
-    this.ui.interactPrompt.classList.toggle("hidden", !interaction);
-    if (interaction) this.ui.interactLabel.textContent = interaction.label;
+    this.ui.interactPrompt.classList.remove("hidden");
+    this.ui.interactLabel.textContent = interaction?.label || "足踏み";
   }
 
   interact() {
     const interaction = this.findInteraction();
     if (!interaction) {
-      if (this.state.settings.hint !== "classic") this.toast("ここには何もなさそうだ");
+      this.waitTurn();
       return;
     }
     this.audio.sfx("ok");
     if (interaction.kind === "npc") this.talk(interaction.value);
     else if (interaction.kind === "chest") this.openChest(interaction.value);
     else this.useSpecial(interaction.value);
+  }
+
+  waitTurn() {
+    if (this.mode !== "map" || this.transitionDirection) return false;
+    this.state.steps += 1;
+    if (this.state.lightSteps > 0) this.state.lightSteps -= 1;
+    this.walkFrame += 1;
+    this.audio.sfx("step");
+    this.chaseEnemies();
+    if (this.mode === "map") {
+      this.refreshHud();
+      this.refreshInteractPrompt();
+      if (this.state.settings.hint !== "classic") this.toast("その場で様子を見た", 700);
+    }
+    return true;
   }
 
   openChest(chest) {
@@ -904,7 +922,7 @@ export class HinatiaGame {
           `朝露草は西のこだまの森にある。あと${Math.max(0, 3 - (this.state.inventory.dewleaf || 0))}枚だね。`,
         );
       } else {
-        simple("薬師セナ", "elder", "鈴は使ってもなくならない。恐怖に飲まれそうな時、何度でも鳴らすといい。");
+        simple("薬師セナ", "elder", "鈴の光は一度きりだ。恐怖や大技に飲まれそうな時を選んで鳴らすといい。");
       }
     } else if (id === "lostChild") {
       if (this.state.quests.lostRibbon === "locked") {
@@ -1066,10 +1084,18 @@ export class HinatiaGame {
       ]);
       if (this.state.quests.lostMiner === "locked") this.state.quests.lostMiner = "active";
     } else if (special.type === "campfire") {
+      if (this.state.flags.campRested) {
+        this.dialogue({
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "薪は燃え尽きている。ここではもう休めない。",
+        });
+        return;
+      }
+      this.state.flags.campRested = true;
       const party = activeParty(this.state);
       for (const member of party) {
-        member.hp = Math.min(maxHp(member), member.hp + Math.ceil(maxHp(member) * 0.5));
-        member.mp = Math.min(member.maxMp, member.mp + Math.ceil(member.maxMp * 0.35));
+        member.hp = Math.min(maxHp(member), member.hp + Math.ceil(maxHp(member) * 0.35));
       }
       this.state.lastSafe = {
         map: this.state.map,
@@ -1082,10 +1108,9 @@ export class HinatiaGame {
         {
           speaker: "SYSTEM",
           portrait: "system",
-          text: "火のそばで短く休んだ。HPとMPが少し回復した。",
+          text: "残っていた薪で一度だけ休んだ。HPが少し回復したが、MPは戻らなかった。",
         },
         () => {
-          this.buildMapEnemies();
           this.setMode("map");
           this.refreshHud();
           this.autosave();
@@ -1189,7 +1214,7 @@ export class HinatiaGame {
   }
 
   openInn() {
-    const cost = 12;
+    const cost = 24;
     this.panelContext = { type: "inn", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "INN";
     this.ui.panelTitle.textContent = "青鳥亭";
@@ -1366,6 +1391,7 @@ export class HinatiaGame {
         status: {},
         guarding: false,
         hurtAt: 0,
+        battleIndex: index,
       };
     });
     for (const member of activeParty(this.state)) member.status = {};
@@ -1382,6 +1408,7 @@ export class HinatiaGame {
       barrier: group.includes("smileEater"),
       barrierBrokenRounds: 0,
       telegraph: null,
+      enemyIntents: [],
       formation: false,
       log: options.preemptive
         ? "背後を取った！　こちらが先に動ける。"
@@ -1428,10 +1455,19 @@ export class HinatiaGame {
     const alive = activeParty(this.state).filter((member) => member.hp > 0);
     if (!alive.length) return this.finishDefeat();
     this.battle.planningActors = alive.map((member) => member.id);
+    this.battle.enemyIntents = this.battle.enemies
+      .filter((enemy) => enemy.hp > 0)
+      .map((enemy) => ({ enemy, action: this.chooseEnemyAction(enemy) }));
+    const danger = this.battle.enemyIntents
+      .filter(({ action }) => !["attack", "guard"].includes(action))
+      .map(({ enemy, action }) => `${enemy.name}：${this.enemyIntentLabel(action)}`)
+      .join("／");
     this.battle.log =
       this.battle.telegraph === "sigh"
         ? "笑顔喰らいは大きく息を吸い込んでいる……！"
-        : `${alive[0].name}の行動を選んでください。`;
+        : danger
+          ? `${danger}　— ${alive[0].name}の行動を選んでください。`
+          : `${alive[0].name}の行動を選んでください。`;
     this.renderBattleUi();
     this.renderBattleCommands();
   }
@@ -1628,12 +1664,12 @@ export class HinatiaGame {
     const enemyActions =
       this.battle.options.preemptive && this.battle.round === 1
         ? []
-        : this.battle.enemies
-            .filter((enemy) => enemy.hp > 0)
-            .map((enemy) => ({
+        : this.battle.enemyIntents
+            .filter(({ enemy }) => enemy.hp > 0)
+            .map(({ enemy, action }) => ({
               side: "enemy",
               actor: enemy,
-              action: this.chooseEnemyAction(enemy),
+              action,
               speed: this.enemyStat(enemy, "spd") + Math.random() * 6,
             }));
     const queue = [...partyActions, ...enemyActions].sort((a, b) => b.speed - a.speed);
@@ -1673,7 +1709,7 @@ export class HinatiaGame {
         1,
       );
       this.hitEnemy(target, damage, "physical");
-      this.state.happy = clamp(this.state.happy + 5, 0, 100);
+      this.state.happy = clamp(this.state.happy + 2, 0, 100);
       this.battle.log = `${actor.name}の攻撃！　${target.name}に${damage}のダメージ。`;
     } else if (action.type === "guard") {
       actor.status.guard = 1;
@@ -1760,13 +1796,12 @@ export class HinatiaGame {
       this.audio.sfx("magic");
     } else if (skill.effect === "captain") {
       for (const member of activeParty(this.state)) {
-        member.status.atkUp = 3;
-        member.status.defUp = 3;
-        member.status.fear = 0;
+        member.status.atkUp = 2;
+        member.status.defUp = 2;
       }
-      this.battle.barrierBrokenRounds = Math.max(2, this.battle.barrierBrokenRounds);
-      this.state.happy = clamp(this.state.happy + 18, 0, 100);
-      this.battle.log = "キャプテンコール！　全員の声が重なり、暗い障壁が揺らぐ！";
+      this.battle.barrierBrokenRounds = Math.max(1, this.battle.barrierBrokenRounds);
+      this.state.happy = clamp(this.state.happy + 10, 0, 100);
+      this.battle.log = "キャプテンコール！　全員の攻撃と守備が上がり、暗い障壁が一瞬揺らぐ！";
       this.audio.sfx("magic");
       this.flash();
     } else if (skill.effect === "formation") {
@@ -1828,7 +1863,6 @@ export class HinatiaGame {
       this.battle.log = "光鳴りの鈴が響いた！　恐怖が消え、暗い障壁が裂ける！";
       this.audio.sfx("magic");
       this.flash();
-      addItem(this.state, "brightBell", 1);
     } else if (action.id === "smokeBomb") {
       this.battle.log = `${item.name}が白い煙を広げた。戦いから離脱した！`;
       this.delay(220, () => this.exitBattle(true));
@@ -1843,8 +1877,29 @@ export class HinatiaGame {
       return this.battle.round % 2 ? "darkWhisper" : "attack";
     }
     if (opening) return "attack";
+    if (enemy.pattern?.length)
+      return enemy.pattern[
+        (this.battle.round - 1 + (enemy.battleIndex || 0)) % enemy.pattern.length
+      ];
     const actions = enemy.actions || ["attack"];
     return actions[Math.floor(Math.random() * actions.length)];
+  }
+
+  enemyIntentLabel(action) {
+    return {
+      double: "連続攻撃の構え",
+      auraDown: "オーラを狙う",
+      mist: "全体攻撃の気配",
+      fear: "恐怖のつぶやき",
+      drain: "ゲージ吸収の気配",
+      dust: "鱗粉をまく構え",
+      wind: "強い風の気配",
+      heavy: "大振りの構え",
+      darkWhisper: "暗黒のつぶやき",
+      smileDrain: "ゲージを狙う",
+      telegraph: "大技の準備",
+      sigh: "ため息を放つ",
+    }[action] || "こちらを狙う";
   }
 
   executeEnemyAction(enemy, action) {
@@ -2011,8 +2066,13 @@ export class HinatiaGame {
       );
       if (this.battle.barrierBrokenRounds <= 0) damage = Math.max(1, Math.round(damage * (adds ? 0.42 : 0.68)));
     }
-    if (enemy.guarding) damage = Math.max(1, Math.round(damage * 0.58));
-    if (enemy.weakness === element) this.flash();
+    if (enemy.guarding && enemy.weakness !== element)
+      damage = Math.max(1, Math.round(damage * 0.58));
+    if (enemy.weakness === element) {
+      enemy.guarding = false;
+      damage = Math.round(damage * 1.12);
+      this.flash();
+    }
     enemy.hp = Math.max(0, enemy.hp - damage);
     enemy.hurtAt = performance.now();
     this.state.stats.damageDealt += damage;
@@ -2075,6 +2135,7 @@ export class HinatiaGame {
     this.state.gold += gold;
     this.state.victories += 1;
     const levels = grantExperience(this.state, exp);
+    if (!this.battle.options.story) this.state.happy = Math.min(50, this.state.happy);
     this.battle.log = `勝利！　${exp} EXPと${gold}ゴールドを得た。`;
     if (levels.length)
       this.battle.log += ` ${levels.map((entry) => `${entry.name}はLv${entry.level}`).join("、")}になった！`;
@@ -2090,7 +2151,7 @@ export class HinatiaGame {
     if (symbol) {
       const key = `${this.state.map}:${symbol.id}`;
       if (symbol.unique) this.state.defeatedUnique[key] = true;
-      else this.state.symbolCooldowns[key] = this.state.steps + 34;
+      else this.state.symbolCooldowns[key] = this.state.steps + 52;
       this.mapEnemies = this.mapEnemies.filter((enemy) => enemy.id !== symbol.id);
     }
     if (symbol?.kind === "gloomMoth" || symbol?.id === "grove-elite")
