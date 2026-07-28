@@ -101,6 +101,30 @@ const sarinaBase = () => ({
   status: {},
 });
 
+const katoshiBase = () => ({
+  id: "katoshi",
+  name: "史帆",
+  fullName: "加藤史帆",
+  role: "風の剣士",
+  level: 5,
+  exp: 504,
+  hp: 82,
+  mp: 36,
+  maxHp: 82,
+  maxMp: 36,
+  atk: 27,
+  def: 14,
+  mag: 18,
+  spd: 30,
+  equipment: {
+    weapon: "galeRapier",
+    shield: null,
+    body: "windCoat",
+    accessory: null,
+  },
+  status: {},
+});
+
 export function createState(name = "トシ") {
   return {
     version: SAVE_VERSION,
@@ -115,6 +139,7 @@ export function createState(name = "トシ") {
       kumi: kumiBase(),
       mirei: mireiBase(),
       sarina: sarinaBase(),
+      katoshi: katoshiBase(),
       order: ["hero"],
     },
     inventory: {
@@ -155,6 +180,16 @@ export function createState(name = "トシ") {
       shrineRobe: 0,
       rainbowCharm: 0,
       spiritNectar: 0,
+      galeTonic: 0,
+      stoneCrest: 0,
+      swiftCrest: 0,
+      echoCrest: 0,
+      stormSigil: 0,
+      skyRapier: 0,
+      galeRapier: 0,
+      windCoat: 0,
+      featherCape: 0,
+      arenaMedal: 0,
       legacyEmblem: 0,
     },
     flags: {
@@ -202,6 +237,24 @@ export function createState(name = "トシ") {
       chapter3BossSeen: false,
       chapter3BossWon: false,
       chapter3Clear: false,
+      chapter4Started: false,
+      metKatoshi: false,
+      arenaEntered: false,
+      arenaStoneWon: false,
+      arenaSwiftWon: false,
+      arenaEchoWon: false,
+      arenaFinalWon: false,
+      katoshiJoined: false,
+      rosterUnlocked: false,
+      towerOpen: false,
+      windCampRested: false,
+      lostFanRescued: false,
+      windSealNorth: false,
+      windSealSouth: false,
+      towerShortcut: false,
+      chapter4BossSeen: false,
+      chapter4BossWon: false,
+      chapter4Clear: false,
     },
     quests: {
       chapter1: "active",
@@ -214,6 +267,9 @@ export function createState(name = "トシ") {
       chapter3: "locked",
       threeChimes: "locked",
       lostSpirit: "locked",
+      chapter4: "locked",
+      skyTournament: "locked",
+      lostFan: "locked",
     },
     rumors: {
       city: true,
@@ -229,6 +285,11 @@ export function createState(name = "トシ") {
       spiritLanguage: false,
       silentSanctum: false,
       resonanceCore: false,
+      eastWindRoad: false,
+      katoshia: false,
+      skyTournament: false,
+      towerSeal: false,
+      stormCore: false,
     },
     opened: {},
     gathered: {},
@@ -304,6 +365,7 @@ export function normalizeState(value) {
       kumi: mergeCharacter(base.party.kumi, value.party?.kumi),
       mirei: mergeCharacter(base.party.mirei, value.party?.mirei),
       sarina: mergeCharacter(base.party.sarina, value.party?.sarina),
+      katoshi: mergeCharacter(base.party.katoshi, value.party?.katoshi),
       order: Array.isArray(value.party?.order) ? [...value.party.order] : ["hero"],
     },
     lastSafe: { ...base.lastSafe, ...(value.lastSafe || {}) },
@@ -320,11 +382,18 @@ export function normalizeState(value) {
     result.party.order.push("mirei");
   if (result.flags.sarinaJoined && !result.party.order.includes("sarina"))
     result.party.order.push("sarina");
+  if (result.flags.katoshiJoined && !result.party.order.includes("katoshi") && result.party.order.length < 4)
+    result.party.order.push("katoshi");
   result.party.order = result.party.order.filter(
     (id, index, array) =>
-      ["hero", "kumi", "mirei", "sarina"].includes(id) && array.indexOf(id) === index,
+      ["hero", "kumi", "mirei", "sarina", "katoshi"].includes(id) &&
+      array.indexOf(id) === index,
   );
   if (!result.party.order.includes("hero")) result.party.order.unshift("hero");
+  result.party.order = [
+    "hero",
+    ...result.party.order.filter((id) => id !== "hero"),
+  ].slice(0, 4);
   clampVitals(result);
   return result;
 }
@@ -362,6 +431,7 @@ export function serialize(state) {
       kumi: { ...state.party.kumi, status: {} },
       mirei: { ...state.party.mirei, status: {} },
       sarina: { ...state.party.sarina, status: {} },
+      katoshi: { ...state.party.katoshi, status: {} },
       order: [...state.party.order],
     },
   };
@@ -369,6 +439,15 @@ export function serialize(state) {
 
 export function activeParty(state) {
   return state.party.order.map((id) => state.party[id]).filter(Boolean);
+}
+
+export function partyRoster(state) {
+  const ids = ["hero"];
+  if (state.flags.kumiJoined || state.party.order.includes("kumi")) ids.push("kumi");
+  if (state.flags.mireiJoined || state.party.order.includes("mirei")) ids.push("mirei");
+  if (state.flags.sarinaJoined || state.party.order.includes("sarina")) ids.push("sarina");
+  if (state.flags.katoshiJoined || state.party.order.includes("katoshi")) ids.push("katoshi");
+  return ids.map((id) => state.party[id]).filter(Boolean);
 }
 
 export function equipmentStats(character) {
@@ -460,6 +539,19 @@ export function applySarinaGrowth(character, level, heal = true) {
   }
 }
 
+export function applyKatoshiGrowth(character, level, heal = true) {
+  character.maxHp += 7;
+  character.maxMp += level % 2 ? 3 : 2;
+  character.atk += 3;
+  character.def += 2;
+  character.mag += 2;
+  character.spd += 3;
+  if (heal) {
+    character.hp = maxHp(character);
+    character.mp = character.maxMp;
+  }
+}
+
 export function grantExperience(state, amount) {
   const levels = [];
   for (const character of activeParty(state)) {
@@ -469,7 +561,8 @@ export function grantExperience(state, amount) {
       if (character.id === "hero") applyHeroGrowth(character, character.level);
       else if (character.id === "kumi") applyKumiGrowth(character, character.level);
       else if (character.id === "mirei") applyMireiGrowth(character, character.level);
-      else applySarinaGrowth(character, character.level);
+      else if (character.id === "sarina") applySarinaGrowth(character, character.level);
+      else applyKatoshiGrowth(character, character.level);
       levels.push({
         id: character.id,
         name: character.name,
@@ -499,7 +592,7 @@ export function ownsItem(state, id) {
 }
 
 export function fullHeal(state) {
-  for (const character of activeParty(state)) {
+  for (const character of partyRoster(state)) {
     character.hp = maxHp(character);
     character.mp = character.maxMp;
     character.status = {};

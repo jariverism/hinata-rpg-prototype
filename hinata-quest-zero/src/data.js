@@ -774,7 +774,7 @@ function spiritPass() {
   border(m, TILE.TREE);
   pathPoints(m, [[24, 1], [24, 17], [4, 17]], TILE.PATH, 2);
   pathPoints(m, [[24, 17], [47, 17]], TILE.PATH, 2);
-  pathPoints(m, [[36, 17], [36, 25]], TILE.PATH, 2);
+  pathPoints(m, [[36, 17], [36, 31]], TILE.PATH, 2);
   fill(m, 6, 5, 10, 7, TILE.WATER);
   hline(m, 13, 20, 9, TILE.BRIDGE, 2);
   fill(m, 31, 23, 12, 6, TILE.MOSS);
@@ -794,6 +794,28 @@ function spiritPass() {
     { x: 3, y: 18, to: "sarinaria", tx: 21, ty: 27, dir: "left", label: "精霊樹の里サリナリア" },
     { x: 47, y: 17, to: "whisperWood", tx: 2, ty: 17, dir: "right", label: "三響の森" },
     { x: 47, y: 18, to: "whisperWood", tx: 2, ty: 18, dir: "right", label: "三響の森" },
+    {
+      x: 36,
+      y: 31,
+      to: "windRoad",
+      tx: 2,
+      ty: 18,
+      dir: "down",
+      label: "天翔け街道",
+      requires: "chapter3Clear",
+      denied: "南東の谷は無音の嵐に閉ざされている。虹泉の声を取り戻せば風向きが変わりそうだ。",
+    },
+    {
+      x: 37,
+      y: 31,
+      to: "windRoad",
+      tx: 2,
+      ty: 19,
+      dir: "down",
+      label: "天翔け街道",
+      requires: "chapter3Clear",
+      denied: "南東の谷は無音の嵐に閉ざされている。虹泉の声を取り戻せば風向きが変わりそうだ。",
+    },
   );
   m.npcs.push(
     { id: "ridgeRanger", type: "ranger", x: 18, y: 18, dir: "right" },
@@ -1019,6 +1041,241 @@ function spiritHeart() {
   return m;
 }
 
+function windRoad() {
+  const m = map("windRoad", "天翔け街道", 52, 36, TILE.GRASS, "windRoad");
+  border(m, TILE.ROCK);
+  hline(m, 1, 50, 18, TILE.PATH, 2);
+  pathPoints(m, [[25, 18], [25, 2]], TILE.PATH, 2);
+  pathPoints(m, [[36, 18], [36, 34]], TILE.PATH, 2);
+  fill(m, 5, 5, 12, 8, TILE.WATER);
+  hline(m, 14, 21, 10, TILE.BRIDGE, 2);
+  fill(m, 31, 4, 14, 7, TILE.STONE);
+  fill(m, 32, 25, 10, 7, TILE.MOSS);
+  for (const [x, y] of [[18,18],[25,12],[34,18],[42,18],[36,28]])
+    put(m, x, y, TILE.LANTERN);
+  scatter(m, 4107, TILE.TREE, 132, (x, y, t) =>
+    t === TILE.GRASS &&
+    Math.abs(y - 18) > 3 &&
+    !(x > 21 && x < 29) &&
+    !(x > 31 && x < 42 && y > 22),
+  );
+  scatter(m, 771, TILE.FLOWER, 54, (_x, _y, t) => t === TILE.GRASS);
+  scatter(m, 117, TILE.ROCK, 38, (_x, _y, t) => t === TILE.GRASS);
+  m.warps.push(
+    { x: 1, y: 18, to: "spiritPass", tx: 36, ty: 30, dir: "up", label: "虹風の峠" },
+    { x: 1, y: 19, to: "spiritPass", tx: 37, ty: 30, dir: "up", label: "虹風の峠" },
+    { x: 25, y: 2, to: "katoshia", tx: 21, ty: 27, dir: "up", label: "風の街カトシア" },
+    { x: 26, y: 2, to: "katoshia", tx: 22, ty: 27, dir: "up", label: "風の街カトシア" },
+    { x: 50, y: 18, to: "skyArena", tx: 2, ty: 15, dir: "right", label: "蒼天闘技場" },
+    { x: 50, y: 19, to: "skyArena", tx: 2, ty: 16, dir: "right", label: "蒼天闘技場" },
+    {
+      x: 36,
+      y: 34,
+      to: "windTower1",
+      tx: 3,
+      ty: 28,
+      dir: "down",
+      label: "風哭きの塔",
+      requires: "towerOpen",
+      denied: "塔門は暴風に閉ざされている。街の風剣士なら風の切れ目を読めるかもしれない。",
+    },
+    {
+      x: 37,
+      y: 34,
+      to: "windTower1",
+      tx: 4,
+      ty: 28,
+      dir: "down",
+      label: "風哭きの塔",
+      requires: "towerOpen",
+      denied: "塔門は暴風に閉ざされている。街の風剣士なら風の切れ目を読めるかもしれない。",
+    },
+  );
+  m.npcs.push(
+    { id: "windCourier", type: "courier", x: 19, y: 19, dir: "right" },
+    { id: "arenaFan", type: "fan", x: 43, y: 19, dir: "left" },
+    { id: "lostFan", type: "fan", x: 39, y: 28, dir: "up" },
+  );
+  m.chests.push(
+    { id: "wind-road-tonic", x: 17, y: 9, loot: { item: "galeTonic", qty: 2 }, label: "風読みの薬を2個" },
+    { id: "wind-road-gold", x: 45, y: 9, loot: { gold: 172 }, label: "172ゴールド" },
+    { id: "wind-road-cape", x: 43, y: 29, loot: { item: "featherCape", qty: 1 }, label: "羽織りの外套" },
+  );
+  m.specials.push(
+    { id: "wind-sign", type: "sign", x: 29, y: 18, text: "北：風の街カトシア　東：蒼天闘技場　南：風哭きの塔" },
+    { id: "wind-camp", type: "windCamp", x: 32, y: 8 },
+  );
+  m.enemies.push(
+    { id: "wind-road-01", x: 11, y: 19, group: ["cloudHare", "cloudHare"], awareness: 5 },
+    { id: "wind-road-02", x: 22, y: 13, group: ["bladeHawk", "cloudHare"], awareness: 6 },
+    { id: "wind-road-03", x: 33, y: 16, group: ["windArmor", "bladeHawk"], awareness: 4 },
+    { id: "wind-road-04", x: 44, y: 17, group: ["stormDjinn", "cloudHare"], awareness: 5 },
+    { id: "wind-road-05", x: 36, y: 26, group: ["windArmor", "stormDjinn"], awareness: 4 },
+  );
+  m.start = [2, 18];
+  return m;
+}
+
+function katoshia() {
+  const m = map("katoshia", "風の街カトシア", 44, 30, TILE.STONE, "windTown");
+  border(m, TILE.WALL);
+  hline(m, 19, 24, 28, TILE.PATH);
+  vline(m, 20, 7, 28, TILE.PATH, 4);
+  hline(m, 3, 40, 19, TILE.PATH, 3);
+  hline(m, 7, 37, 10, TILE.PATH, 2);
+  building(m, 4, 4, 10, 6, 9, TILE.ROOF);
+  building(m, 17, 2, 11, 7, 22, TILE.ROOF);
+  building(m, 31, 4, 9, 6, 35, TILE.ROOF);
+  building(m, 4, 13, 9, 6, 8, TILE.ROOF);
+  building(m, 31, 13, 9, 6, 35, TILE.ROOF);
+  building(m, 5, 23, 10, 5, 10, TILE.ROOF);
+  building(m, 30, 23, 9, 5, 34, TILE.ROOF);
+  fill(m, 14, 13, 5, 5, TILE.FLOWER);
+  fill(m, 25, 13, 5, 5, TILE.WATER);
+  put(m, 27, 15, TILE.BRIDGE);
+  for (const [x, y] of [[17,10],[26,10],[18,21],[26,21]]) put(m, x, y, TILE.LANTERN);
+  m.warps.push(
+    { x: 21, y: 28, to: "windRoad", tx: 25, ty: 3, dir: "down", label: "天翔け街道" },
+    { x: 22, y: 28, to: "windRoad", tx: 26, ty: 3, dir: "down", label: "天翔け街道" },
+  );
+  m.npcs.push(
+    { id: "katoshi", type: "katoshi", x: 24, y: 10, dir: "left" },
+    { id: "arenaMaster", type: "arenaMaster", x: 22, y: 8, dir: "down" },
+    { id: "windSmith", type: "smith", x: 9, y: 10, dir: "down" },
+    { id: "windMerchant", type: "merchant", x: 35, y: 10, dir: "down" },
+    { id: "windInn", type: "inn", x: 8, y: 19, dir: "down" },
+    { id: "windPriest", type: "priest", x: 35, y: 19, dir: "down" },
+    { id: "windChild", type: "child", x: 28, y: 12, dir: "left" },
+    { id: "fanSister", type: "fan", x: 15, y: 20, dir: "right" },
+  );
+  m.chests.push(
+    { id: "katoshia-tonic", x: 3, y: 25, loot: { item: "galeTonic", qty: 2 }, label: "風読みの薬を2個" },
+    { id: "katoshia-gold", x: 41, y: 24, loot: { gold: 114 }, label: "114ゴールド" },
+  );
+  m.specials.push(
+    { id: "wind-armory", type: "shop", shop: "windArmory", x: 9, y: 9 },
+    { id: "wind-item", type: "shop", shop: "windItem", x: 35, y: 9 },
+    { id: "wind-inn", type: "inn", x: 8, y: 18 },
+    { id: "wind-church", type: "church", x: 35, y: 18 },
+    { id: "wind-save", type: "save", x: 17, y: 9 },
+    { id: "wind-board", type: "windBoard", x: 18, y: 23 },
+  );
+  m.start = [21, 27];
+  return m;
+}
+
+function skyArena() {
+  const m = map("skyArena", "蒼天闘技場", 42, 30, TILE.STONE, "arena");
+  border(m, TILE.WALL);
+  hline(m, 1, 40, 15, TILE.PATH, 2);
+  fill(m, 11, 4, 24, 22, TILE.SAND);
+  box(m, 10, 3, 26, 24, TILE.PILLAR);
+  hline(m, 1, 40, 14, TILE.STONE, 4);
+  put(m, 2, 15, TILE.DOOR);
+  m.warps.push(
+    { x: 1, y: 15, to: "windRoad", tx: 49, ty: 18, dir: "left", label: "天翔け街道" },
+    { x: 1, y: 16, to: "windRoad", tx: 49, ty: 19, dir: "left", label: "天翔け街道" },
+  );
+  m.npcs.push(
+    { id: "arenaRegistrar", type: "arenaMaster", x: 7, y: 15, dir: "right" },
+    { id: "arenaHealer", type: "priest", x: 7, y: 19, dir: "up" },
+  );
+  m.specials.push(
+    { id: "arena-final", type: "arenaFinal", x: 23, y: 15 },
+    { id: "arena-rule", type: "sign", x: 7, y: 12, text: "予選の三人は順不同。守り・速さ・魔法、それぞれの型を見抜け。" },
+  );
+  m.enemies.push(
+    { id: "arena-stone", x: 18, y: 8, kind: "arenaBulwark", unique: true, story: "arenaStone", awareness: 1 },
+    { id: "arena-swift", x: 30, y: 15, kind: "arenaRaptor", unique: true, story: "arenaSwift", awareness: 1 },
+    { id: "arena-echo", x: 18, y: 23, kind: "arenaMage", unique: true, story: "arenaEcho", awareness: 1 },
+  );
+  m.chests.push(
+    { id: "arena-medal", x: 33, y: 24, loot: { item: "arenaMedal", qty: 1 }, label: "蒼天の記念章" },
+  );
+  m.start = [2, 15];
+  return m;
+}
+
+function windTower1() {
+  const m = map("windTower1", "風哭きの塔・下層", 44, 32, TILE.WALL, "windTower");
+  border(m, TILE.WALL);
+  fill(m, 2, 24, 12, 6, TILE.FLOOR);
+  fill(m, 10, 17, 10, 10, TILE.FLOOR);
+  fill(m, 17, 10, 10, 11, TILE.FLOOR);
+  fill(m, 24, 4, 15, 10, TILE.FLOOR);
+  fill(m, 25, 17, 14, 10, TILE.FLOOR);
+  fill(m, 6, 4, 10, 10, TILE.FLOOR);
+  fill(m, 12, 11, 9, 7, TILE.FLOOR);
+  put(m, 3, 28, TILE.STAIRS);
+  put(m, 35, 6, TILE.STAIRS);
+  for (const [x, y] of [[8,8],[15,14],[21,16],[29,9],[31,21]]) put(m, x, y, TILE.LANTERN);
+  m.warps.push(
+    { x: 2, y: 28, to: "windRoad", tx: 36, ty: 33, dir: "up", label: "天翔け街道" },
+    {
+      x: 35,
+      y: 6,
+      to: "windTower2",
+      tx: 4,
+      ty: 25,
+      dir: "right",
+      label: "風哭きの塔・上層",
+      requires: "windSealNorth",
+      requiresAll: ["windSealNorth", "windSealSouth"],
+      denied: "中央の昇降翼は止まっている。北と南、二つの風向計を内側へ向ける必要がある。",
+    },
+  );
+  m.chests.push(
+    { id: "tower1-rapier", x: 8, y: 7, loot: { item: "skyRapier", qty: 1 }, label: "蒼羽の細剣" },
+    { id: "tower1-tonic", x: 34, y: 23, loot: { item: "galeTonic", qty: 3 }, label: "風読みの薬を3個" },
+    { id: "tower1-gold", x: 29, y: 5, loot: { gold: 208 }, label: "208ゴールド" },
+  );
+  m.specials.push(
+    { id: "north-vane", type: "windVaneNorth", x: 11, y: 8 },
+    { id: "south-vane", type: "windVaneSouth", x: 33, y: 22 },
+    { id: "tower-inscription", type: "sign", x: 20, y: 13, text: "『向かい合う二つの風は、争わず上昇気流となる』" },
+  );
+  m.enemies.push(
+    { id: "tower1-01", x: 10, y: 26, group: ["windArmor", "cloudHare"], awareness: 4 },
+    { id: "tower1-02", x: 17, y: 19, group: ["bladeHawk", "bladeHawk"], awareness: 6 },
+    { id: "tower1-03", x: 22, y: 13, group: ["stormDjinn", "windArmor"], awareness: 5 },
+    { id: "tower1-04", x: 30, y: 10, group: ["stormDjinn", "cloudHare", "cloudHare"], awareness: 4 },
+  );
+  m.start = [3, 28];
+  return m;
+}
+
+function windTower2() {
+  const m = map("windTower2", "風哭きの塔・天輪", 40, 30, TILE.WALL, "windBoss");
+  border(m, TILE.WALL);
+  fill(m, 2, 20, 10, 8, TILE.FLOOR);
+  fill(m, 9, 14, 10, 10, TILE.FLOOR);
+  fill(m, 16, 8, 9, 11, TILE.FLOOR);
+  fill(m, 22, 3, 14, 11, TILE.FLOOR);
+  fill(m, 27, 12, 10, 13, TILE.FLOOR);
+  fill(m, 16, 22, 13, 6, TILE.FLOOR);
+  fill(m, 27, 4, 7, 7, TILE.CRYSTAL);
+  put(m, 4, 25, TILE.STAIRS);
+  put(m, 30, 7, TILE.CRYSTAL);
+  for (const [x, y] of [[8,23],[14,17],[21,12],[31,17],[22,24]]) put(m, x, y, TILE.LANTERN);
+  m.warps.push({ x: 3, y: 25, to: "windTower1", tx: 34, ty: 6, dir: "left", label: "風哭きの塔・下層" });
+  m.chests.push(
+    { id: "tower2-cape", x: 31, y: 21, loot: { item: "featherCape", qty: 1 }, label: "羽織りの外套" },
+    { id: "tower2-tonic", x: 19, y: 25, loot: { item: "galeTonic", qty: 2 }, label: "風読みの薬を2個" },
+  );
+  m.specials.push(
+    { id: "tower-shortcut", type: "towerLever", x: 20, y: 24 },
+    { id: "tower-return", type: "shortcut", x: 21, y: 24, requires: "towerShortcut", target: [4, 25] },
+    { id: "chapter4-boss", type: "boss4", x: 30, y: 7 },
+  );
+  m.enemies.push(
+    { id: "tower2-01", x: 11, y: 21, group: ["windArmor", "stormDjinn"], awareness: 4 },
+    { id: "tower2-02", x: 18, y: 15, group: ["bladeHawk", "stormDjinn", "bladeHawk"], awareness: 6 },
+    { id: "tower2-03", x: 27, y: 15, group: ["windArmor", "windArmor"], awareness: 4 },
+  );
+  m.start = [4, 25];
+  return m;
+}
+
 export const MAPS = Object.freeze({
   highroad: highroad(),
   solaido: solaido(),
@@ -1037,6 +1294,11 @@ export const MAPS = Object.freeze({
   whisperWood: whisperWood(),
   spiritSanctum: spiritSanctum(),
   spiritHeart: spiritHeart(),
+  windRoad: windRoad(),
+  katoshia: katoshia(),
+  skyArena: skyArena(),
+  windTower1: windTower1(),
+  windTower2: windTower2(),
 });
 
 export const ITEMS = Object.freeze({
@@ -1077,6 +1339,16 @@ export const ITEMS = Object.freeze({
   rainbowBell: { name: "七色の精霊鈴", type: "weapon", sell: 255, atk: 6, mag: 16, spd: 2, element: "light", description: "三つの響きを束ね、弱点の音色を奏でる鈴。" },
   shrineRobe: { name: "精霊織りの装束", type: "body", sell: 138, def: 9, mag: 5, description: "森の光を編み込んだ巫女の装束。" },
   rainbowCharm: { name: "虹結びのお守り", type: "accessory", sell: 125, def: 2, mag: 3, maxHp: 6, resist: "silence", description: "沈黙に抗い、精霊との縁を守るお守り。" },
+  galeTonic: { name: "風読みの薬", type: "usable", price: 84, sell: 40, description: "味方ひとりのHPを45回復し、鈍足を治して素早さを上げる。" },
+  stoneCrest: { name: "堅陣の勝印", type: "key", description: "守りの型を破った証。蒼天闘技場の決勝資格の一つ。" },
+  swiftCrest: { name: "瞬脚の勝印", type: "key", description: "速さの型を捉えた証。蒼天闘技場の決勝資格の一つ。" },
+  echoCrest: { name: "魔響の勝印", type: "key", description: "魔法の型を越えた証。蒼天闘技場の決勝資格の一つ。" },
+  stormSigil: { name: "風塔の通行章", type: "key", description: "史帆が闘技場で勝者へ託した、暴風を裂く通行章。" },
+  galeRapier: { name: "追風の細剣", type: "weapon", sell: 230, atk: 14, spd: 4, element: "wind", description: "軽やかな連撃を導く、風の剣士の愛剣。" },
+  skyRapier: { name: "蒼羽の細剣", type: "weapon", sell: 310, atk: 17, spd: 6, element: "wind", description: "風哭きの塔に眠る、空気すら切り分ける細剣。" },
+  windCoat: { name: "疾風の戦衣", type: "body", sell: 165, def: 10, spd: 4, description: "風圧を逃がし、身のこなしを妨げない戦衣。" },
+  featherCape: { name: "羽織りの外套", type: "body", sell: 195, def: 12, spd: 3, resist: "wind", description: "強風を受け流す羽根織りの外套。" },
+  arenaMedal: { name: "蒼天の記念章", type: "accessory", sell: 155, atk: 3, spd: 4, description: "挑戦する勇気を讃える闘技場の記念章。" },
   legacyEmblem: { name: "旅人のしるし", type: "accessory", sell: 0, def: 2, maxHp: 5, description: "旧ヒナティアを歩いた冒険者の証。" },
 });
 
@@ -1108,6 +1380,14 @@ export const SHOPS = Object.freeze({
   sarinaArmory: {
     name: "虹枝の武具店",
     goods: ["skyBlade", "ironSpear", "holyPan", "spiritBell", "shrineRobe", "blueBuckler"],
+  },
+  windItem: {
+    name: "追風通りの道具屋",
+    goods: ["herb", "moonwort", "auraDrop", "spiritNectar", "galeTonic", "smokeBomb", "wing"],
+  },
+  windArmory: {
+    name: "天輪の武具店",
+    goods: ["galeRapier", "ironSpear", "rainbowBell", "windCoat", "featherCape", "blueBuckler"],
   },
 });
 
@@ -1253,6 +1533,48 @@ export const SKILLS = Object.freeze({
     target: "allAllies",
     effect: "sarimakashi",
     description: "全員を大きく癒やし、再生と属性の守りを与える。",
+  },
+  henyoSlash: {
+    name: "へにょへにょ斬り",
+    owner: "katoshi",
+    level: 1,
+    mp: 4,
+    target: "enemy",
+    effect: "henyoSlash",
+    power: 0.82,
+    element: "wind",
+    description: "力の抜けた二連撃。構えと風の障壁を崩しやすい。",
+  },
+  galeStep: {
+    name: "疾風のステップ",
+    owner: "katoshi",
+    level: 5,
+    mp: 5,
+    target: "ally",
+    effect: "galeStep",
+    description: "味方ひとりの素早さと回避を3ターン上げ、鈍足を治す。",
+  },
+  katoshiCombo: {
+    name: "かとしコンビネーション",
+    owner: "katoshi",
+    level: 5,
+    mp: 7,
+    target: "enemy",
+    effect: "katoshiCombo",
+    power: 2.05,
+    element: "wind",
+    description: "敵の予告行動へ割り込み、溜めた風を散らす連携剣。",
+  },
+  skyDance: {
+    name: "天空の剣舞",
+    owner: "katoshi",
+    level: 6,
+    mp: 11,
+    target: "allEnemies",
+    effect: "skyDance",
+    power: 1.18,
+    element: "wind",
+    description: "敵全体を三度切り抜ける風の奥義。",
   },
 });
 
@@ -1637,6 +1959,151 @@ export const ENEMIES = Object.freeze({
     weakness: "fire",
     actions: ["attack", "muteSong", "silenceNova", "spiritDevour"],
   },
+  cloudHare: {
+    name: "クモノウサギ",
+    sprite: "cloudHare",
+    hp: 88,
+    mp: 10,
+    atk: 30,
+    mag: 22,
+    def: 13,
+    spd: 30,
+    exp: 29,
+    gold: 24,
+    weakness: "light",
+    pattern: ["feint", "double", "attack"],
+  },
+  bladeHawk: {
+    name: "カマイタチドリ",
+    sprite: "bladeHawk",
+    hp: 94,
+    mp: 16,
+    atk: 34,
+    mag: 25,
+    def: 14,
+    spd: 34,
+    exp: 32,
+    gold: 27,
+    weakness: "fire",
+    pattern: ["windCut", "double", "feint"],
+  },
+  windArmor: {
+    name: "フウジンヨロイ",
+    sprite: "windArmor",
+    hp: 148,
+    mp: 12,
+    atk: 35,
+    mag: 23,
+    def: 28,
+    spd: 10,
+    exp: 39,
+    gold: 33,
+    weakness: "light",
+    pattern: ["mirrorGuard", "heavy", "attack"],
+  },
+  stormDjinn: {
+    name: "アラシノジン",
+    sprite: "stormDjinn",
+    hp: 112,
+    mp: 34,
+    atk: 28,
+    mag: 38,
+    def: 16,
+    spd: 22,
+    exp: 38,
+    gold: 31,
+    weakness: "fire",
+    pattern: ["windBurst", "rootBind", "spiritDevour"],
+  },
+  arenaBulwark: {
+    name: "不動のバルガ",
+    sprite: "arenaBulwark",
+    elite: true,
+    hp: 285,
+    mp: 18,
+    atk: 36,
+    mag: 20,
+    def: 30,
+    spd: 8,
+    exp: 76,
+    gold: 68,
+    weakness: "light",
+    pattern: ["mirrorGuard", "heavy", "guard"],
+  },
+  arenaRaptor: {
+    name: "瞬脚のリュネ",
+    sprite: "arenaRaptor",
+    elite: true,
+    hp: 248,
+    mp: 24,
+    atk: 37,
+    mag: 24,
+    def: 16,
+    spd: 39,
+    exp: 76,
+    gold: 68,
+    weakness: "earth",
+    pattern: ["feint", "double", "windCut"],
+  },
+  arenaMage: {
+    name: "魔響のセレナ",
+    sprite: "arenaMage",
+    elite: true,
+    hp: 232,
+    mp: 58,
+    atk: 22,
+    mag: 43,
+    def: 15,
+    spd: 20,
+    exp: 80,
+    gold: 72,
+    weakness: "wind",
+    pattern: ["windBurst", "muteSong", "mirrorGuard"],
+  },
+  katoshiDuel: {
+    name: "風の剣士シホ",
+    sprite: "katoshiDuel",
+    boss: true,
+    hp: 390,
+    mp: 70,
+    atk: 40,
+    mag: 28,
+    def: 20,
+    spd: 38,
+    exp: 120,
+    gold: 100,
+    weakness: "light",
+    actions: ["feint", "windCut", "mirrorGuard", "duelRush"],
+  },
+  stormEye: {
+    name: "暴風の眼",
+    sprite: "stormEye",
+    hp: 172,
+    mp: 34,
+    atk: 27,
+    mag: 39,
+    def: 18,
+    spd: 20,
+    exp: 45,
+    gold: 34,
+    weakness: "light",
+    pattern: ["windBurst", "muteSong", "spiritDevour"],
+  },
+  tempestMirror: {
+    name: "颶風鏡ヴェントラ",
+    sprite: "tempestMirror",
+    boss: true,
+    hp: 820,
+    mp: 180,
+    atk: 40,
+    mag: 46,
+    def: 23,
+    spd: 26,
+    exp: 330,
+    gold: 390,
+    weakness: "light",
+    actions: ["attack", "mirrorGuard", "windBurst", "stormDive"],
+  },
 });
 
 export const EQUIP_SLOTS = Object.freeze(["weapon", "shield", "body", "accessory"]);
@@ -1738,6 +2205,31 @@ export const RUMORS = Object.freeze({
     text: "無響獣は炎・風・光の順に共鳴を変える。依代を崩すか、現在の響きへ弱点属性を合わせる。",
     region: "虹泉の心室",
   },
+  eastWindRoad: {
+    title: "雲より高い天翔け街道",
+    text: "虹風の峠の南東から、風の街カトシアと蒼天闘技場へ続く高原街道へ出られる。",
+    region: "虹風の峠・南東",
+  },
+  katoshia: {
+    title: "風を競う街カトシア",
+    text: "街では三つの予選を好きな順に突破した者だけが、風の剣士シホへ挑める。",
+    region: "風の街カトシア",
+  },
+  skyTournament: {
+    title: "三つの型を越える予選",
+    text: "不動は光、瞬脚は鈍足、魔響は風に弱い。順番ではなく、装備と役割の選択が勝敗を分ける。",
+    region: "蒼天闘技場",
+  },
+  towerSeal: {
+    title: "向かい合う二つの風向計",
+    text: "風哭きの塔では北と南の風向計を内側へ向けると、中央の昇降翼が動く。",
+    region: "風哭きの塔・下層",
+  },
+  stormCore: {
+    title: "鏡と二つの暴風眼",
+    text: "颶風鏡は暴風眼がある間、風圧障壁と反撃の構えを使う。二連撃で構えを崩し、大技の溜めは連携剣で散らせる。",
+    region: "風哭きの塔・天輪",
+  },
 });
 
 export const QUESTS = Object.freeze({
@@ -1790,6 +2282,21 @@ export const QUESTS = Object.freeze({
     name: "帰れない小さな灯",
     description: "虹風の峠で迷った精霊を見つけ、里の精霊守へ知らせる。",
     reward: "虹結びのお守り",
+  },
+  chapter4: {
+    name: "疾風の剣士と蒼天の塔",
+    description: "風を競う街で三つの型を越え、空の笑顔を奪う暴風を止める。",
+    main: true,
+  },
+  skyTournament: {
+    name: "蒼天三型試合",
+    description: "守り・速さ・魔法の予選を好きな順で突破し、風の剣士シホとの決勝へ進む。",
+    reward: "加藤史帆の加入と風哭きの塔への道",
+  },
+  lostFan: {
+    name: "向かい風の応援旗",
+    description: "天翔け街道で取り残された観客を見つけ、街で待つ姉へ知らせる。",
+    reward: "蒼天の記念章",
   },
 });
 

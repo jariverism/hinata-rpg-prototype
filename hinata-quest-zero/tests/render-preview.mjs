@@ -137,4 +137,46 @@ save("sarinaria-boss", (renderer) => {
   renderer.drawPartyBack("sarina", 281, 214, 1250);
 });
 
+save("katoshia-field", (renderer) => {
+  const map = MAPS.katoshia;
+  const camera = { x: 12 * 32, y: 3 * 32 };
+  for (let y = 2; y < 16; y += 1)
+    for (let x = 11; x < 33; x += 1)
+      renderer.drawTile(
+        map.tiles[y][x],
+        x * 32 - camera.x,
+        y * 32 - camera.y,
+        x,
+        y,
+        1250,
+      );
+  renderer.drawSpecial("windBoard", 18 * 32 - camera.x, 23 * 32 - camera.y, false, 1250);
+  renderer.drawCharacter("arenaMaster", 22 * 32 + 4 - camera.x, 8 * 32 + 1 - camera.y, "down", 1);
+  renderer.drawCharacter("katoshi", 24 * 32 + 4 - camera.x, 10 * 32 + 1 - camera.y, "left", 0);
+  renderer.drawCharacter("sarina", 21 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
+  renderer.drawCharacter("mirei", 22 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
+  renderer.drawCharacter("kumi", 23 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
+  renderer.drawCharacter("hero", 24 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
+});
+
+save("katoshia-boss", (renderer) => {
+  renderer.drawBattleBackground("windBoss", 1250);
+  const ctx = renderer.ctx;
+  ctx.save();
+  ctx.globalAlpha = 0.32;
+  ctx.strokeStyle = "#9de9ff";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.ellipse(410, 130, 86, 86, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  renderer.drawBattleEnemy("stormEye", 278, 151, 0.82, 1250);
+  renderer.drawBattleEnemy("tempestMirror", 410, 132, 1.08, 1250);
+  renderer.drawBattleEnemy("stormEye", 535, 151, 0.82, 1250);
+  renderer.drawPartyBack("hero", 65, 214, 1250);
+  renderer.drawPartyBack("kumi", 137, 214, 1250);
+  renderer.drawPartyBack("sarina", 209, 214, 1250);
+  renderer.drawPartyBack("katoshi", 281, 214, 1250);
+});
+
 console.log(output);

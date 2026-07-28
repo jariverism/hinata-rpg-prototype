@@ -484,14 +484,19 @@ test("第一章公開版のv5セーブに第二章データを補い、育成値
   oldSave.party.order = ["hero", "kumi"];
   delete oldSave.party.mirei;
   delete oldSave.party.sarina;
+  delete oldSave.party.katoshi;
   oldSave.gold = 345;
   oldSave.inventory.herb = 7;
   delete oldSave.inventory.happyBread;
   oldSave.flags.chapter1Clear = true;
   delete oldSave.flags.chapter2Started;
   delete oldSave.flags.mireiJoined;
+  delete oldSave.flags.chapter4Started;
+  delete oldSave.flags.katoshiJoined;
   delete oldSave.quests.chapter2;
+  delete oldSave.quests.chapter4;
   delete oldSave.rumors.mirelia;
+  delete oldSave.rumors.katoshia;
 
   const restored = normalizeState(JSON.parse(JSON.stringify(oldSave)));
   assert.equal(restored.name, "空色ファン");
@@ -509,6 +514,11 @@ test("第一章公開版のv5セーブに第二章データを補い、育成値
   assert.equal(restored.rumors.mirelia, false);
   assert.equal(restored.party.mirei.name, "美玲");
   assert.equal(restored.party.sarina.name, "紗理菜");
+  assert.equal(restored.party.katoshi.name, "史帆");
+  assert.equal(restored.flags.chapter4Started, false);
+  assert.equal(restored.flags.katoshiJoined, false);
+  assert.equal(restored.quests.chapter4, "locked");
+  assert.equal(restored.rumors.katoshia, false);
 });
 
 test("美玲の回復と炎スキルを使えば第二章ボスを攻略できる", async () => {
@@ -716,6 +726,199 @@ test("四人の属性・回復・防御役割を使えば第三章ボスを攻�
   }
   assert.ok(decisions < 180, "第三章ボス戦が有限ターンで終了する");
   assert.notEqual(game.mode, "gameover", "属性・防御・回復を使えば全滅しない");
+  assert.equal(game.state.victories, 1);
+});
+
+test("第三章の峠から第四章へ地続きで進み、自由順の大会・控え編成・二経路の塔・章終了まで通る", async () => {
+  const { game, document, window } = await createGame();
+  game.state.flags.prologueSeen = true;
+  game.state.flags.chapter1Clear = true;
+  game.state.flags.chapter2Started = true;
+  game.state.flags.chapter2Clear = true;
+  game.state.flags.chapter3Started = true;
+  game.state.flags.chapter3Clear = true;
+  game.state.flags.chapter3BossWon = true;
+  game.state.flags.kumiJoined = true;
+  game.state.flags.mireiJoined = true;
+  game.state.flags.sarinaJoined = true;
+  game.state.flags.postClear = true;
+  game.state.party.order = ["hero", "kumi", "mirei", "sarina"];
+  game.state.party.hero.level = 8;
+  game.state.party.hero.exp = 1536;
+  game.state.party.hero.atk = 38;
+  game.state.gold = 744;
+  game.state.inventory.herb = 7;
+  game.state.inventory.spiritNectar = 2;
+  game.state.map = "spiritPass";
+  game.state.x = 36;
+  game.state.y = 30;
+  game.buildMapEnemies();
+  game.setMode("map");
+
+  const southeast = game.currentMap().warps.find(
+    (warp) => warp.to === "windRoad" && warp.x === 36,
+  );
+  game.useWarp(southeast);
+  assert.equal(game.state.map, "windRoad", "第三章の峠から天翔け街道へ接続する");
+  assert.equal(game.state.party.hero.level, 8);
+  assert.equal(game.state.party.hero.exp, 1536);
+  assert.equal(game.state.party.hero.atk, 38);
+  assert.equal(game.state.gold, 744);
+  assert.equal(game.state.inventory.herb, 7);
+  assert.equal(game.state.quests.chapter4, "active");
+
+  window.__HQ0_TEST__.teleport("katoshia", 23, 10);
+  window.__HQ0_TEST__.talk("katoshi");
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.metKatoshi, true);
+  assert.equal(game.state.quests.skyTournament, "active");
+
+  // 魔法→守り→速さの順で挑み、予選が固定順ではないことを確認する。
+  for (const [story, enemy, flag, crest] of [
+    ["arenaEcho", "arenaMage", "arenaEchoWon", "echoCrest"],
+    ["arenaStone", "arenaBulwark", "arenaStoneWon", "stoneCrest"],
+    ["arenaSwift", "arenaRaptor", "arenaSwiftWon", "swiftCrest"],
+  ]) {
+    game.startBattle([enemy], { story, canEscape: false });
+    window.__HQ0_TEST__.winBattle();
+    drainDialogue(game, document);
+    assert.equal(game.state.flags[flag], true);
+    assert.equal(game.state.inventory[crest], 1);
+  }
+
+  window.__HQ0_TEST__.teleport("skyArena", 22, 15);
+  window.__HQ0_TEST__.special("arena-final");
+  drainDialogue(game, document);
+  assert.equal(game.mode, "battle");
+  assert.equal(game.battle.enemies[0].kind, "katoshiDuel");
+  window.__HQ0_TEST__.winBattle();
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.katoshiJoined, true);
+  assert.equal(game.state.flags.towerOpen, true);
+  assert.deepEqual(game.state.party.order, ["hero", "kumi", "mirei", "katoshi"]);
+  assert.equal(game.state.inventory.stormSigil, 1);
+
+  game.openMenu("party");
+  document.querySelector('[data-party-toggle="mirei"]').click();
+  document.querySelector('[data-party-toggle="sarina"]').click();
+  assert.deepEqual(
+    game.state.party.order,
+    ["hero", "kumi", "katoshi", "sarina"],
+    "加入後は町やフィールドで控えメンバーと交代できる",
+  );
+  game.closeMenu();
+
+  window.__HQ0_TEST__.teleport("windTower1", 10, 8);
+  window.__HQ0_TEST__.special("north-vane");
+  drainDialogue(game, document);
+  const upper = game.currentMap().warps.find((warp) => warp.to === "windTower2");
+  game.useWarp(upper);
+  drainDialogue(game, document);
+  assert.equal(game.state.map, "windTower1", "片方の風向計だけでは上層へ進めない");
+  window.__HQ0_TEST__.special("south-vane");
+  drainDialogue(game, document);
+  game.useWarp(upper);
+  assert.equal(game.state.map, "windTower2", "二経路の風向計を揃えると上層へ進める");
+
+  window.__HQ0_TEST__.special("chapter4-boss");
+  drainDialogue(game, document);
+  assert.equal(game.mode, "battle");
+  assert.deepEqual(
+    game.battle.enemies.map((enemy) => enemy.kind),
+    ["tempestMirror", "stormEye", "stormEye"],
+  );
+  window.__HQ0_TEST__.winBattle();
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.chapter4Clear, true);
+  assert.equal(game.state.quests.chapter4, "complete");
+  assert.equal(game.mode, "clear");
+  assert.equal(document.querySelector("#clear-heading").textContent, "疾風の剣士と蒼天の塔");
+
+  game.showSavePicker("clear");
+  document.querySelector('[data-save-slot="1"]').click();
+  game.goTitle();
+  game.openLoadScreen("title");
+  document.querySelector('[data-load-slot="1"]').click();
+  assert.equal(game.mode, "clear");
+  assert.equal(game.state.flags.chapter4Clear, true);
+  assert.equal(game.state.party.katoshi.name, "史帆");
+  assert.deepEqual(game.state.party.order, ["hero", "kumi", "katoshi", "sarina"]);
+});
+
+test("史帆の構え崩しと予告阻止、回復・防御・弱点攻撃を使えば第四章ボスを攻略できる", async () => {
+  const { game } = await createGame();
+  const hero = game.state.party.hero;
+  const kumi = game.state.party.kumi;
+  const sarina = game.state.party.sarina;
+  const katoshi = game.state.party.katoshi;
+  Object.assign(hero, { level: 8, hp: 122, maxHp: 122, mp: 48, maxMp: 48, atk: 39, def: 22, mag: 27, spd: 23 });
+  Object.assign(kumi, { level: 8, hp: 144, maxHp: 144, mp: 52, maxMp: 52, atk: 37, def: 29, mag: 15, spd: 19 });
+  Object.assign(sarina, { level: 8, hp: 108, maxHp: 108, mp: 82, maxMp: 82, atk: 18, def: 21, mag: 43, spd: 23 });
+  Object.assign(katoshi, { level: 8, hp: 108, maxHp: 108, mp: 70, maxMp: 70, atk: 36, def: 20, mag: 22, spd: 38 });
+  game.state.party.order = ["hero", "kumi", "sarina", "katoshi"];
+  game.state.flags.prologueSeen = true;
+  game.state.flags.katoshiJoined = true;
+  game.state.inventory.spiritNectar = 4;
+  game.state.inventory.galeTonic = 5;
+  game.state.inventory.happyBread = 4;
+  game.state.happy = 30;
+  game.setMode("map");
+  game.startBattle(["tempestMirror", "stormEye", "stormEye"], {
+    story: "chapter4Boss",
+    canEscape: false,
+  });
+
+  const mirror = game.battle.enemies.find((enemy) => enemy.kind === "tempestMirror");
+  mirror.status.counter = 2;
+  game.battle.telegraph = "stormDive";
+  game.executeSkill(katoshi, {
+    type: "skill",
+    id: "katoshiCombo",
+    target: mirror.id,
+    targetType: "enemy",
+  });
+  assert.equal(game.battle.telegraph, null, "コンビネーションが天落としの予告を中断する");
+  assert.equal(mirror.status.counter, 0, "史帆の連携剣が反撃の構えを崩す");
+
+  let decisions = 0;
+  while (game.mode === "battle" && decisions < 240) {
+    const actor = game.currentBattleActor();
+    if (!actor) break;
+    const alive = game.state.party.order
+      .map((id) => game.state.party[id])
+      .filter((member) => member.hp > 0);
+    const wounded = [...alive].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    const target =
+      game.battle.enemies.find((enemy) => enemy.kind === "stormEye" && enemy.hp > 0) ||
+      game.battle.enemies.find((enemy) => enemy.hp > 0);
+    const telegraph = game.battle.telegraph === "stormDive";
+    if (actor.id === "sarina" && wounded.hp / wounded.maxHp < 0.58 && actor.mp >= 5) {
+      game.commitPlan({ type: "skill", id: "sacredBell", targetType: "allAllies" });
+    } else if (actor.id === "sarina" && actor.mp >= 7) {
+      game.commitPlan({ type: "skill", id: "rainbowPrayer", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "katoshi" && telegraph && actor.mp >= 7) {
+      game.commitPlan({ type: "skill", id: "katoshiCombo", target: mirror.id, targetType: "enemy" });
+    } else if (actor.id === "katoshi" && actor.mp >= 11 && game.battle.enemies.filter((enemy) => enemy.hp > 0).length > 1) {
+      game.commitPlan({ type: "skill", id: "skyDance", targetType: "allEnemies" });
+    } else if (actor.id === "katoshi" && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "henyoSlash", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "kumi" && telegraph && actor.mp >= 7) {
+      game.commitPlan({ type: "skill", id: "formation", targetType: "allAllies" });
+    } else if (telegraph) {
+      game.commitPlan({ type: "guard" });
+    } else if (actor.id === "kumi" && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "skyThrust", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "hero" && actor.mp >= 3) {
+      game.commitPlan({ type: "skill", id: "auraBlade", target: target.id, targetType: "enemy" });
+    } else if (game.state.inventory.galeTonic > 0 && wounded.hp / wounded.maxHp < 0.48) {
+      game.commitPlan({ type: "item", id: "galeTonic", target: wounded.id, targetType: "ally" });
+    } else {
+      game.commitPlan({ type: "attack", target: target.id, targetType: "enemy" });
+    }
+    decisions += 1;
+  }
+  assert.ok(decisions < 240, "第四章ボス戦が有限ターンで終了する");
+  assert.notEqual(game.mode, "gameover", "構え・予告・回復・役割を使い分ければ全滅しない");
   assert.equal(game.state.victories, 1);
 });
 

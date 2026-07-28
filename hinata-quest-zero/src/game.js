@@ -30,6 +30,7 @@ import {
   migrateLegacy,
   normalizeState,
   ownsItem,
+  partyRoster,
   removeItem,
   serialize,
   stat,
@@ -62,6 +63,7 @@ const STATUS_NAMES = {
   rooted: "鈍足",
   silence: "沈黙",
   spiritWard: "精護",
+  evade: "回避",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -533,12 +535,19 @@ export class HinatiaGame {
           "rope",
           "boss",
           "boss2",
+          "boss3",
+          "boss4",
           "oven",
           "goldenWheat",
           "springWater",
           "sunYeast",
           "mireBoard",
           "granaryLever",
+          "arenaFinal",
+          "windVaneNorth",
+          "windVaneSouth",
+          "towerLever",
+          "windCamp",
         ].includes(special.type),
     );
     if (blockingSpecial) return false;
@@ -567,7 +576,10 @@ export class HinatiaGame {
       return true;
     }
     const warp = this.currentMap().warps.find((entry) => entry.x === nx && entry.y === ny);
-    if (warp?.requires && !this.state.flags[warp.requires]) {
+    const missingWarpRequirement =
+      (warp?.requires && !this.state.flags[warp.requires]) ||
+      warp?.requiresAll?.some((flag) => !this.state.flags[flag]);
+    if (missingWarpRequirement) {
       this.audio.sfx("no");
       this.dialogue({
         speaker: "SYSTEM",
@@ -599,6 +611,18 @@ export class HinatiaGame {
   }
 
   useWarp(warp) {
+    const missingRequirement =
+      (warp?.requires && !this.state.flags[warp.requires]) ||
+      warp?.requiresAll?.some((flag) => !this.state.flags[flag]);
+    if (missingRequirement) {
+      this.audio.sfx("no");
+      this.dialogue({
+        speaker: "SYSTEM",
+        portrait: "system",
+        text: warp.denied || "今は先へ進めない。",
+      });
+      return false;
+    }
     const from = this.state.map;
     if (from === "solaido" && warp.to === "highroad" && this.state.flags.metKumi && !this.state.flags.raidWon && !this.state.flags.raidReady) {
       this.state.flags.raidReady = true;
@@ -636,15 +660,21 @@ export class HinatiaGame {
         this.state.quests.chapter3 = "active";
         discoverRumor(this.state, "southTrail");
       }
-      if (["solaido", "mileria", "sarinaria"].includes(id)) {
+      if (id === "windRoad" && !this.state.flags.chapter4Started) {
+        this.state.flags.chapter4Started = true;
+        this.state.quests.chapter3 = "complete";
+        this.state.quests.chapter4 = "active";
+        discoverRumor(this.state, "eastWindRoad");
+      }
+      if (["solaido", "mileria", "sarinaria", "katoshia"].includes(id)) {
         this.state.lastSafe = { map: id, x, y, dir };
         this.audio.play("town");
-      } else if (["cave1", "cave2", "cave3", "oldWell", "granary1", "granary2", "spiritSanctum", "spiritHeart"].includes(id)) {
+      } else if (["cave1", "cave2", "cave3", "oldWell", "granary1", "granary2", "spiritSanctum", "spiritHeart", "windTower1", "windTower2"].includes(id)) {
         this.audio.play("cave");
-        const floor = { oldWell: 1, cave1: 1, cave2: 2, cave3: 3, granary1: 1, granary2: 2, spiritSanctum: 2, spiritHeart: 3 }[id] || 0;
+        const floor = { oldWell: 1, cave1: 1, cave2: 2, cave3: 3, granary1: 1, granary2: 2, spiritSanctum: 2, spiritHeart: 3, windTower1: 2, windTower2: 3 }[id] || 0;
         this.state.stats.deepestFloor = Math.max(this.state.stats.deepestFloor, floor);
       } else {
-        this.audio.play(["echoGrove", "whisperWood"].includes(id) ? "cave" : "field");
+        this.audio.play(["echoGrove", "whisperWood", "skyArena"].includes(id) ? "cave" : "field");
       }
       this.buildMapEnemies();
       this.setMode("map");
@@ -682,6 +712,11 @@ export class HinatiaGame {
     } else if (id === "spiritPass") {
       reveal("sarinaria", 7, 3, 17);
       reveal("whisperWood", 7, 47, 17);
+      reveal("windRoad", 7, 36, 31);
+    } else if (id === "windRoad") {
+      reveal("katoshia", 7, 25, 2);
+      reveal("skyArena", 7, 50, 18);
+      reveal("windTower1", 7, 36, 34);
     }
   }
 
@@ -1327,6 +1362,107 @@ export class HinatiaGame {
       const fresh = discoverRumor(this.state, "resonanceCore");
       simple("神域の木霊", "spirit", "奥の獣、響きを巡らす。炎、風、光。今の色と同じ音だけ、深く届く。" +
         (fresh ? "——『属性を巡らせる無響獣』の噂を記録した。" : ""));
+    } else if (id === "katoshi") {
+      if (!this.state.flags.metKatoshi) {
+        this.state.flags.metKatoshi = true;
+        this.state.quests.skyTournament = "active";
+        discoverRumor(this.state, "katoshia");
+        discoverRumor(this.state, "skyTournament");
+        this.dialogue([
+          {
+            speaker: "風の剣士",
+            portrait: "katoshi",
+            text: "風哭きの塔へ行きたい？　今の風は速すぎるよ。追いつけない人を連れてはいけない。",
+          },
+          {
+            speaker: this.state.name,
+            portrait: "hero",
+            text: "加藤史帆さん……。速くて強いのに、時々ふにゃっと力が抜ける。その剣の動き、覚えている。",
+          },
+          {
+            speaker: "風の剣士",
+            portrait: "katoshi",
+            text: "加藤……史帆。変な感じ。でも『へにょへにょ』は、もっと変な感じ……。どうして少し懐かしいんだろ。",
+          },
+          {
+            speaker: "史帆",
+            portrait: "katoshi",
+            text: "東の蒼天闘技場で三つの予選を越えてきて。順番は自由。全部の型を見せてもらったら、私が決勝で確かめる。",
+          },
+          {
+            speaker: "SYSTEM",
+            portrait: "system",
+            text: "メインクエスト『蒼天三型試合』が始まった。守り・速さ・魔法の予選は好きな順で挑める。",
+          },
+        ]);
+      } else if (!this.state.flags.katoshiJoined) {
+        const wins = ["arenaStoneWon", "arenaSwiftWon", "arenaEchoWon"]
+          .filter((flag) => this.state.flags[flag]).length;
+        simple(
+          "史帆",
+          "katoshi",
+          wins < 3
+            ? `予選は${wins}/3勝。得意な相手からでいいよ。苦手な型は装備や仲間を入れ替えて、また来ればいい。`
+            : "三つの勝印が揃ったね。闘技場の中央で待ってる。決勝は、速さだけじゃ勝てないよ。",
+        );
+      } else {
+        simple(
+          "史帆",
+          "katoshi",
+          this.state.flags.chapter4BossWon
+            ? "思い出した風は、前よりあったかい。次もみんなで、へにょへにょっと行こう。"
+            : "颶風鏡が反撃の構えを取ったら、私の二連撃で崩す。大技を溜めたらコンビネーションで風を散らすよ。",
+        );
+      }
+    } else if (id === "arenaMaster" || id === "arenaRegistrar") {
+      if (!this.state.flags.metKatoshi) {
+        simple("闘技場主", "arenaMaster", "決勝者を指名するのは風の剣士シホだ。まず街で本人と話してきな。");
+      } else {
+        this.state.flags.arenaEntered = true;
+        const wins = ["arenaStoneWon", "arenaSwiftWon", "arenaEchoWon"]
+          .filter((flag) => this.state.flags[flag]).length;
+        simple("闘技場主", "arenaMaster", `予選は${wins}/3勝。三人は場内の別々の場所にいる。順番も、途中で町へ戻るのも自由だ。`);
+      }
+    } else if (id === "arenaHealer") {
+      fullHeal(this.state);
+      simple("闘技場の癒やし手", "priest", "予選の傷は癒やした。相手の予告を見て、同じ手ばかり選ばないことだ。");
+    } else if (id === "windSmith") {
+      this.openShop("windArmory");
+    } else if (id === "windMerchant") {
+      this.openShop("windItem");
+    } else if (id === "windInn") {
+      this.openInn();
+    } else if (id === "windPriest") {
+      this.openChurch();
+    } else if (id === "windChild") {
+      simple("カトシアの子", "child", this.state.flags.chapter4BossWon
+        ? "風車がゆっくり回るようになった！　速い風も、そよ風も、どっちも楽しいね！"
+        : "みんな速い人ばかり応援するけど、転んだ人を待つ史帆お姉ちゃんが一番速いんだよ。");
+    } else if (id === "windCourier") {
+      const fresh = discoverRumor(this.state, "katoshia");
+      simple("風便りの配達人", "courier", "北がカトシア、東が闘技場だ。塔は南だが、暴風の切れ目を読める剣士しか門を抜けられない。" +
+        (fresh ? "——『風を競う街カトシア』の噂を記録した。" : ""));
+    } else if (id === "arenaFan") {
+      const fresh = discoverRumor(this.state, "skyTournament");
+      simple("闘技場の観客", "fan", "不動には光、瞬脚には足止め、魔響には風。三人とも弱点を隠しているが、予告は嘘をつかない。" +
+        (fresh ? "——『三つの型を越える予選』の噂を記録した。" : ""));
+    } else if (id === "lostFan") {
+      this.state.flags.lostFanRescued = true;
+      if (this.state.quests.lostFan === "locked") this.state.quests.lostFan = "active";
+      simple("取り残された観客", "fan", "応援旗を追って谷へ入ったら、風で戻れなくなった。街の姉さんに無事だと伝えて！");
+    } else if (id === "fanSister") {
+      if (this.state.quests.lostFan === "active" && this.state.flags.lostFanRescued) {
+        this.state.quests.lostFan = "complete";
+        this.state.stats.sidequests += 1;
+        addItem(this.state, "arenaMedal", 1);
+        this.dialogue([
+          { speaker: "観客の姉", portrait: "fan", text: "無事だったのね！　向かい風の中まで探してくれてありがとう。" },
+          { speaker: "SYSTEM", portrait: "system", text: "蒼天の記念章を手に入れた！" },
+        ]);
+      } else {
+        if (this.state.quests.lostFan === "locked") this.state.quests.lostFan = "active";
+        simple("観客の姉", "fan", "弟が応援旗を追って街道の南へ行ったきり戻らないの。塔へ続く苔の谷だと思う。");
+      }
     } else if (id === "lostMiner") {
       if (!this.state.flags.minerFound) {
         this.state.flags.minerFound = true;
@@ -1416,6 +1552,61 @@ export class HinatiaGame {
       ],
       () => {
         this.setMode("map");
+        this.refreshHud();
+        this.refreshInteractPrompt();
+        this.autosave();
+      },
+    );
+  }
+
+  completeKatoshiJoin(levelLines = []) {
+    this.state.flags.arenaFinalWon = true;
+    this.state.flags.katoshiJoined = true;
+    this.state.flags.rosterUnlocked = true;
+    this.state.flags.towerOpen = true;
+    this.state.quests.skyTournament = "complete";
+    addItem(this.state, "stormSigil", 1);
+    addItem(this.state, "galeTonic", 2);
+    if (!this.state.party.order.includes("katoshi")) {
+      const reserve = [...this.state.party.order].reverse().find((id) => id !== "hero") || "sarina";
+      this.state.party.order = this.state.party.order.filter((id) => id !== reserve);
+      this.state.party.order.push("katoshi");
+    }
+    fullHeal(this.state);
+    discoverRumor(this.state, "towerSeal");
+    this.audio.play("clear");
+    this.dialogue(
+      [
+        ...levelLines,
+        {
+          speaker: "史帆",
+          portrait: "katoshi",
+          text: "最後の一歩、私より先だった。速さだけじゃなくて、みんなの動きを見てたからだね。",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "史帆、やっぱりあなたなんだね。私たちと一緒に、風哭きの塔を止めよう。",
+        },
+        {
+          speaker: "史帆",
+          portrait: "katoshi",
+          text: "うん。へにょへにょ斬りって呼び方はまだ納得してないけど……みんなで行く。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "加藤史帆が仲間になった！　最大4人で戦うため、紗理菜が待機に回った。メニューの『なかま』から自由に編成できる。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "風塔の通行章を手に入れた。天翔け街道の南から風哭きの塔へ進める。",
+        },
+      ],
+      () => {
+        this.setMode("map");
+        this.audio.play("cave");
         this.refreshHud();
         this.refreshInteractPrompt();
         this.autosave();
@@ -1700,22 +1891,82 @@ export class HinatiaGame {
         this.audio.sfx("save");
         this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "精霊樹の根を動かし、神域入口への近道を開いた！" });
       }
+    } else if (special.type === "windBoard") {
+      if (this.state.quests.lostFan === "locked") this.state.quests.lostFan = "active";
+      this.dialogue([
+        { speaker: "大会掲示板", portrait: "system", text: "『応援旗を追って街道南へ入った少年が未帰還。見つけた者は姉へ知らせてほしい』" },
+        { speaker: "SYSTEM", portrait: "system", text: "サブクエスト『向かい風の応援旗』を記録した。" },
+      ]);
+    } else if (special.type === "windCamp") {
+      if (this.state.flags.windCampRested) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "風除けの布は裂れている。ここではもう休めない。" });
+      } else {
+        this.state.flags.windCampRested = true;
+        for (const member of activeParty(this.state)) {
+          member.hp = Math.min(maxHp(member), member.hp + Math.ceil(maxHp(member) * 0.32));
+          member.mp = Math.min(member.maxMp, member.mp + 10);
+        }
+        this.audio.sfx("heal");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "風除けの野営地で一度だけ休み、HPとMPが少し回復した。" });
+      }
+    } else if (special.type === "arenaFinal") {
+      const ready = ["arenaStoneWon", "arenaSwiftWon", "arenaEchoWon"]
+        .every((flag) => this.state.flags[flag]);
+      if (this.state.flags.arenaFinalWon) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "決勝円には、五人の足跡が風車の形に残っている。" });
+      } else if (!this.state.flags.metKatoshi) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "決勝円は静かだ。街で対戦相手の指名を受ける必要がある。" });
+      } else if (!ready) {
+        const wins = ["arenaStoneWon", "arenaSwiftWon", "arenaEchoWon"]
+          .filter((flag) => this.state.flags[flag]).length;
+        this.dialogue({ speaker: "闘技場主", portrait: "arenaMaster", text: `勝印は${wins}/3個。三つの型を越えた者だけが決勝円へ立てる。` });
+      } else {
+        this.startArenaFinal();
+      }
+    } else if (special.type === "windVaneNorth" || special.type === "windVaneSouth") {
+      const flag = special.type === "windVaneNorth" ? "windSealNorth" : "windSealSouth";
+      const label = special.type === "windVaneNorth" ? "北" : "南";
+      if (this.state.flags[flag]) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: `${label}の風向計は塔の中央を向いている。` });
+      } else {
+        this.state.flags[flag] = true;
+        this.audio.sfx("save");
+        const both = this.state.flags.windSealNorth && this.state.flags.windSealSouth;
+        this.dialogue({
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: both
+            ? `${label}の風向計を内側へ向けた。二つの風が重なり、中央の昇降翼が動き出した！`
+            : `${label}の風向計を塔の中央へ向けた。遠くでもう一つの風が逆らっている。`,
+        });
+      }
+    } else if (special.type === "towerLever") {
+      if (this.state.flags.towerShortcut) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "折り畳み翼は下層入口まで通じている。" });
+      } else {
+        this.state.flags.towerShortcut = true;
+        this.audio.sfx("save");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "折り畳み翼を開き、塔の入口へ戻る近道を作った！" });
+      }
     } else if (special.type === "boss") {
       this.startChapterBoss();
     } else if (special.type === "boss2") {
       this.startChapter2Boss();
     } else if (special.type === "boss3") {
       this.startChapter3Boss();
+    } else if (special.type === "boss4") {
+      this.startChapter4Boss();
     }
   }
 
   openInn() {
-    const cost = 24;
+    const cost = this.state.map === "katoshia" ? 42 : 24;
     const isMirelia = this.state.map === "mileria";
     const isSarinaria = this.state.map === "sarinaria";
+    const isKatoshia = this.state.map === "katoshia";
     this.panelContext = { type: "inn", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "INN";
-    this.ui.panelTitle.textContent = isSarinaria ? "木漏れ日の宿" : isMirelia ? "麦灯り亭" : "青鳥亭";
+    this.ui.panelTitle.textContent = isKatoshia ? "風見鶏の宿" : isSarinaria ? "木漏れ日の宿" : isMirelia ? "麦灯り亭" : "青鳥亭";
     this.ui.panelGold.textContent = `${this.state.gold} G`;
     this.ui.panelBody.innerHTML = `
       <div class="info-card">
@@ -1734,9 +1985,10 @@ export class HinatiaGame {
     const cost = fallen.length * 20;
     const isMirelia = this.state.map === "mileria";
     const isSarinaria = this.state.map === "sarinaria";
+    const isKatoshia = this.state.map === "katoshia";
     this.panelContext = { type: "church", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "SANCTUARY";
-    this.ui.panelTitle.textContent = isSarinaria ? "精霊樹の祈り場" : isMirelia ? "麦穂の礼拝堂" : "風鐘の礼拝堂";
+    this.ui.panelTitle.textContent = isKatoshia ? "蒼天の礼拝堂" : isSarinaria ? "精霊樹の祈り場" : isMirelia ? "麦穂の礼拝堂" : "風鐘の礼拝堂";
     this.ui.panelGold.textContent = `${this.state.gold} G`;
     this.ui.panelBody.innerHTML = `
       <div class="info-card">
@@ -1822,7 +2074,7 @@ export class HinatiaGame {
       this.renderShop();
       this.refreshHud();
     } else if (target.dataset.panel === "inn-stay") {
-      const cost = 24;
+      const cost = this.state.map === "katoshia" ? 42 : 24;
       if (this.state.gold < cost) return;
       this.state.gold -= cost;
       fullHeal(this.state);
@@ -1905,6 +2157,11 @@ export class HinatiaGame {
       if (totems[0]) totems[0].weakness = "wind";
       if (totems[1]) totems[1].weakness = "light";
     }
+    if (group.includes("tempestMirror")) {
+      const eyes = enemies.filter((enemy) => enemy.kind === "stormEye");
+      if (eyes[0]) eyes[0].weakness = "light";
+      if (eyes[1]) eyes[1].weakness = "fire";
+    }
     for (const member of activeParty(this.state)) member.status = {};
     this.battle = {
       enemies,
@@ -1916,11 +2173,12 @@ export class HinatiaGame {
       submenu: null,
       pending: null,
       selectedButton: 0,
-      barrier: group.includes("smileEater") || group.includes("blightHeart") || group.includes("hushAvatar"),
+      barrier: group.includes("smileEater") || group.includes("blightHeart") || group.includes("hushAvatar") || group.includes("tempestMirror"),
       barrierBrokenRounds:
         group.includes("blightHeart") && this.state.flags.breadChoice === "crisp" ? 2 : 0,
       telegraph: null,
       resonance: group.includes("hushAvatar") ? "fire" : null,
+      windBreakRounds: 0,
       enemyIntents: [],
       formation: false,
       log: options.preemptive
@@ -1932,7 +2190,7 @@ export class HinatiaGame {
     this.state.battles += 1;
     this.setMode("battle");
     this.audio.play(
-      group.some((id) => ["smileEater", "gloomMoth", "blightHeart", "blightScarecrow", "hushAvatar", "rippleGuardian", "gustGuardian", "prismGuardian"].includes(id))
+      group.some((id) => ["smileEater", "gloomMoth", "blightHeart", "blightScarecrow", "hushAvatar", "rippleGuardian", "gustGuardian", "prismGuardian", "arenaBulwark", "arenaRaptor", "arenaMage", "katoshiDuel", "tempestMirror"].includes(id))
         ? "boss"
         : "battle",
     );
@@ -1986,6 +2244,8 @@ export class HinatiaGame {
           ? "飢渇核が地中の瘴気を集め、激しく脈打っている……！"
         : this.battle.telegraph === "silenceNova"
           ? "無響獣がすべての音を吸い込み、心室が無音に沈んでいく……！"
+        : this.battle.telegraph === "stormDive"
+          ? "颶風鏡が塔の風を一点へ集め、天落としの軌道へ入った……！"
         : danger
           ? `${danger}${this.resonanceLabel()}　— ${alive[0].name}の行動を選んでください。`
           : `${alive[0].name}の行動を選んでください。${this.resonanceLabel()}`;
@@ -2048,7 +2308,7 @@ export class HinatiaGame {
         );
       add("もどる", { battle: "back" });
     } else if (view === "items") {
-      const usable = ["herb", "happyBread", "spiritNectar", "moonwort", "auraDrop", "brightBell", "smokeBomb"];
+      const usable = ["herb", "happyBread", "spiritNectar", "galeTonic", "moonwort", "auraDrop", "brightBell", "smokeBomb"];
       for (const id of usable) {
         const count = this.state.inventory[id] || 0;
         add(
@@ -2113,7 +2373,7 @@ export class HinatiaGame {
     }
     if (button.dataset.item) {
       const id = button.dataset.item;
-      const targetType = ["herb", "spiritNectar", "moonwort", "auraDrop"].includes(id)
+      const targetType = ["herb", "spiritNectar", "galeTonic", "moonwort", "auraDrop"].includes(id)
         ? "ally"
         : id === "smokeBomb"
           ? "none"
@@ -2237,6 +2497,15 @@ export class HinatiaGame {
       this.hitEnemy(target, damage, "physical");
       this.state.happy = clamp(this.state.happy + 2, 0, 100);
       this.battle.log = `${actor.name}の攻撃！　${target.name}に${damage}のダメージ。`;
+      if (target.hp > 0 && target.status?.counter) {
+        const returned = this.hurtParty(
+          actor,
+          this.calculateDamage(target.atk, this.effectiveStat(actor, "def"), 0.82),
+          "wind",
+        );
+        target.status.counter = 0;
+        this.battle.log += `　反風の構え！　${actor.name}へ${returned}の反撃。`;
+      }
     } else if (action.type === "guard") {
       actor.status.guard = 1;
       this.state.happy = clamp(this.state.happy + 6, 0, 100);
@@ -2402,6 +2671,66 @@ export class HinatiaGame {
       this.state.stats.healingDone += total;
       this.battle.log = `サリマカシー！　味方全体が合計${total}回復し、精霊の加護に包まれた。`;
       this.audio.sfx("win");
+    } else if (skill.effect === "henyoSlash") {
+      const target = this.findEnemyTarget(action.target);
+      if (!target) return;
+      const attack = this.effectiveStat(actor, "atk") + Math.floor(this.effectiveStat(actor, "spd") * 0.3);
+      let total = 0;
+      target.guarding = false;
+      target.status.counter = 0;
+      this.battle.windBreakRounds = Math.max(2, this.battle.windBreakRounds);
+      this.battle.barrierBrokenRounds = Math.max(2, this.battle.barrierBrokenRounds);
+      for (let hit = 0; hit < 2; hit += 1) {
+        const damage = this.calculateDamage(attack, this.enemyStat(target, "def"), skill.power);
+        total += damage;
+        this.hitEnemy(target, damage, "wind");
+      }
+      this.state.happy = clamp(this.state.happy + 12, 0, 100);
+      this.battle.log = `へにょへにょ斬り！　力を抜いた二連撃が構えをほどき、${target.name}に合計${total}のダメージ。`;
+      this.audio.sfx("hit");
+    } else if (skill.effect === "galeStep") {
+      const target = this.state.party[action.target];
+      if (!target) return;
+      target.status.haste = 3;
+      target.status.evade = 3;
+      target.status.rooted = 0;
+      this.state.happy = clamp(this.state.happy + 10, 0, 100);
+      this.battle.log = `疾風のステップ！　${target.name}の素早さと回避が上がった。`;
+      this.audio.sfx("magic");
+    } else if (skill.effect === "katoshiCombo") {
+      const target = this.findEnemyTarget(action.target);
+      if (!target) return;
+      const attack = this.effectiveStat(actor, "atk") + Math.floor(this.effectiveStat(actor, "spd") * 0.45);
+      const damage = this.calculateDamage(attack, this.enemyStat(target, "def"), skill.power);
+      const interrupted = this.battle.telegraph === "stormDive";
+      if (interrupted) this.battle.telegraph = null;
+      this.battle.windBreakRounds = Math.max(2, this.battle.windBreakRounds);
+      this.battle.barrierBrokenRounds = Math.max(2, this.battle.barrierBrokenRounds);
+      target.status.counter = 0;
+      this.hitEnemy(target, damage, "wind");
+      this.state.happy = clamp(this.state.happy + 14, 0, 100);
+      this.battle.log = `かとしコンビネーション！　${target.name}に${damage}のダメージ${interrupted ? "、天落としの風を散らした！" : "。"}`;
+      this.audio.sfx("win");
+    } else if (skill.effect === "skyDance") {
+      let total = 0;
+      for (const target of this.battle.enemies.filter((enemy) => enemy.hp > 0)) {
+        target.guarding = false;
+        target.status.counter = 0;
+        for (let hit = 0; hit < 3; hit += 1) {
+          const damage = this.calculateDamage(
+            this.effectiveStat(actor, "atk") + Math.floor(this.effectiveStat(actor, "spd") * 0.25),
+            this.enemyStat(target, "def"),
+            skill.power * 0.52,
+          );
+          total += damage;
+          this.hitEnemy(target, damage, "wind");
+        }
+      }
+      this.battle.barrierBrokenRounds = Math.max(2, this.battle.barrierBrokenRounds);
+      this.state.happy = clamp(this.state.happy + 18, 0, 100);
+      this.battle.log = `天空の剣舞！　三筋の風が敵全体を駆け抜け、合計${total}のダメージ。`;
+      this.audio.sfx("win");
+      this.flash();
     } else if (skill.effect === "haste") {
       for (const member of activeParty(this.state)) {
         member.status.haste = 3;
@@ -2466,6 +2795,16 @@ export class HinatiaGame {
       this.state.happy = clamp(this.state.happy + 8, 0, 100);
       this.battle.log = `${target.name}のHPが${healed}、MPが${restored}回復し、沈黙が消えた。`;
       this.audio.sfx("heal");
+    } else if (action.id === "galeTonic") {
+      const target = this.state.party[action.target];
+      const healed = Math.min(45, maxHp(target) - target.hp);
+      target.hp += healed;
+      target.status.rooted = 0;
+      target.status.haste = 3;
+      this.state.stats.healingDone += healed;
+      this.state.happy = clamp(this.state.happy + 8, 0, 100);
+      this.battle.log = `${target.name}のHPが${healed}回復し、追風で素早さが上がった。`;
+      this.audio.sfx("heal");
     } else if (action.id === "happyBread") {
       let total = 0;
       for (const member of activeParty(this.state).filter((entry) => entry.hp > 0)) {
@@ -2526,6 +2865,16 @@ export class HinatiaGame {
       if (this.state.happy >= 45 && this.battle.round % 4 === 1) return "spiritDevour";
       return this.battle.round % 2 ? "muteSong" : "elementBurst";
     }
+    if (enemy.kind === "tempestMirror") {
+      if (this.battle.telegraph === "stormDive") return "stormDive";
+      if (this.battle.round % 4 === 2) return "telegraphStorm";
+      if (this.battle.round % 3 === 0) return "mirrorGuard";
+      return this.battle.round % 2 ? "windBurst" : "attack";
+    }
+    if (enemy.kind === "katoshiDuel") {
+      const cycle = ["feint", "mirrorGuard", "duelRush", "windCut"];
+      return cycle[(this.battle.round - 1) % cycle.length];
+    }
     if (opening) return "attack";
     if (enemy.pattern?.length)
       return enemy.pattern[
@@ -2567,6 +2916,13 @@ export class HinatiaGame {
       spiritDevour: "精霊力を吸収する",
       telegraphSilence: "大技の準備",
       silenceNova: "無音の大波",
+      feint: "狙いを惑わす",
+      windCut: "風の斬撃",
+      windBurst: "全体へ暴風",
+      mirrorGuard: "反撃の構え",
+      duelRush: "高速連撃",
+      telegraphStorm: "天落としの準備",
+      stormDive: "天落とし",
     }[action] || "こちらを狙う";
   }
 
@@ -2600,6 +2956,12 @@ export class HinatiaGame {
     if (action === "telegraphSilence") {
       this.battle.telegraph = "silenceNova";
       this.battle.log = "無響獣が鈴も声も吸い込み、巨大な無音の波を溜め始めた……！";
+      this.audio.sfx("no");
+      return;
+    }
+    if (action === "telegraphStorm") {
+      this.battle.telegraph = "stormDive";
+      this.battle.log = "颶風鏡が塔の風を一点へ集め、天落としの軌道へ入った……！";
       this.audio.sfx("no");
       return;
     }
@@ -2653,6 +3015,26 @@ export class HinatiaGame {
       }
       this.state.happy = Math.max(0, this.state.happy - 18);
       this.battle.log = `無音の大波！　味方全体に合計${total}のダメージ。技の声が奪われる！`;
+      this.shake();
+      return;
+    }
+    if (action === "stormDive") {
+      if (this.battle.telegraph !== "stormDive") {
+        this.battle.log = "史帆の連携剣で風の軌道は散り、天落としは不発に終わった！";
+        return;
+      }
+      this.battle.telegraph = null;
+      let total = 0;
+      for (const member of living) {
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag, this.effectiveStat(member, "def"), 1.26),
+          "wind",
+        );
+        if (!member.status.guard && !member.status.formation) member.status.rooted = 2;
+      }
+      this.state.happy = Math.max(0, this.state.happy - 16);
+      this.battle.log = `天落とし！　味方全体に合計${total}のダメージ。暴風で足を取られた！`;
       this.shake();
       return;
     }
@@ -2844,6 +3226,51 @@ export class HinatiaGame {
         if (Math.random() < 0.4) member.status.auraDown = 2;
       this.battle.log = `${enemy.name}が精霊とハッピーオーラを吸収し、${heal}回復した！`;
       this.audio.sfx("no");
+    } else if (action === "feint") {
+      target.status.rooted = 2;
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.atk, this.effectiveStat(target, "def"), 0.7),
+        "physical",
+      );
+      this.battle.log = `${enemy.name}の幻惑歩法！　${target.name}に${damage}、足運びを乱した。`;
+    } else if (action === "windCut") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.atk, this.effectiveStat(target, "def"), 1.22),
+        "wind",
+      );
+      this.battle.log = `${enemy.name}の風切り！　${target.name}に${damage}のダメージ。`;
+      this.shake();
+    } else if (action === "windBurst") {
+      let total = 0;
+      for (const member of living)
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag, this.effectiveStat(member, "def"), 0.7),
+          "wind",
+        );
+      this.battle.log = `${enemy.name}の暴風波！　味方全体に合計${total}のダメージ。`;
+      this.shake();
+    } else if (action === "mirrorGuard") {
+      enemy.guarding = true;
+      enemy.status.counter = 2;
+      this.battle.log = `${enemy.name}は風を鏡のように張り、通常攻撃への反撃を構えた。`;
+      this.audio.sfx("no");
+    } else if (action === "duelRush") {
+      const first = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.atk, this.effectiveStat(target, "def"), 0.82),
+        "wind",
+      );
+      const next = living.find((member) => member.id !== target.id) || target;
+      const second = this.hurtParty(
+        next,
+        this.calculateDamage(enemy.atk, this.effectiveStat(next, "def"), 0.74),
+        "wind",
+      );
+      this.battle.log = `${enemy.name}の疾風連撃！　二人へ合計${first + second}のダメージ。`;
+      this.shake();
     }
   }
 
@@ -2877,6 +3304,7 @@ export class HinatiaGame {
       }
     }
     if (this.battle.barrierBrokenRounds > 0) this.battle.barrierBrokenRounds -= 1;
+    if (this.battle.windBreakRounds > 0) this.battle.windBreakRounds -= 1;
     if (this.battle.resonance) {
       const cycle = ["fire", "wind", "light"];
       this.battle.resonance = cycle[(cycle.indexOf(this.battle.resonance) + 1) % cycle.length];
@@ -2936,6 +3364,15 @@ export class HinatiaGame {
           damage = Math.max(1, Math.round(damage * 0.72));
       }
     }
+    if (enemy.kind === "tempestMirror" && this.battle.barrier) {
+      const eyes = this.battle.enemies.some(
+        (entry) => entry.kind === "stormEye" && entry.hp > 0,
+      );
+      if (eyes && this.battle.windBreakRounds <= 0)
+        damage = Math.max(1, Math.round(damage * 0.34));
+      else if (eyes)
+        damage = Math.max(1, Math.round(damage * 0.78));
+    }
     if (enemy.guarding && enemy.weakness !== element)
       damage = Math.max(1, Math.round(damage * 0.58));
     if (enemy.weakness === element) {
@@ -2979,9 +3416,27 @@ export class HinatiaGame {
       this.battle.barrier = false;
       this.battle.log += "　二つの依代が砕け、無響獣を守る沈黙が消えた！";
     }
+    if (
+      enemy.kind === "stormEye" &&
+      enemy.hp <= 0 &&
+      !this.battle.enemies.some(
+        (entry) => entry !== enemy && entry.kind === "stormEye" && entry.hp > 0,
+      )
+    ) {
+      this.battle.barrier = false;
+      this.battle.log += "　二つの暴風眼が消え、颶風鏡の風圧障壁が砕けた！";
+    }
   }
 
   hurtParty(member, amount, _element = "physical") {
+    if (
+      member.status.evade &&
+      ["physical", "wind"].includes(_element) &&
+      Math.random() < 0.48
+    ) {
+      this.audio.sfx("ok");
+      return 0;
+    }
     let damage = amount;
     if (member.status.guard) damage *= 0.48;
     if (member.status.formation) damage *= 0.5;
@@ -2989,6 +3444,8 @@ export class HinatiaGame {
     if (member.status.spiritWard && _element !== "physical") damage *= 0.58;
     const shield = ITEMS[member.equipment.shield];
     if (shield?.resist === "fear" && _element === "dark") damage *= 0.82;
+    const body = ITEMS[member.equipment.body];
+    if (body?.resist === _element) damage *= 0.72;
     damage = Math.max(1, Math.round(damage));
     member.hp = Math.max(0, member.hp - damage);
     this.damageNumbers.push({ side: "party", id: member.id, amount: damage, born: performance.now() });
@@ -3066,12 +3523,18 @@ export class HinatiaGame {
       this.finishSpiritTrial(story, levelLines);
     } else if (story === "chapter3Boss") {
       this.finishChapter3Boss(levelLines);
+    } else if (["arenaStone", "arenaSwift", "arenaEcho"].includes(story)) {
+      this.finishArenaTrial(story, levelLines);
+    } else if (story === "arenaFinal") {
+      this.completeKatoshiJoin(levelLines);
+    } else if (story === "chapter4Boss") {
+      this.finishChapter4Boss(levelLines);
     } else {
       this.setMode("map");
       this.audio.play(
-        ["solaido", "mileria", "sarinaria"].includes(this.state.map)
+        ["solaido", "mileria", "sarinaria", "katoshia"].includes(this.state.map)
           ? "town"
-          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart"].includes(this.state.map)
+          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart", "skyArena", "windTower1", "windTower2"].includes(this.state.map)
             ? "cave"
             : "field",
       );
@@ -3397,6 +3860,135 @@ export class HinatiaGame {
     );
   }
 
+  finishArenaTrial(story, levelLines = []) {
+    const config = {
+      arenaStone: ["arenaStoneWon", "stoneCrest", "不動のバルガ", "堅陣の勝印"],
+      arenaSwift: ["arenaSwiftWon", "swiftCrest", "瞬脚のリュネ", "瞬脚の勝印"],
+      arenaEcho: ["arenaEchoWon", "echoCrest", "魔響のセレナ", "魔響の勝印"],
+    }[story];
+    this.state.flags[config[0]] = true;
+    addItem(this.state, config[1], 1);
+    const wins = ["arenaStoneWon", "arenaSwiftWon", "arenaEchoWon"]
+      .filter((flag) => this.state.flags[flag]).length;
+    this.audio.play("cave");
+    this.dialogue(
+      [
+        ...levelLines,
+        { speaker: config[2], portrait: "arenaMaster", text: "見事だ。得意な型を押しつけるだけでは、この先の風は読めない。" },
+        { speaker: "SYSTEM", portrait: "system", text: `${config[3]}を手に入れた！　予選は${wins}/3勝。` },
+        ...(wins === 3
+          ? [{ speaker: "闘技場主", portrait: "arenaMaster", text: "三つの勝印が揃った！　中央の決勝円で、風の剣士シホが待っている。" }]
+          : []),
+      ],
+      () => {
+        this.setMode("map");
+        this.refreshHud();
+        this.refreshInteractPrompt();
+        this.autosave();
+      },
+    );
+  }
+
+  startArenaFinal() {
+    this.dialogue(
+      [
+        {
+          speaker: "史帆",
+          portrait: "katoshi",
+          text: "守り、速さ、魔法。全部見てきた顔だね。じゃあ最後は、私の風に追いついて。",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "史帆は反撃の構えから一気に間合いを詰める。通常攻撃だけで押さず、予告と弱点を見て！",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "決勝は全員で挑める。反撃の構えには属性技、疾風連撃には防御と回復を合わせよう。",
+        },
+      ],
+      () => this.startBattle(["katoshiDuel"], { story: "arenaFinal", canEscape: false }),
+    );
+  }
+
+  startChapter4Boss() {
+    if (this.state.flags.chapter4BossWon) {
+      this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "天輪には穏やかな風が巡り、空色の羽根がゆっくり舞っている。" });
+      return;
+    }
+    if (!this.state.flags.katoshiJoined) {
+      this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "暴風の鏡へ近づけない。風の切れ目を読める剣士が必要だ。" });
+      return;
+    }
+    this.state.flags.chapter4BossSeen = true;
+    discoverRumor(this.state, "stormCore");
+    this.dialogue(
+      [
+        {
+          speaker: "颶風鏡ヴェントラ",
+          portrait: "system",
+          text: "遅レル者ハ置イテイケ。立チ止マレバ、価値ハナイ。速サダケガ空ヲ支配スル。",
+        },
+        {
+          speaker: "史帆",
+          portrait: "katoshi",
+          text: "速くても、一人じゃ遠くまで行けない。待つことも、隣に合わせることも、私の速さだから。",
+        },
+        {
+          speaker: "紗理菜",
+          portrait: "sarina",
+          text: "二つの暴風眼が鏡を守っています。反撃の構えと大技の予告を、みんなで声に出してつなぎましょう。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "暴風眼がある間、颶風鏡の風圧障壁は強い。史帆の二連撃で構えを崩し、コンビネーションで『天落とし』の溜めを中断できる。",
+        },
+      ],
+      () => this.startBattle(["tempestMirror", "stormEye", "stormEye"], {
+        story: "chapter4Boss",
+        canEscape: false,
+      }),
+    );
+  }
+
+  finishChapter4Boss(levelLines = []) {
+    this.state.flags.chapter4BossWon = true;
+    this.state.flags.chapter4Clear = true;
+    this.state.flags.postClear = false;
+    this.state.quests.chapter4 = "complete";
+    this.state.happy = 100;
+    fullHeal(this.state);
+    this.audio.play("clear");
+    this.dialogue(
+      [
+        ...levelLines,
+        {
+          speaker: "史帆",
+          portrait: "katoshi",
+          text: "思い出した。自分だけ先へ行くんじゃなくて、隣の人と笑ってゴールするのが好きだった。",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "速いのにみんなを待てる。それが史帆の強さだよ。ちゃんと戻ってきてくれて嬉しい。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "激しい風が五人の声にほどけ、四つ目のハッピーオーラの欠片へ結晶した。",
+        },
+        {
+          speaker: "史帆",
+          portrait: "katoshi",
+          text: "次の風が吹くまで、街道も大会も自由に回ろう。編成を変えたら、戦い方も全然変わるよ。",
+        },
+      ],
+      () => this.showChapterClear(4),
+    );
+  }
+
   finishDefeat() {
     if (!this.battle) return;
     this.battle.phase = "defeat";
@@ -3421,7 +4013,7 @@ export class HinatiaGame {
     this.state.happy = Math.min(35, this.state.happy);
     this.buildMapEnemies();
     this.setMode("map");
-    this.audio.play(["solaido", "mileria", "sarinaria"].includes(safe.map) ? "town" : "field");
+    this.audio.play(["solaido", "mileria", "sarinaria", "katoshia"].includes(safe.map) ? "town" : "field");
     this.refreshHud();
     this.showArea();
     this.dialogue({
@@ -3442,7 +4034,7 @@ export class HinatiaGame {
     this.battle = null;
     this.setMode("map");
     this.audio.play(
-      ["cave1", "cave2", "cave3", "oldWell", "echoGrove"].includes(this.state.map)
+      ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart", "skyArena", "windTower1", "windTower2"].includes(this.state.map)
         ? "cave"
         : "field",
     );
@@ -3552,8 +4144,12 @@ export class HinatiaGame {
   }
 
   renderPartyMenu() {
-    this.ui.menuBody.innerHTML = `<div class="card-grid">${activeParty(this.state)
+    const canArrange = this.state.flags.rosterUnlocked;
+    this.ui.menuBody.innerHTML = `${canArrange
+      ? `<div class="info-card" style="margin-bottom:7px"><h3>隊列編成　${this.state.party.order.length}/4人</h3><p>戦闘に参加する仲間は最大4人。先に編成中の仲間を外すと、待機中の仲間を加えられます。主人公は外せません。</p></div>`
+      : ""}<div class="card-grid">${partyRoster(this.state)
       .map((member) => {
+        const active = this.state.party.order.includes(member.id);
         const eq = EQUIP_SLOTS.map(
           (slot) => `${SLOT_NAMES[slot]}：${ITEMS[member.equipment[slot]]?.name || "なし"}`,
         ).join(" / ");
@@ -3562,7 +4158,7 @@ export class HinatiaGame {
           .map((skill) => skill.name)
           .join("・");
         return `<article class="info-card">
-          <h3>${member.name} <span class="tag">${member.role}</span> Lv${member.level}</h3>
+          <h3>${member.name} <span class="tag">${member.role}</span> <span class="tag ${active ? "gold" : ""}">${active ? "編成中" : "待機"}</span> Lv${member.level}</h3>
           <p>HP ${member.hp}/${maxHp(member)}　MP ${member.mp}/${member.maxMp}　次のLvまで ${Math.max(0, expNext(member.level) - member.exp)} EXP</p>
           <div class="stat-grid">
             <span>こうげき<b>${stat(member, "atk")}</b></span>
@@ -3572,6 +4168,9 @@ export class HinatiaGame {
           </div>
           <p>${eq}</p>
           <p>特技：${skills || "なし"}</p>
+          ${canArrange && member.id !== "hero"
+            ? `<button data-party-toggle="${member.id}">${active ? "待機にする" : "隊列に加える"}</button>`
+            : ""}
         </article>`;
       })
       .join("")}</div>
@@ -3618,7 +4217,22 @@ export class HinatiaGame {
       return "神域の奥、虹泉の心室へ。七色の精霊鈴と回復道具を確認しよう。";
     if (!this.state.flags.chapter3BossWon)
       return "無響獣の共鳴表示へ炎・風・光を合わせ、大技には精霊の守りを使おう。";
-    return "第三章を達成した。残る依頼や宝箱を探し、次の地域へ備えよう。";
+    if (!this.state.flags.chapter4Started)
+      return "虹風の峠の南東へ。無音の嵐が消え、天翔け街道へ進める。";
+    if (!this.state.flags.metKatoshi)
+      return "天翔け街道を北へ進み、風の街カトシアで風の剣士を探そう。";
+    if (!this.state.flags.katoshiJoined) {
+      const count = ["arenaStoneWon", "arenaSwiftWon", "arenaEchoWon"]
+        .filter((flag) => this.state.flags[flag]).length;
+      return `蒼天闘技場の予選は${count}/3勝。三人へ好きな順で挑み、揃ったら中央の決勝円へ。`;
+    }
+    if (!this.state.flags.windSealNorth || !this.state.flags.windSealSouth)
+      return "街道南の風哭きの塔へ。下層の北と南にある風向計を、両方とも中央へ向ける。";
+    if (!this.state.flags.chapter4BossSeen)
+      return "二つの風向計で昇降翼が動いた。塔の天輪へ上がり、暴風の鏡を探そう。";
+    if (!this.state.flags.chapter4BossWon)
+      return "暴風眼を弱点で崩す。反撃にはへにょへにょ斬り、大技の溜めにはコンビネーション。";
+    return "第四章を達成した。待機メンバーを編成し直し、残る依頼や宝箱を探そう。";
   }
 
   renderRumorsMenu() {
@@ -3626,6 +4240,9 @@ export class HinatiaGame {
       "chapter1",
       "chapter2",
       "chapter3",
+      "chapter4",
+      "skyTournament",
+      "lostFan",
       "threeChimes",
       "lostSpirit",
       "miracleBread",
@@ -3673,7 +4290,7 @@ export class HinatiaGame {
         .filter(([, quantity]) => quantity > 0)
         .map(([id, quantity]) => {
           const item = ITEMS[id];
-          const fieldUsable = ["herb", "happyBread", "spiritNectar", "moonwort", "auraDrop", "torch", "wing", "lifeSeed"].includes(id);
+          const fieldUsable = ["herb", "happyBread", "spiritNectar", "galeTonic", "moonwort", "auraDrop", "torch", "wing", "lifeSeed"].includes(id);
           return `<div class="list-row">
             <div><h3>${item.name} ×${quantity} <span class="tag">${this.itemTypeName(item.type)}</span></h3><p>${item.description}</p></div>
             ${fieldUsable ? `<button data-use-item="${id}">使う</button>` : ""}
@@ -3736,6 +4353,18 @@ export class HinatiaGame {
       target.status.silence = 0;
       this.toast(`${target.name}のHPが${healed}、MPが${restored}回復`);
       this.audio.sfx("heal");
+    } else if (id === "galeTonic") {
+      const target = activeParty(this.state)
+        .filter((member) => member.hp > 0 && (member.hp < maxHp(member) || member.status.rooted))
+        .sort((a, b) => a.hp / maxHp(a) - b.hp / maxHp(b))[0];
+      if (!target) return this.toast("HPは満タンで、鈍足の仲間もいない");
+      removeItem(this.state, id, 1);
+      const healed = Math.min(45, maxHp(target) - target.hp);
+      target.hp += healed;
+      target.status.rooted = 0;
+      target.status.haste = 3;
+      this.toast(`${target.name}のHPが${healed}回復し、追風をまとった`);
+      this.audio.sfx("heal");
     } else if (id === "moonwort") {
       const target = activeParty(this.state).find((member) =>
         ["poison", "fear", "auraDown"].some((key) => member.status[key]),
@@ -3778,10 +4407,11 @@ export class HinatiaGame {
 
   renderEquipmentMenu() {
     this.equipCharacter ||= "hero";
-    if (!this.state.party[this.equipCharacter] || !this.state.party.order.includes(this.equipCharacter))
+    const roster = partyRoster(this.state);
+    if (!roster.some((member) => member.id === this.equipCharacter))
       this.equipCharacter = "hero";
     const member = this.state.party[this.equipCharacter];
-    const characterButtons = activeParty(this.state)
+    const characterButtons = roster
       .map(
         (entry) =>
           `<button data-equip-character="${entry.id}" class="${entry.id === this.equipCharacter ? "selected" : ""}">${entry.name}</button>`,
@@ -3834,6 +4464,10 @@ export class HinatiaGame {
       ["sarinaria", "サリナリア", 38, 88],
       ["whisperWood", "三響の森", 61, 84],
       ["spiritSanctum", "無音神域", 73, 91],
+      ["windRoad", "天翔け街道", 76, 73],
+      ["katoshia", "カトシア", 78, 55],
+      ["skyArena", "蒼天闘技場", 91, 68],
+      ["windTower1", "風哭きの塔", 84, 91],
     ];
     const currentKey =
       this.state.map === "highroad"
@@ -3852,7 +4486,11 @@ export class HinatiaGame {
                     ? this.state.map
                     : ["spiritSanctum", "spiritHeart"].includes(this.state.map)
                       ? "spiritSanctum"
-                  : "cave1";
+                      : ["windRoad", "katoshia", "skyArena"].includes(this.state.map)
+                        ? this.state.map
+                        : ["windTower1", "windTower2"].includes(this.state.map)
+                          ? "windTower1"
+                          : "cave1";
     const markerHtml = markers
       .filter(([id]) => this.state.discoveries[id])
       .map(
@@ -3890,6 +4528,10 @@ export class HinatiaGame {
       sarinaria: "精霊樹と鈴の祈りに守られた里。今は精霊の声が途切れている。",
       whisperWood: "水・風・光の守り手が別々の道で待つ、自由探索の森。",
       spiritSanctum: "三つの音を正しい順に響かせて進む、古い精霊神域。",
+      windRoad: "カトシア、闘技場、風哭きの塔を結ぶ雲上の高原街道。",
+      katoshia: "剣士たちが速さと技を競う風の街。最大4人の隊列編成が解禁される。",
+      skyArena: "守り・速さ・魔法の三つの型へ、好きな順で挑める闘技場。",
+      windTower1: "二つの風向計と、反撃を構える魔物が待つ風の古塔。",
     }[id];
   }
 
@@ -3905,7 +4547,7 @@ export class HinatiaGame {
       </div>
       <div class="info-card" style="margin-top:7px">
         <h3>現在の記録</h3>
-        <p>${MAPS[this.state.map].name} / ${this.formatTime(this.currentPlayTime())} / ${this.state.gold} G / ${this.state.flags.chapter3Clear ? "第三章クリア" : this.state.flags.chapter2Clear ? "第三章冒険中" : this.state.flags.chapter1Clear ? "第二章冒険中" : "第一章冒険中"}</p>
+        <p>${MAPS[this.state.map].name} / ${this.formatTime(this.currentPlayTime())} / ${this.state.gold} G / ${this.state.flags.chapter4Clear ? "第四章クリア" : this.state.flags.chapter3Clear ? "第四章冒険中" : this.state.flags.chapter2Clear ? "第三章冒険中" : this.state.flags.chapter1Clear ? "第二章冒険中" : "第一章冒険中"}</p>
       </div>`;
   }
 
@@ -3943,6 +4585,22 @@ export class HinatiaGame {
     const target = event.target.closest("button");
     if (!target) return;
     if (target.dataset.useItem) this.useFieldItem(target.dataset.useItem);
+    else if (target.dataset.partyToggle) {
+      const id = target.dataset.partyToggle;
+      if (this.state.party.order.includes(id)) {
+        if (this.state.party.order.length <= 2) return this.toast("主人公のほかに一人は編成しておこう");
+        this.state.party.order = this.state.party.order.filter((entry) => entry !== id);
+        this.audio.sfx("ok");
+      } else if (this.state.party.order.length >= 4) {
+        return this.toast("先に編成中の仲間を一人、待機にしてください");
+      } else {
+        this.state.party.order.push(id);
+        this.audio.sfx("ok");
+      }
+      this.renderPartyMenu();
+      this.refreshHud();
+      this.autosave();
+    }
     else if (target.dataset.equipCharacter) {
       this.equipCharacter = target.dataset.equipCharacter;
       this.renderEquipmentMenu();
@@ -4010,8 +4668,10 @@ export class HinatiaGame {
               ? ""
               : `<button data-save-slot="${id}">記録</button>`
             : `<button data-load-slot="${id}" ${!value ? "disabled" : ""}>再開</button>`;
-        const progress = value?.flags?.chapter3Clear
-          ? "第三章クリア"
+        const progress = value?.flags?.chapter4Clear
+          ? "第四章クリア"
+          : value?.flags?.chapter3Clear
+            ? "第四章進行中"
           : value?.flags?.chapter2Clear
             ? "第三章進行中"
           : value?.flags?.chapter1Clear
@@ -4096,7 +4756,9 @@ export class HinatiaGame {
     this.state = normalizeState(value);
     this.buildMapEnemies();
     this.audio.sfx("save");
-    if (this.state.flags.chapter3Clear && !this.state.flags.postClear) {
+    if (this.state.flags.chapter4Clear && !this.state.flags.postClear) {
+      this.showChapterClear(4);
+    } else if (this.state.flags.chapter3Clear && !this.state.flags.postClear) {
       this.showChapterClear(3);
     } else if (this.state.flags.chapter2Clear && !this.state.flags.postClear) {
       this.showChapterClear(2);
@@ -4105,9 +4767,9 @@ export class HinatiaGame {
     } else {
       this.setMode("map");
       this.audio.play(
-        ["solaido", "mileria", "sarinaria"].includes(this.state.map)
+        ["solaido", "mileria", "sarinaria", "katoshia"].includes(this.state.map)
           ? "town"
-          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart"].includes(this.state.map)
+          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart", "skyArena", "windTower1", "windTower2"].includes(this.state.map)
             ? "cave"
             : "field",
       );
@@ -4157,12 +4819,13 @@ export class HinatiaGame {
 
   showChapterClear(chapter = 1) {
     if (chapter === 1) this.state.flags.chapter1Clear = true;
-    const numerals = { 1: "I", 2: "II", 3: "III" };
-    const headings = { 1: "空色の騎士団長", 2: "枯れた麦畑と奇跡のパン", 3: "虹鈴の精霊巫女" };
+    const numerals = { 1: "I", 2: "II", 3: "III", 4: "IV" };
+    const headings = { 1: "空色の騎士団長", 2: "枯れた麦畑と奇跡のパン", 3: "虹鈴の精霊巫女", 4: "疾風の剣士と蒼天の塔" };
     const rewards = {
       1: "ハッピーオーラの欠片を手に入れた！",
       2: "二つ目のハッピーオーラの欠片を手に入れた！",
       3: "三つ目のハッピーオーラの欠片を手に入れた！",
+      4: "四つ目のハッピーオーラの欠片を手に入れた！",
     };
     this.ui.clearKicker.textContent = `CHAPTER ${numerals[chapter]} COMPLETE`;
     this.ui.clearHeading.textContent = headings[chapter];
@@ -4174,11 +4837,12 @@ export class HinatiaGame {
   }
 
   continueAfterClear() {
+    const chapter4 = this.state.flags.chapter4Clear;
     const chapter3 = this.state.flags.chapter3Clear;
     const chapter2 = this.state.flags.chapter2Clear;
     this.state.flags.postClear = true;
-    this.state.map = chapter3 ? "sarinaria" : chapter2 ? "mileria" : "solaido";
-    this.state.x = chapter3 ? 20 : chapter2 ? 20 : 19;
+    this.state.map = chapter4 ? "katoshia" : chapter3 ? "sarinaria" : chapter2 ? "mileria" : "solaido";
+    this.state.x = chapter4 ? 21 : chapter3 ? 20 : chapter2 ? 20 : 19;
     this.state.y = 27;
     this.state.dir = "up";
     this.state.lastSafe = {
@@ -4270,6 +4934,7 @@ export class HinatiaGame {
       if (special.type === "boss" && this.state.flags.bossWon) continue;
       if (special.type === "boss2" && this.state.flags.chapter2BossWon) continue;
       if (special.type === "boss3" && this.state.flags.chapter3BossWon) continue;
+      if (special.type === "boss4" && this.state.flags.chapter4BossWon) continue;
       if (["shop", "inn", "church", "hiddenWall", "bridgeGate", "shortcut"].includes(special.type))
         continue;
       const key = `${m.id}:${special.id}`;
@@ -4281,7 +4946,10 @@ export class HinatiaGame {
         Boolean(
           this.state.flags[special.requires] ||
             (special.type === "lever" && this.state.flags.waterLever) ||
-            (special.type === "groveShrine" && this.state.flags.groveEliteWon),
+            (special.type === "groveShrine" && this.state.flags.groveEliteWon) ||
+            (special.type === "windVaneNorth" && this.state.flags.windSealNorth) ||
+            (special.type === "windVaneSouth" && this.state.flags.windSealSouth) ||
+            (special.type === "towerLever" && this.state.flags.towerShortcut),
         ),
         now,
       );
@@ -4297,6 +4965,7 @@ export class HinatiaGame {
       if (npc.id === "lostMiner" && this.state.flags.minerFound) continue;
       if (npc.id === "mirei" && this.state.flags.mireiJoined) continue;
       if (npc.id === "sarina" && this.state.flags.sarinaJoined) continue;
+      if (npc.id === "katoshi" && this.state.flags.katoshiJoined) continue;
       this.renderer.drawCharacter(
         npc.type,
         npc.x * T + 4 - this.camera.x,
@@ -4316,46 +4985,21 @@ export class HinatiaGame {
         enemy.alert > 0,
       );
 
-    if (this.state.party.order.includes("kumi")) {
+    this.state.party.order.filter((id) => id !== "hero").forEach((id, index) => {
       const [dx, dy] = DIRS[this.state.dir];
-      const fx = this.state.x - dx;
-      const fy = this.state.y - dy;
+      const distance = index + 1;
+      const fx = this.state.x - dx * distance;
+      const fy = this.state.y - dy * distance;
       this.renderer.drawCharacter(
-        "kumi",
+        id,
         fx * T + 4 - this.camera.x,
         fy * T + 1 - this.camera.y,
         this.state.dir,
         this.walkFrame,
         1,
-        !this.state.flags.kumiJoined,
+        id === "kumi" && !this.state.flags.kumiJoined,
       );
-    }
-    if (this.state.party.order.includes("mirei")) {
-      const [dx, dy] = DIRS[this.state.dir];
-      const fx = this.state.x - dx * 2;
-      const fy = this.state.y - dy * 2;
-      this.renderer.drawCharacter(
-        "mirei",
-        fx * T + 4 - this.camera.x,
-        fy * T + 1 - this.camera.y,
-        this.state.dir,
-        this.walkFrame,
-        1,
-      );
-    }
-    if (this.state.party.order.includes("sarina")) {
-      const [dx, dy] = DIRS[this.state.dir];
-      const fx = this.state.x - dx * 3;
-      const fy = this.state.y - dy * 3;
-      this.renderer.drawCharacter(
-        "sarina",
-        fx * T + 4 - this.camera.x,
-        fy * T + 1 - this.camera.y,
-        this.state.dir,
-        this.walkFrame,
-        1,
-      );
-    }
+    });
     this.renderer.drawCharacter(
       "hero",
       this.state.x * T + 4 - this.camera.x,
@@ -4369,7 +5013,7 @@ export class HinatiaGame {
   }
 
   drawLandmarks(now) {
-    if (!["highroad", "mireRoad", "spiritPass"].includes(this.state.map)) return;
+    if (!["highroad", "mireRoad", "spiritPass", "windRoad"].includes(this.state.map)) return;
     const points = this.state.map === "highroad"
       ? [
           { x: 25, y: 2, type: "castle" },
@@ -4380,9 +5024,13 @@ export class HinatiaGame {
           { x: 3, y: 16, type: "town" },
           { x: 24, y: 3, type: "mill" },
           { x: 42, y: 5, type: "granary" },
-        ] : [
+        ] : this.state.map === "spiritPass" ? [
           { x: 3, y: 17, type: "spiritTown" },
           { x: 47, y: 17, type: "spiritGrove" },
+        ] : [
+          { x: 25, y: 2, type: "windTown" },
+          { x: 50, y: 18, type: "arena" },
+          { x: 36, y: 34, type: "windTower" },
         ];
     for (const point of points) {
       const x = point.x * T + 16 - this.camera.x;
@@ -4413,10 +5061,23 @@ export class HinatiaGame {
         this.renderer.rect(x - 23, y - 24, 46, 27, "#456e64");
         this.renderer.rect(x - 17, y - 35, 34, 14, "#73b89d");
         this.renderer.rect(x - 4, y - 42 + Math.sin(now / 300), 8, 19, "#e6dd72");
-      } else {
+      } else if (point.type === "spiritGrove") {
         this.renderer.rect(x - 22, y - 27, 44, 30, "#1c5948");
         this.renderer.rect(x - 14, y - 39, 28, 34, "#3b8a68");
         this.renderer.rect(x - 4, y - 46 + Math.sin(now / 280), 8, 18, "#9fe8c5");
+      } else if (point.type === "windTown") {
+        this.renderer.rect(x - 24, y - 24, 48, 28, "#496f8c");
+        this.renderer.rect(x - 18, y - 35, 36, 14, "#b8d8df");
+        this.renderer.rect(x - 3, y - 48, 6, 30, "#e4c967");
+        this.renderer.rect(x - 19, y - 38, 38, 4, "#edf5e9");
+      } else if (point.type === "arena") {
+        this.renderer.rect(x - 25, y - 18, 50, 22, "#8a735b");
+        this.renderer.rect(x - 21, y - 27, 42, 12, "#d5b66c");
+        this.renderer.rect(x - 16, y - 12, 32, 16, "#4d3c43");
+      } else {
+        this.renderer.rect(x - 18, y - 44, 36, 48, "#526875");
+        this.renderer.rect(x - 24, y - 31, 48, 8, "#91aeb4");
+        this.renderer.rect(x - 4, y - 57 + Math.sin(now / 260), 8, 22, "#dff7ef");
       }
     }
   }
@@ -4440,31 +5101,26 @@ export class HinatiaGame {
   }
 
   drawCompassHint() {
-    const target = !this.state.flags.metKumi
-      ? { map: "highroad", x: 25, y: 2, label: "王都" }
-      : !this.state.flags.raidWon
-        ? { map: "solaido", x: 20, y: 6, label: "聞き込み" }
-        : !this.state.flags.bossWon
-          ? { map: "highroad", x: 47, y: 7, label: "空泣き洞" }
-          : !this.state.flags.chapter2Started
-            ? { map: "highroad", x: 1, y: 18, label: "西の国" }
-            : !this.state.flags.metMirei
-              ? { map: "mireRoad", x: 2, y: 16, label: "ミレリア" }
-              : !this.state.flags.mireiJoined
-                ? { map: "mileria", x: 23, y: 10, label: "美玲" }
-                : !this.state.flags.chapter2BossWon
-                  ? { map: "mireRoad", x: 42, y: 5, label: "地下穀倉" }
-                  : !this.state.flags.chapter3Started
-                    ? { map: "mireRoad", x: 24, y: 32, label: "南の峠" }
-                    : !this.state.flags.metSarina
-                      ? { map: "spiritPass", x: 3, y: 17, label: "精霊の里" }
-                      : !this.state.flags.sarinaJoined
-                        ? { map: "sarinaria", x: 23, y: 10, label: "紗理菜" }
-                        : !this.state.flags.spiritGateOpen
-                          ? { map: "spiritSanctum", x: 30, y: 8, label: "響石の扉" }
-                          : !this.state.flags.chapter3BossWon
-                            ? { map: "spiritHeart", x: 28, y: 7, label: "無響獣" }
-                  : null;
+    let target = null;
+    if (!this.state.flags.metKumi) target = { map: "highroad", x: 25, y: 2, label: "王都" };
+    else if (!this.state.flags.raidWon) target = { map: "solaido", x: 20, y: 6, label: "聞き込み" };
+    else if (!this.state.flags.bossWon) target = { map: "highroad", x: 47, y: 7, label: "空泣き洞" };
+    else if (!this.state.flags.chapter2Started) target = { map: "highroad", x: 1, y: 18, label: "西の国" };
+    else if (!this.state.flags.metMirei) target = { map: "mireRoad", x: 2, y: 16, label: "ミレリア" };
+    else if (!this.state.flags.mireiJoined) target = { map: "mileria", x: 23, y: 10, label: "美玲" };
+    else if (!this.state.flags.chapter2BossWon) target = { map: "mireRoad", x: 42, y: 5, label: "地下穀倉" };
+    else if (!this.state.flags.chapter3Started) target = { map: "mireRoad", x: 24, y: 32, label: "南の峠" };
+    else if (!this.state.flags.metSarina) target = { map: "spiritPass", x: 3, y: 17, label: "精霊の里" };
+    else if (!this.state.flags.sarinaJoined) target = { map: "sarinaria", x: 23, y: 10, label: "紗理菜" };
+    else if (!this.state.flags.spiritGateOpen) target = { map: "spiritSanctum", x: 30, y: 8, label: "響石の扉" };
+    else if (!this.state.flags.chapter3BossWon) target = { map: "spiritHeart", x: 28, y: 7, label: "無響獣" };
+    else if (!this.state.flags.chapter4Started) target = { map: "spiritPass", x: 36, y: 31, label: "南東の風" };
+    else if (!this.state.flags.metKatoshi) target = { map: "windRoad", x: 25, y: 2, label: "カトシア" };
+    else if (!this.state.flags.katoshiJoined) target = { map: "skyArena", x: 23, y: 15, label: "蒼天闘技場" };
+    else if (!this.state.flags.windSealNorth || !this.state.flags.windSealSouth)
+      target = { map: "windTower1", x: 22, y: 14, label: "二つの風向計" };
+    else if (!this.state.flags.chapter4BossWon)
+      target = { map: "windTower2", x: 30, y: 7, label: "颶風鏡" };
     if (!target || target.map !== this.state.map) return;
     const dx = target.x - this.state.x;
     const dy = target.y - this.state.y;
@@ -4489,21 +5145,21 @@ export class HinatiaGame {
       if (enemy.hp <= 0) return;
       const [x, y] = positions[index] || [400 + index * 70, 145];
       if (
-        ["smileEater", "blightHeart", "hushAvatar"].includes(enemy.kind) &&
+        ["smileEater", "blightHeart", "hushAvatar", "tempestMirror"].includes(enemy.kind) &&
         this.battle.barrier &&
         this.battle.barrierBrokenRounds <= 0
       ) {
         const ctx = this.renderer.ctx;
         ctx.save();
         ctx.globalAlpha = 0.25 + Math.sin(now / 180) * 0.08;
-        ctx.strokeStyle = enemy.kind === "blightHeart" ? "#e0b84f" : enemy.kind === "hushAvatar" ? "#71dfbd" : "#b68fd2";
+        ctx.strokeStyle = enemy.kind === "blightHeart" ? "#e0b84f" : enemy.kind === "hushAvatar" ? "#71dfbd" : enemy.kind === "tempestMirror" ? "#a8e6ef" : "#b68fd2";
         ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.ellipse(x, y - 10, 78, 80, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
-      const scale = ["smileEater", "blightHeart", "hushAvatar"].includes(enemy.kind) ? 1.08 : enemy.boss ? 1 : 0.82;
+      const scale = ["smileEater", "blightHeart", "hushAvatar", "tempestMirror"].includes(enemy.kind) ? 1.08 : enemy.boss ? 1 : 0.82;
       this.renderer.drawBattleEnemy(
         enemy.sprite,
         x,
