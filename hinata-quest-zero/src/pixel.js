@@ -287,6 +287,7 @@ export class PixelRenderer {
     const palettes = {
       hero: { hair: "#293243", skin: "#f0bf99", main: "#68c3df", dark: "#18385a", trim: "#f4cf61" },
       kumi: { hair: "#3d2a30", skin: "#efbd98", main: "#4f9fce", dark: "#182f58", trim: "#f2d27c" },
+      mirei: { hair: "#49342c", skin: "#f0bd98", main: "#f2c95f", dark: "#7a4b3d", trim: "#fff1b0" },
       guard: { hair: "#5a4534", skin: "#dca77f", main: "#6c88a4", dark: "#303e55", trim: "#d3bd78" },
       merchant: { hair: "#80613e", skin: "#ecc29b", main: "#b66f55", dark: "#5a3440", trim: "#f0cc78" },
       pilgrim: { hair: "#c6c2ad", skin: "#dcb18c", main: "#73658f", dark: "#3a3658", trim: "#c6b9e8" },
@@ -305,6 +306,9 @@ export class PixelRenderer {
       hermit: { hair: "#c6bfa8", skin: "#d9a986", main: "#496e5d", dark: "#2f4544", trim: "#a5b47e" },
       spirit: { hair: "#9ce5d8", skin: "#b9f0df", main: "#6ab8a4", dark: "#386b6c", trim: "#e5ffe0" },
       miner: { hair: "#4a372f", skin: "#d99d72", main: "#8b735a", dark: "#4b413c", trim: "#d9a84f" },
+      baker: { hair: "#7b5138", skin: "#edbb94", main: "#e3bb63", dark: "#704855", trim: "#fff0bd" },
+      farmer: { hair: "#6f4d32", skin: "#dfa77d", main: "#9b8b4f", dark: "#4d5338", trim: "#e0c66b" },
+      miller: { hair: "#c9bda4", skin: "#e0ad84", main: "#8fa4a0", dark: "#475b5d", trim: "#e8d69b" },
     };
     const q = palettes[type] || palettes.town;
     if (dir === "up") {
@@ -342,6 +346,11 @@ export class PixelRenderer {
       p(19, 9, 4, 4, "#eef5ef");
       p(20, 7, 2, 4, "#76cae0");
     }
+    if (type === "mirei") {
+      p(20, 18, 5, 8, "#4d4040");
+      p(21, 15, 3, 4, "#d9dde1");
+      p(19, 24, 7, 3, "#bd704f");
+    }
     if (type === "guard") {
       p(5, 3, 15, 4, "#8598aa");
       p(8, 1, 9, 3, "#b6c5ca");
@@ -368,7 +377,7 @@ export class PixelRenderer {
       this.rect(x + 8, y + 19, 18, 3, "#7b4d32");
       this.rect(x + 11, y + 10 - pulse, 10, 12 + pulse, "#e95c3f");
       this.rect(x + 14, y + 13 - pulse, 6, 8 + pulse, "#ffd45f");
-    } else if (type === "sign" || type === "board") {
+    } else if (type === "sign" || type === "board" || type === "mireBoard") {
       this.rect(x + 5, y + 6, 22, 14, "#65422f");
       this.rect(x + 7, y + 8, 18, 10, "#b27b4c");
       this.rect(x + 14, y + 20, 5, 11, "#4a372d");
@@ -384,21 +393,21 @@ export class PixelRenderer {
       this.rect(x + 14, y + 7, 4, 14, "#507987");
       this.rect(x + 10, y + 9 + pulse, 3, 10, "#77d0df");
       this.rect(x + 20, y + 10 - pulse, 3, 9, "#77d0df");
-    } else if (type === "boss") {
+    } else if (type === "boss" || type === "boss2") {
       this.rect(x + 2, y + 24, 28, 5, "#15101d");
-      this.rect(x + 6, y + 13, 20, 13, "#291836");
-      this.rect(x + 9, y + 7 + pulse, 14, 13, "#4c245e");
-      this.rect(x + 11, y + 9 + pulse, 3, 3, "#ed5a88");
-      this.rect(x + 19, y + 9 + pulse, 3, 3, "#ed5a88");
+      this.rect(x + 6, y + 13, 20, 13, type === "boss2" ? "#4b3a1d" : "#291836");
+      this.rect(x + 9, y + 7 + pulse, 14, 13, type === "boss2" ? "#7c6427" : "#4c245e");
+      this.rect(x + 11, y + 9 + pulse, 3, 3, type === "boss2" ? "#f0d34f" : "#ed5a88");
+      this.rect(x + 19, y + 9 + pulse, 3, 3, type === "boss2" ? "#f0d34f" : "#ed5a88");
     } else if (type === "gather") {
       this.rect(x + 14, y + 15, 3, 14, "#2b694d");
       this.rect(x + 8, y + 14, 8, 5, "#75bb83");
       this.rect(x + 17, y + 10, 8, 6, "#99d49b");
       if (active) this.rect(x + 22, y + 5 + pulse, 3, 3, "#e5ffe5");
-    } else if (["lever", "rope", "seal", "groveShrine"].includes(type)) {
+    } else if (["lever", "rope", "seal", "groveShrine", "granaryLever"].includes(type)) {
       this.rect(x + 7, y + 21, 18, 8, "#444b55");
       this.rect(x + 10, y + 18, 12, 5, "#78828a");
-      if (type === "lever") {
+      if (type === "lever" || type === "granaryLever") {
         this.rect(x + 15, y + 7, 3, 13, "#b88b50");
         this.rect(x + 13, y + 5, 7, 5, active ? "#6cd399" : "#d85c5c");
       } else if (type === "rope") {
@@ -408,6 +417,24 @@ export class PixelRenderer {
         this.rect(x + 12, y + 5 + pulse, 8, 17, active ? "#f2d871" : "#62c9e3");
         this.rect(x + 15, y + 3 + pulse, 3, 16, "#e4fbff");
       }
+    } else if (type === "goldenWheat") {
+      for (let i = 0; i < 5; i += 1) {
+        this.rect(x + 6 + i * 5, y + 10 + (i % 2) * 2, 2, 19, "#b78635");
+        this.rect(x + 3 + i * 5, y + 7 + (i % 2) * 2, 7, 6, "#f0cb58");
+      }
+    } else if (type === "springWater") {
+      this.rect(x + 3, y + 18, 26, 11, "#397f9c");
+      this.rect(x + 7, y + 15, 18, 8, "#68c8d5");
+      this.rect(x + 12, y + 7 + pulse, 8, 13, "#b9f5ed");
+    } else if (type === "sunYeast") {
+      this.rect(x + 7, y + 20, 18, 8, "#74523a");
+      this.rect(x + 11, y + 7 + pulse, 10, 16, "#f2ce58");
+      this.rect(x + 14, y + 4 + pulse, 4, 15, "#fff3a4");
+    } else if (type === "oven") {
+      this.rect(x + 3, y + 10, 26, 20, "#7e5a45");
+      this.rect(x + 7, y + 14, 18, 16, "#3d2a29");
+      this.rect(x + 10, y + 19, 12, 8, "#e66b3e");
+      this.rect(x + 13, y + 17 + pulse, 6, 8, "#ffd15c");
     }
   }
 
@@ -421,6 +448,13 @@ export class PixelRenderer {
       anxietyShade: "shade",
       raidBrute: "orc",
       gloomMoth: "moth",
+      cropSprout: "sprout",
+      hungryCrow: "crow",
+      mudGolem: "mud",
+      flourGhost: "flour",
+      blightScarecrow: "scarecrow",
+      dryRoot: "root",
+      blightHeart: "blightHeart",
     }[kind] || "shade";
     const bob = Math.sin(now / 230 + x) * 2;
     this.ctx.save();
@@ -466,6 +500,47 @@ export class PixelRenderer {
       this.rect(3, -4, 3, 3, "#182b36");
       this.rect(-10, 10, 5, 4, "#483d3a");
       this.rect(5, 10, 5, 4, "#483d3a");
+    } else if (sprite === "sprout") {
+      this.rect(-9, -2, 18, 13, "#7f733e");
+      this.rect(-5, -8, 10, 9, "#a69a4f");
+      this.rect(-11, -13, 10, 7, "#78934a");
+      this.rect(1, -15, 11, 8, "#5e823e");
+      this.rect(-5, 1, 3, 3, "#342d2c");
+      this.rect(3, 1, 3, 3, "#342d2c");
+    } else if (sprite === "crow") {
+      this.rect(-11, -8, 22, 16, "#263143");
+      this.rect(-16, -5, 8, 11, "#394b5c");
+      this.rect(8, -5, 8, 11, "#394b5c");
+      this.rect(-7, -13, 14, 8, "#1d2736");
+      this.rect(-4, -9, 3, 3, "#f1cf55");
+      this.rect(2, -9, 3, 3, "#f1cf55");
+      this.rect(7, -4, 8, 3, "#c68b38");
+    } else if (sprite === "mud") {
+      this.rect(-11, -10, 22, 22, "#715b43");
+      this.rect(-14, -3, 6, 15, "#594b3b");
+      this.rect(8, -3, 6, 15, "#594b3b");
+      this.rect(-6, -5, 4, 3, "#f0cb5a");
+      this.rect(2, -5, 4, 3, "#f0cb5a");
+      this.rect(-8, 5, 16, 3, "#3d342e");
+    } else if (sprite === "flour") {
+      this.rect(-9, -11, 18, 20, "#d9d3bd");
+      this.rect(-13, 4, 26, 8, "#aba891");
+      this.rect(-5, -6, 3, 3, "#5c5363");
+      this.rect(3, -6, 3, 3, "#5c5363");
+    } else if (sprite === "scarecrow") {
+      this.rect(-3, -13, 6, 27, "#705035");
+      this.rect(-14, -8, 28, 5, "#8d6b42");
+      this.rect(-9, -16, 18, 12, "#9b814b");
+      this.rect(-5, -12, 3, 3, "#ecbf4d");
+      this.rect(3, -12, 3, 3, "#ecbf4d");
+      this.rect(-12, 4, 24, 9, "#59623a");
+    } else if (sprite === "root" || sprite === "blightHeart") {
+      this.rect(-10, -11, 20, 22, sprite === "blightHeart" ? "#7d5d28" : "#5d4a2e");
+      this.rect(-15, 6, 30, 6, "#403622");
+      this.rect(-5, -6, 3, 3, "#f0cf4d");
+      this.rect(3, -6, 3, 3, "#f0cf4d");
+      this.rect(-14, -15, 5, 22, "#4c4228");
+      this.rect(9, -15, 5, 22, "#4c4228");
     } else if (sprite === "orc") {
       this.rect(-10, -10, 20, 20, "#613653");
       this.rect(-7, -13, 14, 7, "#8d536e");
@@ -502,6 +577,10 @@ export class PixelRenderer {
       cave: ["#0b1724", "#334b5d", "#1d2b3a", "#08111d"],
       deepCave: ["#101226", "#3a3b5c", "#20213d", "#090b17"],
       bossCave: ["#160e23", "#4a2c58", "#291a39", "#0d0916"],
+      harvest: ["#244d66", "#c9aa55", "#796b38", "#33472d"],
+      harvestTown: ["#315873", "#c59c63", "#74654d", "#3e4438"],
+      granary: ["#201d19", "#685a43", "#3f3529", "#171512"],
+      granaryBoss: ["#21170f", "#76582b", "#46331d", "#140e0a"],
     };
     const p = palettes[tone] || palettes.field;
     const g = ctx.createLinearGradient(0, 0, 0, 250);
@@ -597,6 +676,74 @@ export class PixelRenderer {
       p(4, -6, 4, 4, "#182a35");
       p(-15, 17, 5, 7, "#4b3d3a");
       p(10, 17, 5, 7, "#4b3d3a");
+    } else if (sprite === "sprout") {
+      p(-19, 10, 38, 8, "#233028");
+      p(-16, -9, 32, 25, "#837640");
+      p(-11, -19, 22, 15, "#aa9d50");
+      p(-28, -27, 25, 14, "#78964d");
+      p(3, -31, 27, 16, "#5f8741");
+      p(-8, -5, 5, 5, "#342d2d");
+      p(4, -5, 5, 5, "#342d2d");
+      p(-4, 5, 9, 3, "#4d402f");
+    } else if (sprite === "crow") {
+      p(-25, 15, 50, 7, "#192331");
+      p(-18, -15, 36, 33, "#273244");
+      p(-37, -9, 22, 22, "#3b4d5e");
+      p(15, -9, 22, 22, "#3b4d5e");
+      p(-12, -27, 24, 17, "#1d2736");
+      p(-7, -18, 5, 5, "#f2d15a");
+      p(3, -18, 5, 5, "#f2d15a");
+      p(15, -11, 18, 6, "#c68a38");
+    } else if (sprite === "mud") {
+      p(-28, 21, 56, 8, "#1d2929");
+      p(-22, -23, 44, 48, "#715b43");
+      p(-35, -9, 16, 34, "#594a3a");
+      p(19, -9, 16, 34, "#594a3a");
+      p(-12, -12, 8, 6, "#f0cb5a");
+      p(4, -12, 8, 6, "#f0cb5a");
+      p(-13, 5, 26, 5, "#3d342e");
+      p(-5, -21, 4, 18, "#9a7b52");
+    } else if (sprite === "flour") {
+      p(-25, 20, 50, 6, "#18242d");
+      p(-20, -27, 40, 48, "#d9d4c0");
+      p(-31, 6, 62, 17, "#aaa892");
+      p(-11, -15, 7, 6, "#5c5363");
+      p(4, -15, 7, 6, "#5c5363");
+      p(-7, 0, 14, 4, "#827986");
+      p(-28, -17, 10, 8, "#ede9d7");
+      p(18, -10, 12, 9, "#ede9d7");
+    } else if (sprite === "scarecrow") {
+      p(-29, 27, 58, 7, "#17231f");
+      p(-5, -37, 10, 68, "#6f5036");
+      p(-38, -20, 76, 10, "#8c6b43");
+      p(-22, -42, 44, 29, "#9c814a");
+      p(-11, -32, 7, 7, "#f0c84f");
+      p(5, -32, 7, 7, "#f0c84f");
+      p(-10, -18, 20, 5, "#483928");
+      p(-30, -7, 60, 30, "#59643a");
+      p(-39, 15, 20, 9, "#8c793e");
+      p(19, 15, 20, 9, "#8c793e");
+    } else if (sprite === "root") {
+      p(-27, 23, 54, 8, "#161d1a");
+      p(-20, -30, 40, 56, "#5e4b2e");
+      p(-34, -25, 15, 50, "#493d28");
+      p(19, -25, 15, 50, "#493d28");
+      p(-11, -17, 7, 6, "#efce4d");
+      p(4, -17, 7, 6, "#efce4d");
+      p(-7, -3, 14, 4, "#2c281f");
+      p(-27, 8, 54, 10, "#76613a");
+    } else if (sprite === "blightHeart") {
+      p(-58, 38, 116, 10, "#100f0b");
+      p(-45, -42, 90, 82, "#654b23");
+      p(-32, -56, 64, 34, "#84632b");
+      p(-58, -20, 24, 58, "#4b3d21");
+      p(34, -20, 24, 58, "#4b3d21");
+      p(-22, -37, 14, 12, "#f0d14d");
+      p(8, -37, 14, 12, "#f0d14d");
+      p(-29, -10, 58, 9, "#2b2418");
+      p(-23, -4, 46, 22, "#b69747");
+      for (let i = 0; i < 6; i += 1) p(-18 + i * 7, -2, 3, 16, "#5e4827");
+      p(-8, 20, 16, 18, "#2f261a");
     } else if (sprite === "shade") {
       p(-20, 15, 40, 7, "#100e1c");
       p(-16, -18, 32, 36, "#302a48");
@@ -653,9 +800,9 @@ export class PixelRenderer {
     ctx.save();
     ctx.translate(x, y + Math.sin(frame / 350 + x) * 1.5);
     if (hurt && Math.floor(frame / 45) % 2) ctx.globalAlpha = 0.35;
-    const main = type === "kumi" ? "#4f9fce" : "#65c3dd";
-    const dark = type === "kumi" ? "#172d53" : "#193c5c";
-    const hair = type === "kumi" ? "#3d2931" : "#293243";
+    const main = type === "kumi" ? "#4f9fce" : type === "mirei" ? "#f0c85c" : "#65c3dd";
+    const dark = type === "kumi" ? "#172d53" : type === "mirei" ? "#78483b" : "#193c5c";
+    const hair = type === "kumi" ? "#3d2931" : type === "mirei" ? "#49342c" : "#293243";
     this.rect(-8, -27, 16, 12, hair);
     this.rect(-10, -19, 20, 9, main);
     this.rect(-9, -10, 18, 19, dark);
@@ -665,6 +812,10 @@ export class PixelRenderer {
     if (type === "kumi") {
       this.rect(11, -25, 3, 39, "#c7a55c");
       this.rect(8, -29, 9, 7, "#dce7e3");
+    } else if (type === "mirei") {
+      this.rect(10, -11, 10, 5, "#64666b");
+      this.rect(13, -16, 4, 11, "#d7d9dc");
+      this.rect(9, -6, 12, 4, "#b96d4b");
     } else {
       this.rect(9, -14, 7, 20, "#a6b7c1");
       this.rect(10, -17, 5, 5, "#e9d070");
@@ -696,9 +847,10 @@ export class PixelRenderer {
       return;
     }
     const kumi = type === "kumi";
-    const hair = kumi ? "#3e2831" : "#293243";
+    const mirei = type === "mirei";
+    const hair = kumi ? "#3e2831" : mirei ? "#49342c" : "#293243";
     const skin = "#efbd99";
-    const main = kumi ? "#4f9fce" : "#64c2dc";
+    const main = kumi ? "#4f9fce" : mirei ? "#f0c75a" : "#64c2dc";
     this.rect(12, 67, 60, 17, "#10213a");
     this.rect(19, 54, 46, 30, main);
     this.rect(22, 18, 42, 44, hair);
@@ -707,7 +859,7 @@ export class PixelRenderer {
     this.rect(55, 18, 10, 33, hair);
     this.rect(31, 37, 5, 5, "#253043");
     this.rect(49, 37, 5, 5, "#253043");
-    this.rect(38, 51, 10, 3, kumi ? "#b85f72" : "#a95869");
+    this.rect(38, 51, 10, 3, kumi ? "#b85f72" : mirei ? "#c5656f" : "#a95869");
     this.rect(28, 31, 10, 3, hair);
     this.rect(47, 31, 10, 3, hair);
     this.rect(35, 58, 15, 8, skin);
@@ -715,6 +867,9 @@ export class PixelRenderer {
     if (kumi) {
       this.rect(54, 13, 7, 8, "#61c4df");
       this.rect(58, 16, 7, 4, "#f1d36c");
+    } else if (mirei) {
+      this.rect(18, 62, 48, 7, "#fff0b5");
+      this.rect(57, 54, 10, 8, "#b96c4b");
     }
     this.ctx = old;
   }
