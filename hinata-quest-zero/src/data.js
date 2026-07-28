@@ -23,6 +23,10 @@ export const TILE = Object.freeze({
   LANTERN: 21,
   PILLAR: 22,
   REEDS: 23,
+  CLIFF: 24,
+  RUNE: 25,
+  BOOKSHELF: 26,
+  GLASS: 27,
 });
 
 export const PASSABLE = new Set([
@@ -42,6 +46,7 @@ export const PASSABLE = new Set([
   TILE.WOOD,
   TILE.RUIN,
   TILE.LANTERN,
+  TILE.RUNE,
 ]);
 
 const map = (id, name, width, height, base, tone = "field") => ({
@@ -1047,6 +1052,7 @@ function windRoad() {
   hline(m, 1, 50, 18, TILE.PATH, 2);
   pathPoints(m, [[25, 18], [25, 2]], TILE.PATH, 2);
   pathPoints(m, [[36, 18], [36, 34]], TILE.PATH, 2);
+  pathPoints(m, [[36, 19], [36, 29], [50, 29]], TILE.PATH, 2);
   fill(m, 5, 5, 12, 8, TILE.WATER);
   hline(m, 14, 21, 10, TILE.BRIDGE, 2);
   fill(m, 31, 4, 14, 7, TILE.STONE);
@@ -1089,6 +1095,28 @@ function windRoad() {
       label: "風哭きの塔",
       requires: "towerOpen",
       denied: "塔門は暴風に閉ざされている。街の風剣士なら風の切れ目を読めるかもしれない。",
+    },
+    {
+      x: 50,
+      y: 29,
+      to: "manaRoad",
+      tx: 2,
+      ty: 19,
+      dir: "right",
+      label: "星詠み街道",
+      requires: "chapter4Clear",
+      denied: "東の雲海は暴風に閉ざされている。風哭きの塔から空の流れを取り戻す必要がある。",
+    },
+    {
+      x: 50,
+      y: 30,
+      to: "manaRoad",
+      tx: 2,
+      ty: 20,
+      dir: "right",
+      label: "星詠み街道",
+      requires: "chapter4Clear",
+      denied: "東の雲海は暴風に閉ざされている。風哭きの塔から空の流れを取り戻す必要がある。",
     },
   );
   m.npcs.push(
@@ -1276,6 +1304,229 @@ function windTower2() {
   return m;
 }
 
+function manaRoad() {
+  const m = map("manaRoad", "星詠み街道", 56, 38, TILE.GRASS, "manaRoad");
+  border(m, TILE.CLIFF);
+  hline(m, 1, 54, 19, TILE.PATH, 2);
+  pathPoints(m, [[27, 19], [27, 2]], TILE.PATH, 2);
+  pathPoints(m, [[13, 20], [13, 30], [10, 30]], TILE.PATH, 2);
+  pathPoints(m, [[42, 19], [42, 8], [45, 8]], TILE.PATH, 2);
+  pathPoints(m, [[39, 20], [39, 31], [47, 31]], TILE.PATH, 2);
+  fill(m, 4, 5, 12, 8, TILE.WATER);
+  fill(m, 43, 26, 9, 8, TILE.WATER);
+  vline(m, 13, 10, 18, TILE.PATH, 2);
+  hline(m, 8, 15, 10, TILE.BRIDGE, 2);
+  fill(m, 40, 5, 9, 7, TILE.STONE);
+  fill(m, 7, 27, 10, 7, TILE.RUIN);
+  fill(m, 37, 28, 12, 6, TILE.STONE);
+  for (const [x, y] of [[11,19],[20,19],[28,13],[35,19],[45,19],[13,27]])
+    put(m, x, y, TILE.LANTERN);
+  for (const [x, y] of [[44,8],[11,30],[46,31]]) put(m, x, y, TILE.RUNE);
+  scatter(
+    m,
+    5105,
+    TILE.TREE,
+    148,
+    (x, y, t) =>
+      t === TILE.GRASS &&
+      Math.abs(y - 19) > 3 &&
+      !(x > 23 && x < 31) &&
+      !(x > 38 && y < 14) &&
+      !(x < 19 && y > 24),
+  );
+  scatter(m, 9901, TILE.FLOWER, 62, (_x, _y, t) => t === TILE.GRASS);
+  scatter(m, 2305, TILE.ROCK, 42, (_x, _y, t) => t === TILE.GRASS);
+  m.warps.push(
+    { x: 1, y: 19, to: "windRoad", tx: 49, ty: 29, dir: "left", label: "天翔け街道" },
+    { x: 1, y: 20, to: "windRoad", tx: 49, ty: 30, dir: "left", label: "天翔け街道" },
+    { x: 27, y: 2, to: "manafia", tx: 22, ty: 29, dir: "up", label: "魔導都市マナフィア" },
+    { x: 28, y: 2, to: "manafia", tx: 23, ty: 29, dir: "up", label: "魔導都市マナフィア" },
+  );
+  m.npcs.push(
+    { id: "manaCourier", type: "courier", x: 22, y: 20, dir: "right" },
+    { id: "indexSeeker", type: "scholar", x: 34, y: 20, dir: "left" },
+  );
+  m.chests.push(
+    { id: "mana-road-elixir", x: 8, y: 10, loot: { item: "starElixir", qty: 2 }, label: "星明かりの霊薬を2個" },
+    { id: "mana-road-gold", x: 51, y: 10, loot: { gold: 246 }, label: "246ゴールド" },
+    { id: "mana-road-lens", x: 18, y: 31, loot: { item: "logicLens", qty: 1 }, label: "論理の片眼鏡" },
+  );
+  m.specials.push(
+    { id: "mana-sign", type: "sign", x: 31, y: 19, text: "北：魔導都市マナフィア　南西：始原の石板　北東：問いの天文台　南東：未来の水鏡" },
+    { id: "origin-index", type: "originIndex", x: 11, y: 30 },
+    { id: "question-index", type: "questionIndex", x: 44, y: 8 },
+    { id: "future-index", type: "futureIndex", x: 46, y: 31 },
+    { id: "mana-camp", type: "manaCamp", x: 17, y: 11 },
+  );
+  m.enemies.push(
+    { id: "mana-road-01", x: 9, y: 20, group: ["inkSlime", "inkSlime"], awareness: 4 },
+    { id: "mana-road-02", x: 19, y: 18, group: ["runeOwl", "inkSlime"], awareness: 6 },
+    { id: "mana-road-03", x: 31, y: 16, group: ["logicGolem", "runeOwl"], awareness: 4 },
+    { id: "mana-road-04", x: 43, y: 17, group: ["bookMimic", "inkSlime"], awareness: 5 },
+    { id: "mana-road-05", x: 40, y: 29, group: ["logicGolem", "runeOwl"], awareness: 4 },
+  );
+  m.start = [2, 19];
+  return m;
+}
+
+function manafia() {
+  const m = map("manafia", "魔導都市マナフィア", 46, 32, TILE.STONE, "manaTown");
+  border(m, TILE.WALL);
+  hline(m, 20, 25, 30, TILE.PATH);
+  vline(m, 21, 6, 30, TILE.PATH, 4);
+  hline(m, 3, 42, 19, TILE.PATH, 3);
+  hline(m, 7, 38, 10, TILE.PATH, 2);
+  building(m, 3, 3, 11, 7, 8, TILE.ROOF);
+  building(m, 16, 2, 14, 7, 22, TILE.ROOF);
+  building(m, 33, 3, 10, 7, 38, TILE.ROOF);
+  building(m, 4, 13, 10, 6, 9, TILE.ROOF);
+  building(m, 32, 13, 10, 6, 37, TILE.ROOF);
+  building(m, 5, 23, 11, 6, 10, TILE.ROOF);
+  building(m, 31, 23, 10, 6, 36, TILE.ROOF);
+  put(m, 23, 8, TILE.DOOR);
+  fill(m, 15, 13, 6, 5, TILE.WATER);
+  fill(m, 26, 13, 5, 5, TILE.FLOWER);
+  for (const [x, y] of [[16,10],[29,10],[17,21],[28,21]]) put(m, x, y, TILE.RUNE);
+  m.warps.push(
+    { x: 22, y: 30, to: "manaRoad", tx: 27, ty: 3, dir: "down", label: "星詠み街道" },
+    { x: 23, y: 30, to: "manaRoad", tx: 28, ty: 3, dir: "down", label: "星詠み街道" },
+    {
+      x: 22,
+      y: 8,
+      to: "arcaneArchive1",
+      tx: 3,
+      ty: 29,
+      dir: "up",
+      label: "大魔導図書館",
+      requires: "manakaJoined",
+      denied: "大図書館は偽の目録に封鎖されている。研究者マナカと三つの索引を復元する必要がある。",
+    },
+    {
+      x: 23,
+      y: 8,
+      to: "arcaneArchive1",
+      tx: 4,
+      ty: 29,
+      dir: "up",
+      label: "大魔導図書館",
+      requires: "manakaJoined",
+      denied: "大図書館は偽の目録に封鎖されている。研究者マナカと三つの索引を復元する必要がある。",
+    },
+  );
+  m.npcs.push(
+    { id: "manaka", type: "manaka", x: 24, y: 14, dir: "left" },
+    { id: "manaArchivist", type: "scholar", x: 22, y: 8, dir: "down" },
+    { id: "manaSmith", type: "smith", x: 8, y: 10, dir: "down" },
+    { id: "manaMerchant", type: "merchant", x: 38, y: 10, dir: "down" },
+    { id: "manaInn", type: "inn", x: 9, y: 19, dir: "down" },
+    { id: "manaPriest", type: "priest", x: 37, y: 19, dir: "down" },
+    { id: "manaChild", type: "child", x: 27, y: 12, dir: "left" },
+    { id: "lostTomeScholar", type: "scholar", x: 17, y: 20, dir: "right" },
+  );
+  m.chests.push(
+    { id: "manafia-elixir", x: 3, y: 26, loot: { item: "starElixir", qty: 2 }, label: "星明かりの霊薬を2個" },
+    { id: "manafia-gold", x: 43, y: 25, loot: { gold: 164 }, label: "164ゴールド" },
+  );
+  m.specials.push(
+    { id: "mana-armory", type: "shop", shop: "manaArmory", x: 8, y: 9 },
+    { id: "mana-item", type: "shop", shop: "manaItem", x: 38, y: 9 },
+    { id: "mana-inn", type: "inn", x: 9, y: 18 },
+    { id: "mana-church", type: "church", x: 37, y: 18 },
+    { id: "mana-save", type: "save", x: 16, y: 9 },
+    { id: "mana-board", type: "manaBoard", x: 29, y: 23 },
+  );
+  m.start = [22, 29];
+  return m;
+}
+
+function arcaneArchive1() {
+  const m = map("arcaneArchive1", "大魔導図書館・閲覧層", 48, 34, TILE.WALL, "manaArchive");
+  border(m, TILE.WALL);
+  fill(m, 2, 26, 11, 6, TILE.FLOOR);
+  fill(m, 9, 19, 11, 11, TILE.FLOOR);
+  fill(m, 16, 12, 18, 13, TILE.FLOOR);
+  fill(m, 5, 5, 14, 12, TILE.FLOOR);
+  fill(m, 31, 4, 14, 14, TILE.FLOOR);
+  fill(m, 29, 16, 10, 12, TILE.FLOOR);
+  hline(m, 11, 35, 15, TILE.FLOOR, 3);
+  put(m, 3, 29, TILE.STAIRS);
+  put(m, 42, 6, TILE.STAIRS);
+  for (const [x, y] of [[11,27],[13,21],[22,14],[31,22],[38,9]]) put(m, x, y, TILE.RUNE);
+  for (const [x, y] of [[7,7],[8,7],[15,7],[16,7],[33,6],[34,6],[41,12],[42,12],[18,20],[32,18]])
+    put(m, x, y, TILE.BOOKSHELF);
+  for (const [x, y] of [[6,12],[17,10],[25,13],[35,15],[38,24]]) put(m, x, y, TILE.GLASS);
+  m.warps.push(
+    { x: 2, y: 29, to: "manafia", tx: 22, ty: 9, dir: "down", label: "魔導都市マナフィア" },
+    {
+      x: 42,
+      y: 6,
+      to: "arcaneArchive2",
+      tx: 4,
+      ty: 26,
+      dir: "right",
+      label: "大魔導図書館・禁書庫",
+      requires: "archiveGateOpen",
+      denied: "分類門は閉じている。三つの索引を、知識が育つ順番で照合する必要がある。",
+    },
+  );
+  m.npcs.push(
+    { id: "archiveEcho", type: "scholar", x: 18, y: 22, dir: "right" },
+  );
+  m.chests.push(
+    { id: "archive-codex", x: 8, y: 9, loot: { item: "sageCodex", qty: 1 }, label: "英知の魔導書" },
+    { id: "archive-robe", x: 40, y: 15, loot: { item: "arcaneRobe", qty: 1 }, label: "星図のローブ" },
+    { id: "archive-elixir", x: 35, y: 25, loot: { item: "starElixir", qty: 3 }, label: "星明かりの霊薬を3個" },
+  );
+  m.specials.push(
+    { id: "archive-gate", type: "archiveGate", x: 38, y: 9 },
+    { id: "archive-tablet-origin", type: "sign", x: 7, y: 13, text: "『始原は、確かめられた事実を記す。問いは、その余白から生まれる』" },
+    { id: "archive-tablet-question", type: "sign", x: 24, y: 14, text: "『問いは、知っていることと知らないことを分け、未来への道を選ぶ』" },
+    { id: "archive-tablet-future", type: "sign", x: 36, y: 16, text: "『未来は答えではない。事実と問いを携え、これから書き足す頁である』" },
+    { id: "runaway-tome", type: "runawayTome", x: 14, y: 9 },
+    { id: "archive-shortcut", type: "archiveLever", x: 32, y: 23 },
+    { id: "archive-return", type: "shortcut", x: 33, y: 23, requires: "archiveShortcut", target: [4, 29] },
+  );
+  m.enemies.push(
+    { id: "archive1-01", x: 10, y: 27, group: ["inkSlime", "runeOwl"], awareness: 4 },
+    { id: "archive1-02", x: 14, y: 20, group: ["bookMimic", "inkSlime"], awareness: 5 },
+    { id: "archive1-03", x: 21, y: 15, group: ["logicGolem", "runeOwl"], awareness: 4 },
+    { id: "archive1-04", x: 33, y: 17, group: ["bookMimic", "bookMimic"], awareness: 5 },
+  );
+  m.start = [3, 29];
+  return m;
+}
+
+function arcaneArchive2() {
+  const m = map("arcaneArchive2", "大魔導図書館・記憶禁書庫", 42, 30, TILE.WALL, "manaBoss");
+  border(m, TILE.WALL);
+  fill(m, 2, 22, 11, 6, TILE.FLOOR);
+  fill(m, 10, 16, 10, 10, TILE.FLOOR);
+  fill(m, 17, 9, 10, 12, TILE.FLOOR);
+  fill(m, 24, 3, 14, 13, TILE.FLOOR);
+  fill(m, 27, 14, 11, 11, TILE.FLOOR);
+  fill(m, 17, 22, 13, 6, TILE.FLOOR);
+  put(m, 4, 26, TILE.STAIRS);
+  put(m, 34, 6, TILE.RUNE);
+  for (const [x, y] of [[8,24],[14,18],[22,13],[30,10],[32,20],[23,25]]) put(m, x, y, TILE.RUNE);
+  for (const [x, y] of [[12,17],[18,12],[25,5],[36,12],[29,22]]) put(m, x, y, TILE.BOOKSHELF);
+  m.warps.push({ x: 3, y: 26, to: "arcaneArchive1", tx: 41, ty: 6, dir: "left", label: "大魔導図書館・閲覧層" });
+  m.chests.push(
+    { id: "archive2-lens", x: 29, y: 23, loot: { item: "logicLens", qty: 1 }, label: "論理の片眼鏡" },
+    { id: "archive2-elixir", x: 19, y: 25, loot: { item: "starElixir", qty: 2 }, label: "星明かりの霊薬を2個" },
+  );
+  m.specials.push(
+    { id: "chapter5-boss", type: "boss5", x: 34, y: 6 },
+    { id: "memory-index", type: "sign", x: 22, y: 12, text: "『記憶は正確さだけでは残らない。誰かと読み返すたび、新しい意味を得る』" },
+  );
+  m.enemies.push(
+    { id: "archive2-01", x: 11, y: 23, group: ["logicGolem", "inkSlime"], awareness: 4 },
+    { id: "archive2-02", x: 18, y: 17, group: ["bookMimic", "runeOwl", "runeOwl"], awareness: 5 },
+    { id: "archive2-03", x: 28, y: 15, group: ["logicGolem", "bookMimic"], awareness: 4 },
+  );
+  m.start = [4, 26];
+  return m;
+}
+
 export const MAPS = Object.freeze({
   highroad: highroad(),
   solaido: solaido(),
@@ -1299,6 +1550,10 @@ export const MAPS = Object.freeze({
   skyArena: skyArena(),
   windTower1: windTower1(),
   windTower2: windTower2(),
+  manaRoad: manaRoad(),
+  manafia: manafia(),
+  arcaneArchive1: arcaneArchive1(),
+  arcaneArchive2: arcaneArchive2(),
 });
 
 export const ITEMS = Object.freeze({
@@ -1349,6 +1604,13 @@ export const ITEMS = Object.freeze({
   windCoat: { name: "疾風の戦衣", type: "body", sell: 165, def: 10, spd: 4, description: "風圧を逃がし、身のこなしを妨げない戦衣。" },
   featherCape: { name: "羽織りの外套", type: "body", sell: 195, def: 12, spd: 3, resist: "wind", description: "強風を受け流す羽根織りの外套。" },
   arenaMedal: { name: "蒼天の記念章", type: "accessory", sell: 155, atk: 3, spd: 4, description: "挑戦する勇気を讃える闘技場の記念章。" },
+  originIndex: { name: "始原の索引", type: "key", description: "確かめられた出来事を記録する、青い索引結晶。" },
+  questionIndex: { name: "問いの索引", type: "key", description: "未知へ手を伸ばす問いを記録する、紫の索引結晶。" },
+  futureIndex: { name: "未来の索引", type: "key", description: "これから書き足す頁を示す、金色の索引結晶。" },
+  starElixir: { name: "星明かりの霊薬", type: "usable", price: 112, sell: 52, description: "味方ひとりのHPを70、MPを12回復し、沈黙を治す。" },
+  sageCodex: { name: "英知の魔導書", type: "weapon", sell: 365, atk: 5, mag: 21, element: "light", description: "読み手の問いへ応じて頁が光る、賢者の魔導書。" },
+  arcaneRobe: { name: "星図のローブ", type: "body", sell: 245, def: 14, mag: 7, resist: "dark", description: "夜空の術式を織り込み、闇の魔法を和らげる長衣。" },
+  logicLens: { name: "論理の片眼鏡", type: "accessory", sell: 190, mag: 5, spd: 3, description: "敵の動きから弱点へ至る筋道を読みやすくする片眼鏡。" },
   legacyEmblem: { name: "旅人のしるし", type: "accessory", sell: 0, def: 2, maxHp: 5, description: "旧ヒナティアを歩いた冒険者の証。" },
 });
 
@@ -1388,6 +1650,14 @@ export const SHOPS = Object.freeze({
   windArmory: {
     name: "天輪の武具店",
     goods: ["galeRapier", "ironSpear", "rainbowBell", "windCoat", "featherCape", "blueBuckler"],
+  },
+  manaItem: {
+    name: "星屑通りの道具屋",
+    goods: ["herb", "moonwort", "auraDrop", "spiritNectar", "galeTonic", "starElixir", "smokeBomb", "wing"],
+  },
+  manaArmory: {
+    name: "術式鍛造所",
+    goods: ["skyBlade", "galeRapier", "rainbowBell", "sageCodex", "featherCape", "arcaneRobe", "logicLens"],
   },
 });
 
@@ -1575,6 +1845,47 @@ export const SKILLS = Object.freeze({
     power: 1.18,
     element: "wind",
     description: "敵全体を三度切り抜ける風の奥義。",
+  },
+  monsterAnalysis: {
+    name: "モンスター分析",
+    owner: "manaka",
+    level: 1,
+    mp: 4,
+    target: "enemy",
+    effect: "monsterAnalysis",
+    description: "弱点と障壁を3ターン見抜き、知識の守りを薄くする。",
+  },
+  wisdomBook: {
+    name: "英知の書",
+    owner: "manaka",
+    level: 7,
+    mp: 7,
+    target: "enemy",
+    effect: "wisdomBook",
+    power: 1.75,
+    description: "分析した弱点の属性を選び、強い魔法を放つ。",
+  },
+  magicalTsukkomi: {
+    name: "マジカルツッコミ",
+    owner: "manaka",
+    level: 7,
+    mp: 8,
+    target: "enemy",
+    effect: "magicalTsukkomi",
+    power: 1.72,
+    element: "light",
+    description: "矛盾を光で正し、敵の予告行動と反撃の構えを中断する。",
+  },
+  forbiddenRelease: {
+    name: "禁書解放",
+    owner: "manaka",
+    level: 9,
+    mp: 12,
+    target: "allEnemies",
+    effect: "forbiddenRelease",
+    power: 1.12,
+    element: "light",
+    description: "解析した術式を解放し、敵全体へ三属性の連続魔法を放つ。",
   },
 });
 
@@ -2104,6 +2415,91 @@ export const ENEMIES = Object.freeze({
     weakness: "light",
     actions: ["attack", "mirrorGuard", "windBurst", "stormDive"],
   },
+  inkSlime: {
+    name: "インクルン",
+    sprite: "inkSlime",
+    hp: 118,
+    mp: 20,
+    atk: 31,
+    mag: 38,
+    def: 16,
+    spd: 18,
+    exp: 42,
+    gold: 34,
+    weakness: "wind",
+    pattern: ["inkBurst", "attack", "auraDown"],
+  },
+  runeOwl: {
+    name: "ルーンフクロウ",
+    sprite: "runeOwl",
+    hp: 106,
+    mp: 28,
+    atk: 33,
+    mag: 41,
+    def: 15,
+    spd: 35,
+    exp: 44,
+    gold: 36,
+    weakness: "light",
+    pattern: ["mislabel", "spiritBolt", "double"],
+  },
+  bookMimic: {
+    name: "ミミックブック",
+    sprite: "bookMimic",
+    hp: 168,
+    mp: 22,
+    atk: 42,
+    mag: 37,
+    def: 23,
+    spd: 16,
+    exp: 52,
+    gold: 45,
+    weakness: "fire",
+    pattern: ["mirrorGuard", "pageStorm", "heavy"],
+  },
+  logicGolem: {
+    name: "ロジックゴーレム",
+    sprite: "logicGolem",
+    hp: 205,
+    mp: 18,
+    atk: 44,
+    mag: 34,
+    def: 31,
+    spd: 9,
+    exp: 58,
+    gold: 49,
+    weakness: "wind",
+    pattern: ["guard", "heavy", "mislabel"],
+  },
+  falseIndex: {
+    name: "偽りの目録",
+    sprite: "falseIndex",
+    hp: 225,
+    mp: 48,
+    atk: 35,
+    mag: 48,
+    def: 22,
+    spd: 22,
+    exp: 62,
+    gold: 52,
+    weakness: "fire",
+    pattern: ["mislabel", "pageStorm", "catalogueDrain"],
+  },
+  amnesiaLibrarian: {
+    name: "忘却司書アムネシア",
+    sprite: "amnesiaLibrarian",
+    boss: true,
+    hp: 1040,
+    mp: 220,
+    atk: 44,
+    mag: 55,
+    def: 27,
+    spd: 20,
+    exp: 430,
+    gold: 510,
+    weakness: "light",
+    actions: ["attack", "indexShift", "catalogueDrain", "rewrite"],
+  },
 });
 
 export const EQUIP_SLOTS = Object.freeze(["weapon", "shield", "body", "accessory"]);
@@ -2230,6 +2626,31 @@ export const RUMORS = Object.freeze({
     text: "颶風鏡は暴風眼がある間、風圧障壁と反撃の構えを使う。二連撃で構えを崩し、大技の溜めは連携剣で散らせる。",
     region: "風哭きの塔・天輪",
   },
+  starRoad: {
+    title: "雲海の先の星詠み街道",
+    text: "天翔け街道の南東から、夜空の術式が浮かぶ街道を通って魔導都市へ進める。",
+    region: "天翔け街道・南東",
+  },
+  manafia: {
+    title: "記録が書き換わる魔導都市",
+    text: "マナフィアでは本の目次と人々の記憶が食い違い、大図書館が偽の目録に封鎖されている。",
+    region: "魔導都市マナフィア",
+  },
+  threeIndexes: {
+    title: "街道に散った三つの索引",
+    text: "始原・問い・未来の索引は街道の南西、北東、南東に散った。どの順番でも回収できる。",
+    region: "星詠み街道",
+  },
+  grandLibrary: {
+    title: "知識が育つ分類順",
+    text: "始原の事実から問いが生まれ、問いを携えて未来を書く。大図書館の分類門もこの順で開く。",
+    region: "大魔導図書館",
+  },
+  falseCatalogue: {
+    title: "偽目録と忘却司書",
+    text: "偽目録が司書を守る。分析で本当の弱点を固定し、『記憶改稿』の予告にはマジカルツッコミを合わせる。",
+    region: "大魔導図書館・記憶禁書庫",
+  },
 });
 
 export const QUESTS = Object.freeze({
@@ -2297,6 +2718,21 @@ export const QUESTS = Object.freeze({
     name: "向かい風の応援旗",
     description: "天翔け街道で取り残された観客を見つけ、街で待つ姉へ知らせる。",
     reward: "蒼天の記念章",
+  },
+  chapter5: {
+    name: "英知の賢者と魔導都市",
+    description: "書き換わる記録の謎を解き、魔導都市から人々の記憶を奪う存在を探る。",
+    main: true,
+  },
+  threeIndexes: {
+    name: "始原・問い・未来の索引",
+    description: "星詠み街道に散った三つの索引を好きな順で回収し、研究者マナカへ届ける。",
+    reward: "高瀬愛奈の加入と大魔導図書館への道",
+  },
+  lostTome: {
+    name: "逃げ出した一冊",
+    description: "大魔導図書館の閲覧層で、ひとりでに逃げた研究書を見つける。",
+    reward: "論理の片眼鏡",
   },
 });
 

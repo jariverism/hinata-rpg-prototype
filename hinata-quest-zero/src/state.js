@@ -125,6 +125,30 @@ const katoshiBase = () => ({
   status: {},
 });
 
+const manakaBase = () => ({
+  id: "manaka",
+  name: "愛奈",
+  fullName: "高瀬愛奈",
+  role: "魔導賢者",
+  level: 7,
+  exp: 1080,
+  hp: 88,
+  mp: 74,
+  maxHp: 88,
+  maxMp: 74,
+  atk: 16,
+  def: 16,
+  mag: 39,
+  spd: 23,
+  equipment: {
+    weapon: "sageCodex",
+    shield: null,
+    body: "arcaneRobe",
+    accessory: null,
+  },
+  status: {},
+});
+
 export function createState(name = "トシ") {
   return {
     version: SAVE_VERSION,
@@ -140,6 +164,7 @@ export function createState(name = "トシ") {
       mirei: mireiBase(),
       sarina: sarinaBase(),
       katoshi: katoshiBase(),
+      manaka: manakaBase(),
       order: ["hero"],
     },
     inventory: {
@@ -190,6 +215,13 @@ export function createState(name = "トシ") {
       windCoat: 0,
       featherCape: 0,
       arenaMedal: 0,
+      originIndex: 0,
+      questionIndex: 0,
+      futureIndex: 0,
+      starElixir: 0,
+      sageCodex: 0,
+      arcaneRobe: 0,
+      logicLens: 0,
       legacyEmblem: 0,
     },
     flags: {
@@ -255,6 +287,20 @@ export function createState(name = "トシ") {
       chapter4BossSeen: false,
       chapter4BossWon: false,
       chapter4Clear: false,
+      chapter5Started: false,
+      metManaka: false,
+      originIndexFound: false,
+      questionIndexFound: false,
+      futureIndexFound: false,
+      manakaJoined: false,
+      manaCampRested: false,
+      archiveGateOpen: false,
+      archivePuzzleFailed: false,
+      archiveShortcut: false,
+      lostTomeFound: false,
+      chapter5BossSeen: false,
+      chapter5BossWon: false,
+      chapter5Clear: false,
     },
     quests: {
       chapter1: "active",
@@ -270,6 +316,9 @@ export function createState(name = "トシ") {
       chapter4: "locked",
       skyTournament: "locked",
       lostFan: "locked",
+      chapter5: "locked",
+      threeIndexes: "locked",
+      lostTome: "locked",
     },
     rumors: {
       city: true,
@@ -290,6 +339,11 @@ export function createState(name = "トシ") {
       skyTournament: false,
       towerSeal: false,
       stormCore: false,
+      starRoad: false,
+      manafia: false,
+      threeIndexes: false,
+      grandLibrary: false,
+      falseCatalogue: false,
     },
     opened: {},
     gathered: {},
@@ -366,6 +420,7 @@ export function normalizeState(value) {
       mirei: mergeCharacter(base.party.mirei, value.party?.mirei),
       sarina: mergeCharacter(base.party.sarina, value.party?.sarina),
       katoshi: mergeCharacter(base.party.katoshi, value.party?.katoshi),
+      manaka: mergeCharacter(base.party.manaka, value.party?.manaka),
       order: Array.isArray(value.party?.order) ? [...value.party.order] : ["hero"],
     },
     lastSafe: { ...base.lastSafe, ...(value.lastSafe || {}) },
@@ -384,9 +439,11 @@ export function normalizeState(value) {
     result.party.order.push("sarina");
   if (result.flags.katoshiJoined && !result.party.order.includes("katoshi") && result.party.order.length < 4)
     result.party.order.push("katoshi");
+  if (result.flags.manakaJoined && !result.party.order.includes("manaka") && result.party.order.length < 4)
+    result.party.order.push("manaka");
   result.party.order = result.party.order.filter(
     (id, index, array) =>
-      ["hero", "kumi", "mirei", "sarina", "katoshi"].includes(id) &&
+      ["hero", "kumi", "mirei", "sarina", "katoshi", "manaka"].includes(id) &&
       array.indexOf(id) === index,
   );
   if (!result.party.order.includes("hero")) result.party.order.unshift("hero");
@@ -394,6 +451,8 @@ export function normalizeState(value) {
     "hero",
     ...result.party.order.filter((id) => id !== "hero"),
   ].slice(0, 4);
+  const happy = Number(result.happy);
+  result.happy = Number.isFinite(happy) ? Math.max(0, Math.min(100, Math.round(happy))) : 0;
   clampVitals(result);
   return result;
 }
@@ -432,6 +491,7 @@ export function serialize(state) {
       mirei: { ...state.party.mirei, status: {} },
       sarina: { ...state.party.sarina, status: {} },
       katoshi: { ...state.party.katoshi, status: {} },
+      manaka: { ...state.party.manaka, status: {} },
       order: [...state.party.order],
     },
   };
@@ -447,6 +507,7 @@ export function partyRoster(state) {
   if (state.flags.mireiJoined || state.party.order.includes("mirei")) ids.push("mirei");
   if (state.flags.sarinaJoined || state.party.order.includes("sarina")) ids.push("sarina");
   if (state.flags.katoshiJoined || state.party.order.includes("katoshi")) ids.push("katoshi");
+  if (state.flags.manakaJoined || state.party.order.includes("manaka")) ids.push("manaka");
   return ids.map((id) => state.party[id]).filter(Boolean);
 }
 
@@ -552,6 +613,19 @@ export function applyKatoshiGrowth(character, level, heal = true) {
   }
 }
 
+export function applyManakaGrowth(character, level, heal = true) {
+  character.maxHp += 7;
+  character.maxMp += 5;
+  character.atk += 1;
+  character.def += 2;
+  character.mag += 4;
+  character.spd += level % 2 ? 2 : 1;
+  if (heal) {
+    character.hp = maxHp(character);
+    character.mp = character.maxMp;
+  }
+}
+
 export function grantExperience(state, amount) {
   const levels = [];
   for (const character of activeParty(state)) {
@@ -562,7 +636,8 @@ export function grantExperience(state, amount) {
       else if (character.id === "kumi") applyKumiGrowth(character, character.level);
       else if (character.id === "mirei") applyMireiGrowth(character, character.level);
       else if (character.id === "sarina") applySarinaGrowth(character, character.level);
-      else applyKatoshiGrowth(character, character.level);
+      else if (character.id === "katoshi") applyKatoshiGrowth(character, character.level);
+      else applyManakaGrowth(character, character.level);
       levels.push({
         id: character.id,
         name: character.name,

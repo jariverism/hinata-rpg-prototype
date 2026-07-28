@@ -694,6 +694,38 @@ button.primary {
   transition: width 0.25s steps(8);
 }
 
+.happy-meter i.gain {
+  filter: brightness(1.65) saturate(1.25);
+  box-shadow: 0 0 9px #ffe275;
+  animation: happy-gain 0.42s steps(3);
+}
+
+.happy-meter i.drain {
+  filter: saturate(0.45) brightness(0.72);
+  animation: happy-drain 0.42s steps(3);
+}
+
+.happy-meter i.ready {
+  box-shadow: 0 0 8px #ffe275, 0 0 15px rgba(142, 230, 236, 0.65);
+  animation: happy-ready 0.8s steps(2) infinite;
+}
+
+@keyframes happy-gain {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(2px); }
+  70% { transform: translateX(-1px); }
+}
+
+@keyframes happy-drain {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-3px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes happy-ready {
+  50% { filter: brightness(1.5); }
+}
+
 .happy-meter b {
   color: #fff2ba;
   font-size: 8px;
@@ -718,6 +750,11 @@ button.primary {
   background: rgba(5, 17, 31, 0.75);
   font-size: clamp(6px, 0.8vw, 9px);
   text-align: center;
+}
+
+.enemy-weak {
+  color: #ffe38c;
+  font-size: 0.82em;
 }
 
 .enemy-tag.target {

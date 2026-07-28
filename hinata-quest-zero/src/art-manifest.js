@@ -4,6 +4,7 @@ export const PARTY_SPRITE_IDS = Object.freeze([
   "mirei",
   "sarina",
   "katoshi",
+  "manaka",
 ]);
 
 export const NPC_SPRITE_IDS = Object.freeze([
@@ -73,6 +74,12 @@ export const ENEMY_SPRITE_IDS = Object.freeze([
   "katoshiDuel",
   "stormEye",
   "tempestMirror",
+  "inkSlime",
+  "runeOwl",
+  "bookMimic",
+  "logicGolem",
+  "falseIndex",
+  "amnesiaLibrarian",
 ]);
 
 export const CUTIN_IDS = PARTY_SPRITE_IDS;

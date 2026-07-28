@@ -65,6 +65,17 @@ const characters = [
     trim: "#efd16c",
     feature: "rapier",
   },
+  {
+    id: "manaka",
+    hair: "#2b2636",
+    hairLight: "#625071",
+    skin: "#efbd99",
+    main: "#7769b8",
+    light: "#d8cdf5",
+    dark: "#303657",
+    trim: "#efd36d",
+    feature: "codex",
+  },
 ];
 
 const canvas = createCanvas(frameSize * directions.length * frames, frameSize * characters.length);
@@ -169,6 +180,14 @@ function drawSprite(character, originX, originY, direction, frame) {
     p(6, 18 + arm, 4, 8, "#80b7d3");
     p(8, 3, 7, 5, character.hairLight);
     p(5, 5, 6, 9, character.hair);
+  } else if (character.feature === "codex") {
+    p(21, 16 + arm, 10, 9, "#4a3568");
+    p(22, 17 + arm, 4, 7, "#f1e5c7");
+    p(26, 17 + arm, 4, 7, "#d9cba9");
+    p(25, 18 + arm, 2, 5, character.trim);
+    p(7, 15, 18, 2, character.trim);
+    p(10, 2, 13, 4, character.hairLight);
+    p(20, 4, 6, 10, character.hair);
   }
 }
 

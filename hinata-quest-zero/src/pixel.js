@@ -26,11 +26,13 @@ const ART_URLS = Object.freeze({
   "portrait-mirei": new URL("../assets/art/portraits/mirei.png", import.meta.url).href,
   "portrait-sarina": new URL("../assets/art/portraits/sarina.png", import.meta.url).href,
   "portrait-katoshi": new URL("../assets/art/portraits/katoshi.png", import.meta.url).href,
+  "portrait-manaka": new URL("../assets/art/portraits/manaka.png", import.meta.url).href,
   "cutin-hero": new URL("../assets/art/cutins/hero.png", import.meta.url).href,
   "cutin-kumi": new URL("../assets/art/cutins/kumi.png", import.meta.url).href,
   "cutin-mirei": new URL("../assets/art/cutins/mirei.png", import.meta.url).href,
   "cutin-sarina": new URL("../assets/art/cutins/sarina.png", import.meta.url).href,
   "cutin-katoshi": new URL("../assets/art/cutins/katoshi.png", import.meta.url).href,
+  "cutin-manaka": new URL("../assets/art/cutins/manaka.png", import.meta.url).href,
 });
 
 export class PixelRenderer {
@@ -184,6 +186,8 @@ export class PixelRenderer {
         ? "harvest"
         : tone.includes("spirit")
           ? "spirit"
+          : tone.includes("mana")
+            ? "arcane"
           : tone.includes("wind") || tone === "arena"
             ? "wind"
             : tone.toLowerCase().includes("cave") || tone === "dungeon"
@@ -221,6 +225,14 @@ export class PixelRenderer {
         water: "#3d87ad", waterDark: "#285f8b", waterLight: "#83c9dc",
         stone: "#687987", stoneDark: "#3d5265", stoneLight: "#9bb0b5",
         roof: "#4b82a1", roofDark: "#2f5d82", roofLight: "#83b9ca",
+      },
+      arcane: {
+        grass: "#3d837b", grassAlt: "#35756f", grassDark: "#21585e", grassLight: "#73b9a5",
+        path: "#9389a8", pathDark: "#625a78", pathLight: "#cfc4df",
+        tree: "#315f62", treeDark: "#233e4f", treeLight: "#648f85",
+        water: "#315f98", waterDark: "#283f75", waterLight: "#71b8cc",
+        stone: "#62647b", stoneDark: "#3d4058", stoneLight: "#9a97b1",
+        roof: "#5c5590", roofDark: "#393860", roofLight: "#9288bd",
       },
       cave: {
         grass: "#4b7258", grassAlt: "#42664f", grassDark: "#294a3d", grassLight: "#729078",
@@ -443,6 +455,51 @@ export class PixelRenderer {
         this.rect(x + 9, y + 7, 14, 21, family === "wind" ? "#879da6" : "#8e9ca1");
         this.rect(x + 5, y + 27, 22, 5, palette.stoneDark);
         break;
+      case TILE.CLIFF:
+        this.rect(x, y, 32, 32, family === "arcane" ? "#34465d" : palette.stoneDark);
+        this.rect(x, y, 32, 6, palette.stoneLight);
+        this.rect(x, y + 6, 32, 4, palette.stone);
+        this.rect(x + 3, y + 11, 11, 21, "#29384b");
+        this.rect(x + 17, y + 10, 12, 22, "#202f43");
+        this.rect(x + 6, y + 14, 3, 14, palette.stone);
+        this.rect(x + 21, y + 12, 2, 17, palette.stoneLight);
+        break;
+      case TILE.RUNE: {
+        const pulse = Math.floor(now / 220 + wx + wy) % 3;
+        this.rect(x, y, 32, 32, family === "arcane" ? "#555773" : palette.stone);
+        this.rect(x + 2, y + 2, 28, 28, palette.stoneDark);
+        this.rect(x + 5, y + 5, 22, 22, family === "arcane" ? "#4f5071" : palette.stone);
+        const glow = pulse === 0 ? "#f6d977" : pulse === 1 ? "#8ae1df" : "#b6a7ee";
+        this.rect(x + 14, y + 7, 4, 18, glow);
+        this.rect(x + 8, y + 14, 16, 4, glow);
+        this.rect(x + 10, y + 10, 4, 4, "#eefcff");
+        this.rect(x + 19, y + 19, 4, 4, "#eefcff");
+        break;
+      }
+      case TILE.BOOKSHELF:
+        this.rect(x, y, 32, 32, "#332d46");
+        this.rect(x + 2, y + 2, 28, 29, "#6b4e55");
+        for (let shelf = 0; shelf < 2; shelf += 1) {
+          const yy = y + 5 + shelf * 13;
+          this.rect(x + 4, yy, 24, 10, "#281f31");
+          for (let book = 0; book < 5; book += 1) {
+            const colors = ["#6e87ac", "#a05f76", "#c49d57", "#5e9a8c", "#8268a4"];
+            const height = 6 + ((wx + wy + book + shelf) % 4);
+            this.rect(x + 5 + book * 5, yy + 9 - height, 4, height, colors[(book + shelf) % colors.length]);
+            this.rect(x + 6 + book * 5, yy + 10 - height, 1, height - 2, "#d7c985");
+          }
+        }
+        this.rect(x, y + 29, 32, 3, "#211c2c");
+        break;
+      case TILE.GLASS:
+        this.rect(x, y, 32, 32, "#2b344c");
+        this.rect(x + 3, y + 3, 26, 26, "#477e9a");
+        this.rect(x + 6, y + 6, 20, 20, "#75b8c6");
+        this.rect(x + 8, y + 7, 5, 15, "#d9f7ef");
+        this.rect(x + 15, y + 6, 2, 20, "#394c73");
+        this.rect(x + 6, y + 15, 20, 2, "#394c73");
+        this.rect(x + 21, y + 20, 4, 4, "#c4adf0");
+        break;
       case TILE.VOID:
       default:
         this.rect(x, y, 32, 32, "#080c14");
@@ -461,7 +518,7 @@ export class PixelRenderer {
       ["right", 30, 0, 2, 32],
     ];
     if (type === TILE.PATH || type === TILE.SAND) {
-      const joined = [TILE.PATH, TILE.SAND, TILE.BRIDGE, TILE.DOOR, TILE.STAIRS];
+      const joined = [TILE.PATH, TILE.SAND, TILE.BRIDGE, TILE.DOOR, TILE.STAIRS, TILE.RUNE];
       for (const [direction, xx, yy, width, height] of directions) {
         if (same(direction, joined)) continue;
         this.rect(x + xx, y + yy, width, height, palette.pathDark);
@@ -579,6 +636,44 @@ export class PixelRenderer {
     }
   }
 
+  drawTileForeground(type, sx, sy, wx, wy, now = 0, tone = "field", neighbors = null) {
+    const x = Math.floor(sx);
+    const y = Math.floor(sy);
+    const arcane = tone.includes("mana");
+    if (type === TILE.TREE) {
+      const dark = arcane ? "#233e4f" : tone.includes("spirit") ? "#174d48" : "#1d5f43";
+      const light = arcane ? "#648f85" : tone.includes("spirit") ? "#51aa83" : "#5cad70";
+      this.rect(x + 1, y + 24, 30, 7, dark);
+      this.rect(x + 5, y + 22, 21, 8, dark);
+      this.rect(x + 9, y + 22, 9, 3, light);
+      if (neighbors?.down !== TILE.TREE) {
+        this.ctx.save();
+        this.ctx.globalAlpha = 0.22;
+        this.rect(x + 4, y + 31, 28, 5, "#071522");
+        this.ctx.restore();
+      }
+    } else if (type === TILE.ROOF && neighbors?.down !== TILE.ROOF) {
+      const edge = arcane ? "#312f59" : tone.includes("harvest") ? "#6c442f" : "#1c4b74";
+      this.rect(x - 1, y + 27, 34, 5, edge);
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.2;
+      this.rect(x + 2, y + 32, 32, 6, "#071522");
+      this.ctx.restore();
+    } else if (type === TILE.BOOKSHELF) {
+      const shimmer = Math.floor(now / 350 + wx * 2 + wy) % 5 === 0;
+      if (shimmer) this.rect(x + 6, y + 4, 2, 2, "#f5dc78");
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.23;
+      this.rect(x + 2, y + 31, 30, 5, "#050a16");
+      this.ctx.restore();
+    } else if (type === TILE.CLIFF && neighbors?.down !== TILE.CLIFF) {
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.34;
+      this.rect(x, y + 29, 32, 7, "#060e1d");
+      this.ctx.restore();
+    }
+  }
+
   drawCharacter(type, x, y, dir = "down", frame = 0, scale = 1, ghost = false) {
     const ctx = this.ctx;
     const s = scale;
@@ -621,6 +716,7 @@ export class PixelRenderer {
       mirei: { hair: "#49342c", skin: "#f0bd98", main: "#f2c95f", dark: "#7a4b3d", trim: "#fff1b0" },
       sarina: { hair: "#3f3036", skin: "#efbd99", main: "#72c8aa", dark: "#354d68", trim: "#f4d778" },
       katoshi: { hair: "#4a3038", skin: "#efbc98", main: "#9ac9e5", dark: "#35416a", trim: "#f3d26e" },
+      manaka: { hair: "#2b2636", skin: "#efbd99", main: "#7769b8", dark: "#303657", trim: "#efd36d" },
       guard: { hair: "#5a4534", skin: "#dca77f", main: "#6c88a4", dark: "#303e55", trim: "#d3bd78" },
       merchant: { hair: "#80613e", skin: "#ecc29b", main: "#b66f55", dark: "#5a3440", trim: "#f0cc78" },
       pilgrim: { hair: "#c6c2ad", skin: "#dcb18c", main: "#73658f", dark: "#3a3658", trim: "#c6b9e8" },
@@ -701,6 +797,13 @@ export class PixelRenderer {
       p(21, 6, 2, 3, "#81c9df");
       p(3, 17, 4, 8, "#8ebed9");
     }
+    if (type === "manaka") {
+      p(20, 17, 10, 9, "#4a3568");
+      p(21, 18, 4, 7, "#f1e5c7");
+      p(25, 18, 4, 7, "#d9cba9");
+      p(24, 19, 2, 5, "#efd36d");
+      p(7, 15, 18, 2, "#efd36d");
+    }
     if (type === "guard") {
       p(5, 3, 15, 4, "#8598aa");
       p(8, 1, 9, 3, "#b6c5ca");
@@ -720,6 +823,7 @@ export class PixelRenderer {
       katoshia: { x: 22.5, y: 9, kind: "windHall" },
       sunmill: { x: 30, y: 12, kind: "windmill" },
       skyArena: { x: 21, y: 11, kind: "arena" },
+      manafia: { x: 23, y: 9, kind: "grandLibrary" },
     };
     const landmark = locations[mapId];
     if (!landmark) return;
@@ -884,6 +988,29 @@ export class PixelRenderer {
       flag(x + 79, y - 119, "#c38b58");
       this.rect(x - 12, y - 78, 24, 19, "#475d72");
       this.rect(x - 7, y - 74, 14, 10, "#f0d269");
+    } else if (landmark.kind === "grandLibrary") {
+      shadow(94, 11);
+      this.rect(x - 89, y - 65, 178, 59, "#302d4e");
+      this.rect(x - 82, y - 59, 164, 53, "#9a97b3");
+      this.rect(x - 96, y - 77, 192, 16, "#3d3a62");
+      this.rect(x - 87, y - 88, 174, 13, "#887eb4");
+      this.rect(x - 72, y - 97, 144, 11, "#c3b8db");
+      for (const offset of [-62, -31, 31, 62]) {
+        this.rect(x + offset - 5, y - 58, 10, 52, "#585876");
+        this.rect(x + offset - 2, y - 54, 4, 44, "#d5cde4");
+      }
+      this.rect(x - 16, y - 49, 32, 43, "#17182e");
+      this.rect(x - 10, y - 41, 20, 35, "#394465");
+      this.rect(x - 6, y - 111, 12, 25, "#403b68");
+      this.rect(x - 3, y - 126, 6, 35, "#d9c96f");
+      this.rect(x - 10, y - 130, 20, 4, "#f4dd7a");
+      this.rect(x - 2, y - 138, 4, 20, "#f4dd7a");
+      this.rect(x - 3, y - 131, 6, 6, "#fff6c2");
+      for (let mote = 0; mote < 10; mote += 1) {
+        const mx = x + Math.sin(now / 510 + mote * 1.8) * (28 + (mote % 4) * 15);
+        const my = y - 73 - ((now / 31 + mote * 17) % 62);
+        this.rect(mx, my, mote % 3 === 0 ? 3 : 2, mote % 3 === 0 ? 3 : 2, mote % 2 ? "#a9edf0" : "#efd87a");
+      }
     }
   }
 
@@ -892,14 +1019,15 @@ export class PixelRenderer {
     const harvest = tone.includes("harvest");
     const spirit = tone.includes("spirit");
     const wind = tone.includes("wind") || tone === "arena";
+    const arcane = tone.includes("mana");
     const cave =
       tone.toLowerCase().includes("cave") ||
-      ["dungeon", "granary", "granaryBoss"].includes(tone);
+      ["dungeon", "granary", "granaryBoss", "manaArchive", "manaBoss"].includes(tone);
     const outdoor = !cave && !["house", "castle"].some((word) => tone.includes(word));
     const phase = Math.floor(now / 12000) % 4;
     ctx.save();
 
-    if (outdoor && !spirit) {
+    if (outdoor && !spirit && !arcane) {
       const drift = (now * (wind ? 0.02 : 0.009)) % (this.width + 240);
       ctx.globalAlpha = wind ? 0.11 : 0.07;
       for (let band = 0; band < 3; band += 1) {
@@ -963,6 +1091,32 @@ export class PixelRenderer {
         const pulse = 1 + (Math.sin(now / 170 + light) + 1);
         this.rect(lx, ly, pulse, pulse, light % 2 ? "#c9ffe3" : "#f4e985");
       }
+    } else if (arcane) {
+      ctx.globalAlpha = 0.62;
+      for (let glyph = 0; glyph < 13; glyph += 1) {
+        const gx = (glyph * 97 + Math.sin(now / 620 + glyph) * 34 + 680) % 680 - 20;
+        const gy = 34 + ((glyph * 53 + now * 0.012) % 285);
+        const color = glyph % 3 === 0 ? "#f1d978" : glyph % 2 ? "#9e91df" : "#92e4df";
+        this.rect(gx + 2, gy, 2, 8, color);
+        this.rect(gx - 1, gy + 3, 8, 2, color);
+        if (glyph % 4 === 0) this.rect(gx + 1, gy + 2, 4, 4, "#f4ffff");
+      }
+      ctx.globalAlpha = 0.1;
+      for (let ring = 0; ring < 4; ring += 1) {
+        ctx.strokeStyle = ring % 2 ? "#8f82ce" : "#74cfce";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(
+          80 + ring * 170,
+          85 + (ring % 2) * 128,
+          48 + Math.sin(now / 700 + ring) * 5,
+          18,
+          now / 5000 + ring,
+          0,
+          TWO_PI,
+        );
+        ctx.stroke();
+      }
     } else if (wind) {
       ctx.globalAlpha = 0.38;
       ctx.strokeStyle = "#e4f9f5";
@@ -1006,20 +1160,25 @@ export class PixelRenderer {
     const harvest = tone.includes("harvest");
     const spirit = tone.includes("spirit");
     const wind = tone.includes("wind") || tone === "arena";
+    const arcane = tone.includes("mana");
     const cave =
       tone.toLowerCase().includes("cave") ||
-      ["dungeon", "granary", "granaryBoss"].includes(tone);
-    if (!harvest && !spirit && !wind && !cave) return;
+      ["dungeon", "granary", "granaryBoss", "manaArchive", "manaBoss"].includes(tone);
+    if (!harvest && !spirit && !wind && !arcane && !cave) return;
     ctx.save();
     ctx.globalAlpha = cave ? 0.28 : 0.48;
     for (let i = 0; i < 18; i += 1) {
-      const speed = wind ? 0.12 : harvest ? 0.055 : 0.025;
+      const speed = wind ? 0.12 : harvest ? 0.055 : arcane ? 0.04 : 0.025;
       const px = (i * 83 + Math.floor(now * speed)) % 700 - 30;
       const py =
         (i * 47 +
           (spirit ? Math.sin(now / 430 + i) * 15 : Math.floor(now * 0.012))) %
         330;
-      if (wind) {
+      if (arcane) {
+        const color = i % 3 === 0 ? "#f2dc79" : i % 2 ? "#a79be1" : "#8ce2dc";
+        this.rect(px, py, i % 5 === 0 ? 4 : 2, i % 5 === 0 ? 4 : 2, color);
+        if (i % 4 === 0) this.rect(px - 2, py + 1, 7, 1, "#efffff");
+      } else if (wind) {
         this.rect(
           px,
           py,
@@ -1050,6 +1209,7 @@ export class PixelRenderer {
     const harvest = tone.includes("harvest");
     const spirit = tone.includes("spirit");
     const wind = tone.includes("wind") || tone === "arena";
+    const arcane = tone.includes("mana");
     const cave =
       tone.toLowerCase().includes("cave") ||
       ["dungeon", "granary", "granaryBoss"].includes(tone);
@@ -1063,6 +1223,10 @@ export class PixelRenderer {
       daylight.addColorStop(0, "rgba(139,255,221,.08)");
       daylight.addColorStop(0.54, "rgba(34,151,137,.025)");
       daylight.addColorStop(1, "rgba(7,32,49,.1)");
+    } else if (arcane) {
+      daylight.addColorStop(0, "rgba(188,178,255,.11)");
+      daylight.addColorStop(0.5, "rgba(82,198,202,.035)");
+      daylight.addColorStop(1, "rgba(20,20,62,.14)");
     } else if (wind) {
       daylight.addColorStop(0, "rgba(224,251,255,.12)");
       daylight.addColorStop(0.5, "rgba(102,196,216,.025)");
@@ -1112,7 +1276,7 @@ export class PixelRenderer {
       this.rect(x + 8, y + 19, 18, 3, "#7b4d32");
       this.rect(x + 11, y + 10 - pulse, 10, 12 + pulse, "#e95c3f");
       this.rect(x + 14, y + 13 - pulse, 6, 8 + pulse, "#ffd45f");
-    } else if (type === "sign" || type === "board" || type === "mireBoard" || type === "windBoard") {
+    } else if (type === "sign" || type === "board" || type === "mireBoard" || type === "windBoard" || type === "manaBoard") {
       this.rect(x + 5, y + 6, 22, 14, "#65422f");
       this.rect(x + 7, y + 8, 18, 10, "#b27b4c");
       this.rect(x + 14, y + 20, 5, 11, "#4a372d");
@@ -1128,11 +1292,11 @@ export class PixelRenderer {
       this.rect(x + 14, y + 7, 4, 14, "#507987");
       this.rect(x + 10, y + 9 + pulse, 3, 10, "#77d0df");
       this.rect(x + 20, y + 10 - pulse, 3, 9, "#77d0df");
-    } else if (type === "boss" || type === "boss2" || type === "boss3" || type === "boss4") {
+    } else if (type === "boss" || type === "boss2" || type === "boss3" || type === "boss4" || type === "boss5") {
       this.rect(x + 2, y + 24, 28, 5, "#15101d");
-      const body = type === "boss2" ? "#4b3a1d" : type === "boss3" ? "#23485a" : type === "boss4" ? "#456278" : "#291836";
-      const crown = type === "boss2" ? "#7c6427" : type === "boss3" ? "#3c7c79" : type === "boss4" ? "#86b9c8" : "#4c245e";
-      const eye = type === "boss2" ? "#f0d34f" : type === "boss3" ? "#a7f3d0" : type === "boss4" ? "#eefcce" : "#ed5a88";
+      const body = type === "boss2" ? "#4b3a1d" : type === "boss3" ? "#23485a" : type === "boss4" ? "#456278" : type === "boss5" ? "#453861" : "#291836";
+      const crown = type === "boss2" ? "#7c6427" : type === "boss3" ? "#3c7c79" : type === "boss4" ? "#86b9c8" : type === "boss5" ? "#8977b5" : "#4c245e";
+      const eye = type === "boss2" ? "#f0d34f" : type === "boss3" ? "#a7f3d0" : type === "boss4" ? "#eefcce" : type === "boss5" ? "#f4db73" : "#ed5a88";
       this.rect(x + 6, y + 13, 20, 13, body);
       this.rect(x + 9, y + 7 + pulse, 14, 13, crown);
       this.rect(x + 11, y + 9 + pulse, 3, 3, eye);
@@ -1142,10 +1306,10 @@ export class PixelRenderer {
       this.rect(x + 8, y + 14, 8, 5, "#75bb83");
       this.rect(x + 17, y + 10, 8, 6, "#99d49b");
       if (active) this.rect(x + 22, y + 5 + pulse, 3, 3, "#e5ffe5");
-    } else if (["lever", "rope", "seal", "groveShrine", "granaryLever"].includes(type)) {
+    } else if (["lever", "rope", "seal", "groveShrine", "granaryLever", "archiveLever"].includes(type)) {
       this.rect(x + 7, y + 21, 18, 8, "#444b55");
       this.rect(x + 10, y + 18, 12, 5, "#78828a");
-      if (type === "lever" || type === "granaryLever") {
+      if (type === "lever" || type === "granaryLever" || type === "archiveLever") {
         this.rect(x + 15, y + 7, 3, 13, "#b88b50");
         this.rect(x + 13, y + 5, 7, 5, active ? "#6cd399" : "#d85c5c");
       } else if (type === "rope") {
@@ -1213,6 +1377,32 @@ export class PixelRenderer {
       this.rect(x + 6, y + 22, 20, 7, "#4d606b");
       this.rect(x + 14, y + 7, 4, 16, "#b6a05f");
       this.rect(x + 9, y + 5, 14, 6, active ? "#86d3c2" : "#7faac1");
+    } else if (["originIndex", "questionIndex", "futureIndex"].includes(type)) {
+      const color =
+        type === "originIndex" ? "#72cfe3" : type === "questionIndex" ? "#aa8be0" : "#f2d36d";
+      this.rect(x + 5, y + 23, 22, 6, "#34364f");
+      this.rect(x + 9, y + 20, 14, 5, "#676784");
+      this.rect(x + 12, y + 7 + pulse, 8, 15, color);
+      this.rect(x + 15, y + 4 + pulse, 3, 15, "#f3ffff");
+      this.rect(x + 7, y + 11 + pulse, 18, 3, color);
+    } else if (type === "manaCamp") {
+      this.rect(x + 4, y + 22, 24, 5, "#3e415d");
+      this.rect(x + 7, y + 11, 18, 12, "#665e94");
+      this.rect(x + 11, y + 8, 11, 5, "#b7a8dd");
+      this.rect(x + 14, y + 13 + pulse, 5, 9, "#f0d46c");
+    } else if (type === "archiveGate") {
+      this.rect(x + 3, y + 23, 26, 6, "#36384f");
+      this.rect(x + 6, y + 7, 5, 18, "#6e6892");
+      this.rect(x + 21, y + 7, 5, 18, "#6e6892");
+      this.rect(x + 9, y + 5 + pulse, 14, 13, active ? "#f0d66f" : "#9986d3");
+      this.rect(x + 14, y + 3 + pulse, 4, 16, "#edffff");
+    } else if (type === "runawayTome") {
+      this.rect(x + 7, y + 12 + pulse, 18, 14, "#4c356b");
+      this.rect(x + 9, y + 14 + pulse, 7, 10, "#eee0bd");
+      this.rect(x + 17, y + 14 + pulse, 6, 10, "#d7c7a6");
+      this.rect(x + 15, y + 15 + pulse, 3, 9, "#f0d36b");
+      this.rect(x + 4, y + 8 + pulse, 5, 4, "#9be2df");
+      this.rect(x + 24, y + 7 - pulse, 5, 4, "#a99ae0");
     }
   }
 
@@ -1254,6 +1444,12 @@ export class PixelRenderer {
       katoshiDuel: "katoshiDuel",
       stormEye: "stormEye",
       tempestMirror: "tempestMirror",
+      inkSlime: "inkSlime",
+      runeOwl: "runeOwl",
+      bookMimic: "bookMimic",
+      logicGolem: "logicGolem",
+      falseIndex: "falseIndex",
+      amnesiaLibrarian: "amnesiaLibrarian",
     }[kind] || "shade";
     const bob = Math.sin(now / 230 + x) * 2;
     this.ctx.save();
@@ -1439,6 +1635,47 @@ export class PixelRenderer {
       this.rect(-5, 1, 6, 3, "#e8f2dd");
       this.rect(-22, -8, 7, 3, "#8ed5da");
       this.rect(15, 4, 7, 3, "#8ed5da");
+    } else if (sprite === "inkSlime") {
+      this.rect(-10, 2, 20, 10, "#332c58");
+      this.rect(-8, -7, 16, 13, "#665a9c");
+      this.rect(-4, -12, 8, 7, "#9d8cd1");
+      this.rect(-5, -3, 3, 3, "#eefbff");
+      this.rect(3, -3, 3, 3, "#eefbff");
+      this.rect(-12, 10, 24, 4, "#1b2440");
+    } else if (sprite === "runeOwl") {
+      this.rect(-11, -9, 22, 20, "#59668f");
+      this.rect(-15, -6, 8, 15, "#7f79ae");
+      this.rect(7, -6, 8, 15, "#7f79ae");
+      this.rect(-8, -14, 16, 8, "#c4badb");
+      this.rect(-6, -7, 5, 5, "#f1d66e");
+      this.rect(2, -7, 5, 5, "#f1d66e");
+      this.rect(-2, 0, 4, 4, "#273650");
+    } else if (sprite === "bookMimic" || sprite === "falseIndex") {
+      const cover = sprite === "falseIndex" ? "#8b4f71" : "#4e376b";
+      this.rect(-13, -11, 26, 22, cover);
+      this.rect(-10, -8, 20, 16, "#e1d3ae");
+      this.rect(-3, -9, 6, 19, "#c39e54");
+      this.rect(-8, -4, 4, 4, "#342e4c");
+      this.rect(4, -4, 4, 4, "#342e4c");
+      this.rect(-12, 10, 7, 5, "#7b619d");
+      this.rect(5, 10, 7, 5, "#7b619d");
+    } else if (sprite === "logicGolem") {
+      this.rect(-11, -12, 22, 24, "#62677d");
+      this.rect(-15, -3, 7, 16, "#454b61");
+      this.rect(8, -3, 7, 16, "#454b61");
+      this.rect(-7, -8, 5, 4, "#8de0dc");
+      this.rect(3, -8, 5, 4, "#8de0dc");
+      this.rect(-6, 2, 12, 4, "#d8c66d");
+      this.rect(-10, 11, 20, 4, "#34394d");
+    } else if (sprite === "amnesiaLibrarian") {
+      this.rect(-16, -15, 32, 28, "#493a68");
+      this.rect(-12, -20, 24, 10, "#8a77ae");
+      this.rect(-9, -10, 6, 5, "#f1d66c");
+      this.rect(4, -10, 6, 5, "#f1d66c");
+      this.rect(-11, 0, 22, 5, "#1d2138");
+      this.rect(-18, 8, 36, 6, "#2a2c48");
+      this.rect(-19, -17, 5, 28, "#d6c99f");
+      this.rect(14, -17, 5, 28, "#d6c99f");
     } else if (sprite === "orc") {
       this.rect(-10, -10, 20, 20, "#613653");
       this.rect(-7, -13, 14, 7, "#8d536e");
@@ -1489,6 +1726,10 @@ export class PixelRenderer {
       arena: ["#355a75", "#b69a6f", "#73604f", "#3d3840"],
       windTower: ["#172632", "#647d89", "#394f5b", "#0e1b24"],
       windBoss: ["#142a3a", "#628fa1", "#355e70", "#0b1b28"],
+      manaRoad: ["#242850", "#699b99", "#4e6e76", "#282c4b"],
+      manaTown: ["#35345c", "#9792af", "#66657f", "#303047"],
+      manaArchive: ["#17162d", "#625a83", "#393855", "#0f1021"],
+      manaBoss: ["#1c132d", "#70598a", "#42345d", "#100a1c"],
     };
     const p = palettes[tone] || palettes.field;
     const g = ctx.createLinearGradient(0, 0, 0, 250);
@@ -1508,11 +1749,36 @@ export class PixelRenderer {
         this.rect(x, y, 24, 3, p[2]);
         this.rect(x + 4, y + 4, 18, 2, "#142230");
       }
-    const cave = tone.toLowerCase().includes("cave") || ["dungeon", "windTower", "windBoss", "spiritSanctum", "spiritBoss"].includes(tone);
+    const cave = tone.toLowerCase().includes("cave") || ["dungeon", "windTower", "windBoss", "spiritSanctum", "spiritBoss", "manaArchive", "manaBoss"].includes(tone);
     const harvest = tone.includes("harvest") || tone.includes("granary");
     const spirit = tone.includes("spirit");
     const wind = tone.includes("wind") || tone === "arena";
-    if (cave) {
+    const arcane = tone.includes("mana");
+    if (arcane) {
+      for (let shelf = 0; shelf < 640; shelf += 94) {
+        this.rect(shelf, 88 + (shelf % 23), 74, 136, "#2c2942");
+        this.rect(shelf + 5, 94 + (shelf % 23), 64, 126, "#51465f");
+        for (let row = 0; row < 4; row += 1) {
+          this.rect(shelf + 8, 102 + row * 28 + (shelf % 23), 58, 4, "#241d31");
+          for (let book = 0; book < 7; book += 1) {
+            const colors = ["#6a77a0", "#9b5c75", "#bd995b", "#559183", "#8064a1"];
+            this.rect(shelf + 10 + book * 8, 83 + row * 28 + (shelf % 23), 6, 18, colors[(book + row) % colors.length]);
+          }
+        }
+      }
+      for (let glyph = 0; glyph < 15; glyph += 1) {
+        const gx = (glyph * 89 + now * 0.025) % 680 - 20;
+        const gy = 32 + ((glyph * 47) % 165);
+        this.rect(gx + 2, gy, 2, 9, glyph % 2 ? "#8de1dc" : "#f1d574");
+        this.rect(gx - 1, gy + 3, 8, 2, glyph % 2 ? "#8de1dc" : "#f1d574");
+      }
+      if (tone === "manaBoss") {
+        this.rect(270, 40, 140, 12, "#8671ac");
+        this.rect(286, 52, 108, 94, "#2a203d");
+        this.rect(302, 64, 76, 70, "#665681");
+        this.rect(315, 77, 50, 45, "#d7c86f");
+      }
+    } else if (cave) {
       for (let x = 20; x < 640; x += 74) {
         const h = 24 + ((x * 7) % 45);
         this.rect(x, 0, 15, h, "#0a101a");
@@ -1907,6 +2173,71 @@ export class PixelRenderer {
       p(58, -20, 31, 7, "#4f8399");
       p(57, -30, 24, 7, "#8ed5da");
       p(56, 28, 27, 7, "#6aa4b5");
+    } else if (sprite === "inkSlime") {
+      p(-28, 25, 56, 8, "#111628");
+      p(-25, 5, 50, 24, "#332b57");
+      p(-20, -18, 40, 31, "#625597");
+      p(-12, -32, 24, 19, "#9a88cf");
+      p(-10, -10, 7, 7, "#eefaff");
+      p(4, -10, 7, 7, "#eefaff");
+      p(-4, 4, 9, 4, "#241f3d");
+      p(-32, 18, 10, 8, "#4f427a");
+      p(22, 18, 10, 8, "#4f427a");
+    } else if (sprite === "runeOwl") {
+      p(-36, 28, 72, 8, "#111827");
+      p(-29, -23, 58, 53, "#56628b");
+      p(-48, -15, 23, 44, "#7c75aa");
+      p(25, -15, 23, 44, "#7c75aa");
+      p(-20, -43, 40, 26, "#c4badc");
+      p(-15, -31, 12, 12, "#f0d56d");
+      p(3, -31, 12, 12, "#f0d56d");
+      p(-10, -28, 6, 6, "#293650");
+      p(5, -28, 6, 6, "#293650");
+      p(-5, -14, 10, 8, "#d8b75a");
+      p(-3, -11, 6, 5, "#392f4a");
+    } else if (sprite === "bookMimic" || sprite === "falseIndex") {
+      const cover = sprite === "falseIndex" ? "#8d4e70" : "#4d356a";
+      p(-42, 31, 84, 8, "#111524");
+      p(-36, -38, 72, 70, cover);
+      p(-29, -31, 58, 56, "#e1d2ad");
+      p(-5, -36, 10, 64, "#bc9650");
+      p(-22, -15, 12, 12, "#312c49");
+      p(10, -15, 12, 12, "#312c49");
+      p(-13, 7, 26, 7, "#7d4f68");
+      p(-52, 7, 17, 27, "#79609b");
+      p(35, 7, 17, 27, "#79609b");
+      if (sprite === "falseIndex") {
+        p(-26, -52, 52, 10, "#a18ed1");
+        p(-6, -59, 12, 21, "#f1d66e");
+      }
+    } else if (sprite === "logicGolem") {
+      p(-43, 37, 86, 8, "#101521");
+      p(-34, -40, 68, 80, "#606579");
+      p(-50, -13, 20, 51, "#444a60");
+      p(30, -13, 20, 51, "#444a60");
+      p(-25, -54, 50, 23, "#8f91a5");
+      p(-16, -36, 13, 10, "#8de0dc");
+      p(4, -36, 13, 10, "#8de0dc");
+      p(-15, -4, 30, 9, "#252a3f");
+      p(-11, 9, 22, 9, "#d7c36b");
+      p(-4, 11, 8, 5, "#f7edb0");
+    } else if (sprite === "amnesiaLibrarian") {
+      p(-70, 48, 140, 10, "#090a16");
+      p(-55, -44, 110, 94, "#44365f");
+      p(-43, -66, 86, 31, "#806da4");
+      p(-65, -18, 28, 64, "#2d2745");
+      p(37, -18, 28, 64, "#2d2745");
+      p(-28, -38, 18, 14, "#f1d46d");
+      p(10, -38, 18, 14, "#f1d46d");
+      p(-32, -10, 64, 10, "#17182a");
+      p(-25, 3, 50, 20, "#a796c7");
+      p(-8, 25, 16, 23, "#1a1a30");
+      p(-78, -51, 20, 89, "#d5c89e");
+      p(-73, -46, 10, 76, "#6f5c8e");
+      p(58, -51, 20, 89, "#d5c89e");
+      p(63, -46, 10, 76, "#6f5c8e");
+      p(-9, -78, 18, 20, "#f0d56c");
+      p(-20, -72, 40, 8, "#9d8ac5");
     } else if (sprite === "shade") {
       p(-20, 15, 40, 7, "#100e1c");
       p(-16, -18, 32, 36, "#302a48");
@@ -1984,11 +2315,11 @@ export class PixelRenderer {
     ctx.translate(x, y + Math.sin(frame / 350 + x) * 1.5);
     if (hurt && Math.floor(frame / 45) % 2) ctx.globalAlpha = 0.35;
     const main =
-      type === "kumi" ? "#4f9fce" : type === "mirei" ? "#f0c85c" : type === "sarina" ? "#71c7a8" : type === "katoshi" ? "#9ac9e5" : "#65c3dd";
+      type === "kumi" ? "#4f9fce" : type === "mirei" ? "#f0c85c" : type === "sarina" ? "#71c7a8" : type === "katoshi" ? "#9ac9e5" : type === "manaka" ? "#7769b8" : "#65c3dd";
     const dark =
-      type === "kumi" ? "#172d53" : type === "mirei" ? "#78483b" : type === "sarina" ? "#354d68" : type === "katoshi" ? "#35416a" : "#193c5c";
+      type === "kumi" ? "#172d53" : type === "mirei" ? "#78483b" : type === "sarina" ? "#354d68" : type === "katoshi" ? "#35416a" : type === "manaka" ? "#303657" : "#193c5c";
     const hair =
-      type === "kumi" ? "#3d2931" : type === "mirei" ? "#49342c" : type === "sarina" ? "#3f3036" : type === "katoshi" ? "#4a3038" : "#293243";
+      type === "kumi" ? "#3d2931" : type === "mirei" ? "#49342c" : type === "sarina" ? "#3f3036" : type === "katoshi" ? "#4a3038" : type === "manaka" ? "#2b2636" : "#293243";
     this.rect(-8, -27, 16, 12, hair);
     this.rect(-10, -19, 20, 9, main);
     this.rect(-9, -10, 18, 19, dark);
@@ -2010,6 +2341,11 @@ export class PixelRenderer {
       this.rect(11, -25, 3, 39, "#e4ece8");
       this.rect(8, -29, 9, 7, "#81c9df");
       this.rect(-14, -9, 6, 17, "#8bbdd8");
+    } else if (type === "manaka") {
+      this.rect(8, -11, 13, 10, "#4a3568");
+      this.rect(10, -10, 5, 8, "#f1e5c7");
+      this.rect(15, -10, 5, 8, "#d9cba9");
+      this.rect(14, -9, 2, 6, "#efd36d");
     } else {
       this.rect(9, -14, 7, 20, "#a6b7c1");
       this.rect(10, -17, 5, 5, "#e9d070");
@@ -2059,6 +2395,7 @@ export class PixelRenderer {
       mirei: "#f4c95f",
       sarina: "#7fe0bc",
       katoshi: "#9be6ef",
+      manaka: "#b5a5ef",
     }[actorId] || "#78d5eb";
     ctx.save();
     ctx.globalAlpha = Math.min(1, enter * 1.8, (1 - t) * 5);
@@ -2156,9 +2493,10 @@ export class PixelRenderer {
     const mirei = type === "mirei";
     const sarina = type === "sarina";
     const katoshi = type === "katoshi";
-    const hair = kumi ? "#3e2831" : mirei ? "#49342c" : sarina ? "#3f3036" : katoshi ? "#4a3038" : "#293243";
+    const manaka = type === "manaka";
+    const hair = kumi ? "#3e2831" : mirei ? "#49342c" : sarina ? "#3f3036" : katoshi ? "#4a3038" : manaka ? "#2b2636" : "#293243";
     const skin = "#efbd99";
-    const main = kumi ? "#4f9fce" : mirei ? "#f0c75a" : sarina ? "#71c7a8" : katoshi ? "#9ac9e5" : "#64c2dc";
+    const main = kumi ? "#4f9fce" : mirei ? "#f0c75a" : sarina ? "#71c7a8" : katoshi ? "#9ac9e5" : manaka ? "#7769b8" : "#64c2dc";
     this.rect(12, 67, 60, 17, "#10213a");
     this.rect(19, 54, 46, 30, main);
     this.rect(22, 18, 42, 44, hair);
@@ -2186,6 +2524,12 @@ export class PixelRenderer {
       this.rect(17, 64, 50, 6, "#35416a");
       this.rect(57, 49, 5, 20, "#edf3e8");
       this.rect(54, 46, 12, 7, "#82cadf");
+    } else if (manaka) {
+      this.rect(17, 64, 50, 6, "#303657");
+      this.rect(56, 50, 12, 14, "#4a3568");
+      this.rect(58, 52, 4, 10, "#f1e5c7");
+      this.rect(62, 52, 4, 10, "#d9cba9");
+      this.rect(61, 53, 2, 8, "#efd36d");
     }
     this.ctx = old;
   }

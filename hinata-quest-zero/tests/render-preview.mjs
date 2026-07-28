@@ -19,11 +19,13 @@ const loadedAssets = {
   "portrait-mirei": await loadImage(path.join(art, "portraits", "mirei.png")),
   "portrait-sarina": await loadImage(path.join(art, "portraits", "sarina.png")),
   "portrait-katoshi": await loadImage(path.join(art, "portraits", "katoshi.png")),
+  "portrait-manaka": await loadImage(path.join(art, "portraits", "manaka.png")),
   "cutin-hero": await loadImage(path.join(art, "cutins", "hero.png")),
   "cutin-kumi": await loadImage(path.join(art, "cutins", "kumi.png")),
   "cutin-mirei": await loadImage(path.join(art, "cutins", "mirei.png")),
   "cutin-sarina": await loadImage(path.join(art, "cutins", "sarina.png")),
   "cutin-katoshi": await loadImage(path.join(art, "cutins", "katoshi.png")),
+  "cutin-manaka": await loadImage(path.join(art, "cutins", "manaka.png")),
 };
 
 function tileNeighbors(map, x, y) {
@@ -231,11 +233,11 @@ save("katoshia-boss", (renderer) => {
 
 save("portraits", (renderer) => {
   renderer.clear("#08182b");
-  ["hero", "kumi", "mirei", "sarina", "katoshi"].forEach((type, index) => {
+  ["hero", "kumi", "mirei", "sarina", "katoshi", "manaka"].forEach((type, index) => {
     const portrait = createCanvas(84, 84);
     renderer.drawPortrait(portrait, type);
-    renderer.ctx.drawImage(portrait, 54 + index * 112, 116, 84, 84);
-    renderer.text(type.toUpperCase(), 96 + index * 112, 208, "#e7f8ff", 9, "center");
+    renderer.ctx.drawImage(portrait, 14 + index * 104, 116, 84, 84);
+    renderer.text(type.toUpperCase(), 56 + index * 104, 208, "#e7f8ff", 8, "center");
   });
 });
 
@@ -264,6 +266,18 @@ function drawTownPreview(renderer, mapId, camera, now) {
       npc.dir,
       1,
     );
+  for (let y = startY; y <= Math.min(map.height - 1, startY + 13); y += 1)
+    for (let x = startX; x <= Math.min(map.width - 1, startX + 21); x += 1)
+      renderer.drawTileForeground(
+        map.tiles[y][x],
+        x * 32 - camera.x,
+        y * 32 - camera.y,
+        x,
+        y,
+        now,
+        map.tone,
+        tileNeighbors(map, x, y),
+      );
   renderer.drawMapLighting(map.tone, now);
   renderer.drawWeather(map.id, map.tone, now);
   renderer.drawMapAtmosphere(map.tone, now);
@@ -281,6 +295,30 @@ save("sarinaria-landmark", (renderer) =>
 save("katoshia-landmark", (renderer) =>
   drawTownPreview(renderer, "katoshia", { x: 12 * 32, y: 0 }, 5250),
 );
+save("manafia-landmark", (renderer) =>
+  drawTownPreview(renderer, "manafia", { x: 12 * 32, y: 0 }, 5250),
+);
+
+save("manafia-boss", (renderer) => {
+  renderer.drawBattleBackground("manaBoss", 1250);
+  const ctx = renderer.ctx;
+  ctx.save();
+  ctx.globalAlpha = 0.32;
+  ctx.strokeStyle = "#a99be8";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.ellipse(410, 130, 86, 86, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  renderer.drawBattleEnemy("falseIndex", 278, 151, 0.82, 1250);
+  renderer.drawBattleEnemy("amnesiaLibrarian", 410, 132, 1.08, 1250);
+  renderer.drawBattleEnemy("falseIndex", 535, 151, 0.82, 1250);
+  renderer.drawPartyBack("hero", 65, 214, 1250);
+  renderer.drawPartyBack("kumi", 137, 214, 1250);
+  renderer.drawPartyBack("katoshi", 209, 214, 1250);
+  renderer.drawPartyBack("manaka", 281, 214, 1250);
+  renderer.drawHitEffect(410, 124, 70, "light");
+});
 
 [
   ["hero", "トシ", "約束のハッピーオーラ"],
@@ -288,9 +326,10 @@ save("katoshia-landmark", (renderer) =>
   ["mirei", "美玲", "ハッピーブレッド"],
   ["sarina", "紗理菜", "サリマカシー"],
   ["katoshi", "史帆", "天空の剣舞"],
+  ["manaka", "愛奈", "禁書解放"],
 ].forEach(([id, name, skill]) => {
   save(`cutin-${id}`, (renderer) => {
-    renderer.drawBattleBackground(id === "mirei" ? "granaryBoss" : id === "sarina" ? "spiritBoss" : id === "katoshi" ? "windBoss" : "bossCave", 1250);
+    renderer.drawBattleBackground(id === "mirei" ? "granaryBoss" : id === "sarina" ? "spiritBoss" : id === "katoshi" ? "windBoss" : id === "manaka" ? "manaBoss" : "bossCave", 1250);
     renderer.drawSkillCutIn(id, name, skill, 0.48);
   });
 });
