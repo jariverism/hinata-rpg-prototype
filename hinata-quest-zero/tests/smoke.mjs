@@ -98,6 +98,30 @@ function clickCommand(document, label) {
   button.click();
 }
 
+test("刷新した専用画像アセットとタッチUIがリリース構成に揃っている", () => {
+  const expectedImages = [
+    ["assets/art/title-hinatia.png", 640, 360],
+    ["assets/art/party-sprites.png", 512, 160],
+    ["assets/art/portraits/hero.png", 192, 192],
+    ["assets/art/portraits/kumi.png", 192, 192],
+    ["assets/art/portraits/mirei.png", 192, 192],
+    ["assets/art/portraits/sarina.png", 192, 192],
+    ["assets/art/portraits/katoshi.png", 192, 192],
+  ];
+  for (const [relative, width, height] of expectedImages) {
+    const image = fs.readFileSync(path.join(root, relative));
+    assert.equal(image.subarray(1, 4).toString(), "PNG", `${relative}はPNG`);
+    assert.equal(image.readUInt32BE(16), width, `${relative}の幅`);
+    assert.equal(image.readUInt32BE(20), height, `${relative}の高さ`);
+  }
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
+  assert.match(html, /id="touch-controls"/);
+  assert.match(html, /VISUAL REMASTER/);
+  assert.match(css, /@media \(pointer: coarse\)/);
+  assert.match(css, /\.title-menu\s*\{[\s\S]*position: absolute/);
+});
+
 test("全マップが一画面より広く、主要地点へ到達可能で、地形が使い回しではない", async () => {
   const { MAPS, PASSABLE } = await import(
     `${pathToFileURL(path.join(root, "src/data.js")).href}?maps=1`

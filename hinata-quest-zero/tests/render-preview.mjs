@@ -1,15 +1,37 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createCanvas } from "@napi-rs/canvas";
+import { fileURLToPath } from "node:url";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { MAPS } from "../src/data.js";
 import { PixelRenderer } from "../src/pixel.js";
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = process.argv[2] || "/tmp/hq0-render-preview";
 fs.mkdirSync(output, { recursive: true });
+const art = path.join(root, "assets", "art");
+const loadedAssets = {
+  title: await loadImage(path.join(art, "title-hinatia.png")),
+  party: await loadImage(path.join(art, "party-sprites.png")),
+  "portrait-hero": await loadImage(path.join(art, "portraits", "hero.png")),
+  "portrait-kumi": await loadImage(path.join(art, "portraits", "kumi.png")),
+  "portrait-mirei": await loadImage(path.join(art, "portraits", "mirei.png")),
+  "portrait-sarina": await loadImage(path.join(art, "portraits", "sarina.png")),
+  "portrait-katoshi": await loadImage(path.join(art, "portraits", "katoshi.png")),
+};
+
+function tileNeighbors(map, x, y) {
+  return {
+    up: map.tiles[y - 1]?.[x],
+    down: map.tiles[y + 1]?.[x],
+    left: map.tiles[y]?.[x - 1],
+    right: map.tiles[y]?.[x + 1],
+  };
+}
 
 function save(name, draw) {
   const canvas = createCanvas(640, 360);
   const renderer = new PixelRenderer(canvas);
+  Object.assign(renderer.assets, loadedAssets);
   draw(renderer);
   fs.writeFileSync(path.join(output, `${name}.png`), canvas.toBuffer("image/png"));
 }
@@ -30,6 +52,8 @@ save("field", (renderer) => {
         x,
         y,
         1250,
+        map.tone,
+        tileNeighbors(map, x, y),
       );
   renderer.drawSpecial("campfire", 26 * 32 - camera.x, 30 * 32 - camera.y, false, 1250);
   renderer.drawChest(23 * 32 - camera.x, 32 * 32 - camera.y, false);
@@ -37,6 +61,7 @@ save("field", (renderer) => {
   renderer.drawCharacter("merchant", 28 * 32 + 4 - camera.x, 31 * 32 + 1 - camera.y, "left", 1);
   renderer.drawCharacter("kumi", 25 * 32 + 4 - camera.x, 25 * 32 + 1 - camera.y, "up", 0, 1, true);
   renderer.drawCharacter("hero", 26 * 32 + 4 - camera.x, 24 * 32 + 1 - camera.y, "up", 1);
+  renderer.drawMapLighting(map.tone, 1250);
 });
 
 save("battle", (renderer) => {
@@ -55,6 +80,7 @@ save("battle", (renderer) => {
   renderer.drawBattleEnemy("shade", 535, 151, 0.82, 1250);
   renderer.drawPartyBack("hero", 93, 214, 1250);
   renderer.drawPartyBack("kumi", 171, 214, 1250);
+  renderer.drawHitEffect(410, 124, 85, "light");
 });
 
 save("mirelia-field", (renderer) => {
@@ -69,12 +95,16 @@ save("mirelia-field", (renderer) => {
         x,
         y,
         1250,
+        map.tone,
+        tileNeighbors(map, x, y),
       );
   renderer.drawSpecial("goldenWheat", 12 * 32 - camera.x, 8 * 32 - camera.y, false, 1250);
   renderer.drawEnemySymbol("blightScarecrow", 14 * 32 - camera.x, 10 * 32 - camera.y, "left", 1250, true);
   renderer.drawCharacter("mirei", 10 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
   renderer.drawCharacter("kumi", 11 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
   renderer.drawCharacter("hero", 12 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
+  renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawMapAtmosphere(map.tone, 1250);
 });
 
 save("mirelia-boss", (renderer) => {
@@ -108,6 +138,8 @@ save("sarinaria-field", (renderer) => {
         x,
         y,
         1250,
+        map.tone,
+        tileNeighbors(map, x, y),
       );
   renderer.drawSpecial("spiritAltar", 14 * 32 - camera.x, 6 * 32 - camera.y, false, 1250);
   renderer.drawCharacter("spirit", 10 * 32 + 4 - camera.x, 10 * 32 + 1 - camera.y, "right", 1);
@@ -115,6 +147,8 @@ save("sarinaria-field", (renderer) => {
   renderer.drawCharacter("mirei", 12 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 1);
   renderer.drawCharacter("kumi", 13 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 0);
   renderer.drawCharacter("hero", 14 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 1);
+  renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawMapAtmosphere(map.tone, 1250);
 });
 
 save("sarinaria-boss", (renderer) => {
@@ -149,6 +183,8 @@ save("katoshia-field", (renderer) => {
         x,
         y,
         1250,
+        map.tone,
+        tileNeighbors(map, x, y),
       );
   renderer.drawSpecial("windBoard", 18 * 32 - camera.x, 23 * 32 - camera.y, false, 1250);
   renderer.drawCharacter("arenaMaster", 22 * 32 + 4 - camera.x, 8 * 32 + 1 - camera.y, "down", 1);
@@ -157,6 +193,8 @@ save("katoshia-field", (renderer) => {
   renderer.drawCharacter("mirei", 22 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
   renderer.drawCharacter("kumi", 23 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
   renderer.drawCharacter("hero", 24 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
+  renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawMapAtmosphere(map.tone, 1250);
 });
 
 save("katoshia-boss", (renderer) => {
@@ -177,6 +215,17 @@ save("katoshia-boss", (renderer) => {
   renderer.drawPartyBack("kumi", 137, 214, 1250);
   renderer.drawPartyBack("sarina", 209, 214, 1250);
   renderer.drawPartyBack("katoshi", 281, 214, 1250);
+  renderer.drawHitEffect(410, 124, 70, "wind");
+});
+
+save("portraits", (renderer) => {
+  renderer.clear("#08182b");
+  ["hero", "kumi", "mirei", "sarina", "katoshi"].forEach((type, index) => {
+    const portrait = createCanvas(84, 84);
+    renderer.drawPortrait(portrait, type);
+    renderer.ctx.drawImage(portrait, 54 + index * 112, 116, 84, 84);
+    renderer.text(type.toUpperCase(), 96 + index * 112, 208, "#e7f8ff", 9, "center");
+  });
 });
 
 console.log(output);

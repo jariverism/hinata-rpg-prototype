@@ -1,6 +1,28 @@
 import { TILE } from "./data.js";
 
 const TWO_PI = Math.PI * 2;
+const PARTY_ROWS = Object.freeze({
+  hero: 0,
+  kumi: 1,
+  mirei: 2,
+  sarina: 3,
+  katoshi: 4,
+});
+const DIRECTION_COLUMNS = Object.freeze({
+  down: 0,
+  left: 1,
+  right: 2,
+  up: 3,
+});
+const ART_URLS = Object.freeze({
+  title: new URL("../assets/art/title-hinatia.png", import.meta.url).href,
+  party: new URL("../assets/art/party-sprites.png", import.meta.url).href,
+  "portrait-hero": new URL("../assets/art/portraits/hero.png", import.meta.url).href,
+  "portrait-kumi": new URL("../assets/art/portraits/kumi.png", import.meta.url).href,
+  "portrait-mirei": new URL("../assets/art/portraits/mirei.png", import.meta.url).href,
+  "portrait-sarina": new URL("../assets/art/portraits/sarina.png", import.meta.url).href,
+  "portrait-katoshi": new URL("../assets/art/portraits/katoshi.png", import.meta.url).href,
+});
 
 export class PixelRenderer {
   constructor(canvas) {
@@ -9,6 +31,21 @@ export class PixelRenderer {
     this.ctx.imageSmoothingEnabled = false;
     this.width = canvas.width;
     this.height = canvas.height;
+    this.assets = {};
+    const ImageClass = globalThis.Image;
+    if (ImageClass) {
+      for (const [id, url] of Object.entries(ART_URLS)) {
+        const image = new ImageClass();
+        image.decoding = "async";
+        image.src = url;
+        this.assets[id] = image;
+      }
+    }
+  }
+
+  assetReady(id) {
+    const image = this.assets[id];
+    return Boolean(image && image.complete && (image.naturalWidth || image.width));
   }
 
   rect(x, y, w, h, color) {
@@ -40,6 +77,23 @@ export class PixelRenderer {
 
   drawTitle(now = 0) {
     const ctx = this.ctx;
+    if (this.assetReady("title")) {
+      ctx.drawImage(this.assets.title, 0, 0, this.width, this.height);
+      const shade = ctx.createLinearGradient(0, 0, 0, this.height);
+      shade.addColorStop(0, "rgba(2,10,24,.48)");
+      shade.addColorStop(0.34, "rgba(4,18,38,.08)");
+      shade.addColorStop(0.72, "rgba(3,13,27,.04)");
+      shade.addColorStop(1, "rgba(2,9,20,.56)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, 0, this.width, this.height);
+      for (let i = 0; i < 18; i += 1) {
+        const x = (i * 89 + Math.floor(now / 55)) % 700 - 30;
+        const y = 72 + ((i * 47) % 185);
+        const size = i % 4 === 0 ? 2 : 1;
+        this.rect(x, y, size, size, i % 3 ? "rgba(216,247,255,.8)" : "rgba(255,224,133,.8)");
+      }
+      return;
+    }
     const g = ctx.createLinearGradient(0, 0, 0, this.height);
     g.addColorStop(0, "#06152d");
     g.addColorStop(0.45, "#164875");
@@ -112,35 +166,98 @@ export class PixelRenderer {
     this.rect(x - 2 * s, y + 35 * s, 5 * s, 8 * s, "#f8d36a");
   }
 
-  drawTile(type, sx, sy, wx, wy, now = 0) {
+  drawTile(type, sx, sy, wx, wy, now = 0, tone = "field", neighbors = null) {
     const x = Math.floor(sx);
     const y = Math.floor(sy);
     const phase = Math.floor(now / 450 + wx + wy) % 4;
+    const family =
+      tone.includes("harvest") || tone.includes("granary")
+        ? "harvest"
+        : tone.includes("spirit")
+          ? "spirit"
+          : tone.includes("wind") || tone === "arena"
+            ? "wind"
+            : tone.toLowerCase().includes("cave") || tone === "dungeon"
+              ? "cave"
+              : "sky";
+    const palettes = {
+      sky: {
+        grass: "#459f6c", grassAlt: "#3f9665", grassDark: "#247451", grassLight: "#73c786",
+        path: "#c6a36d", pathDark: "#927049", pathLight: "#e1c58f",
+        tree: "#2c7f53", treeDark: "#1d5f43", treeLight: "#5cad70",
+        water: "#287ca6", waterDark: "#195b84", waterLight: "#62bed3",
+        stone: "#69727c", stoneDark: "#414b57", stoneLight: "#929ba0",
+        roof: "#346f99", roofDark: "#1c4b74", roofLight: "#5fa0c1",
+      },
+      harvest: {
+        grass: "#83974d", grassAlt: "#788c47", grassDark: "#536b37", grassLight: "#b4b960",
+        path: "#cfaf6e", pathDark: "#9d7747", pathLight: "#eed292",
+        tree: "#638447", treeDark: "#3f6338", treeLight: "#91aa5d",
+        water: "#4e8f9b", waterDark: "#316d7b", waterLight: "#88c6c4",
+        stone: "#817665", stoneDark: "#5c5145", stoneLight: "#aa9c7e",
+        roof: "#9b6b43", roofDark: "#6c442f", roofLight: "#d09a5b",
+      },
+      spirit: {
+        grass: "#2f8268", grassAlt: "#28775f", grassDark: "#185b50", grassLight: "#63b994",
+        path: "#77947f", pathDark: "#526e65", pathLight: "#acc1a1",
+        tree: "#206d5b", treeDark: "#174d48", treeLight: "#51aa83",
+        water: "#2c8296", waterDark: "#1b5f77", waterLight: "#65cfcc",
+        stone: "#5b7475", stoneDark: "#364f57", stoneLight: "#8aa29a",
+        roof: "#477d73", roofDark: "#2c5b5b", roofLight: "#77b29b",
+      },
+      wind: {
+        grass: "#4c9381", grassAlt: "#428777", grassDark: "#2a6570", grassLight: "#82c5a8",
+        path: "#a8a68c", pathDark: "#74776f", pathLight: "#d8d3b5",
+        tree: "#367765", treeDark: "#28576a", treeLight: "#6ba994",
+        water: "#3d87ad", waterDark: "#285f8b", waterLight: "#83c9dc",
+        stone: "#687987", stoneDark: "#3d5265", stoneLight: "#9bb0b5",
+        roof: "#4b82a1", roofDark: "#2f5d82", roofLight: "#83b9ca",
+      },
+      cave: {
+        grass: "#4b7258", grassAlt: "#42664f", grassDark: "#294a3d", grassLight: "#729078",
+        path: "#776d61", pathDark: "#4d4845", pathLight: "#9b9080",
+        tree: "#385b4a", treeDark: "#293f3d", treeLight: "#5f8069",
+        water: "#315f7c", waterDark: "#213e62", waterLight: "#568ca1",
+        stone: "#4e5c69", stoneDark: "#293744", stoneLight: "#78838b",
+        roof: "#41576a", roofDark: "#283b50", roofLight: "#688096",
+      },
+    };
+    const palette = palettes[family];
+    const variant = Math.abs((wx * 17 + wy * 31) % 5);
     switch (type) {
       case TILE.GRASS:
-        this.rect(x, y, 32, 32, (wx + wy) % 2 ? "#3f9b68" : "#459f6c");
-        this.rect(x + 5 + ((wx * 7) % 16), y + 7 + ((wy * 5) % 13), 2, 5, "#277b55");
-        this.rect(x + 20, y + 22, 5, 2, "#65bb77");
+        this.rect(x, y, 32, 32, (wx + wy) % 2 ? palette.grassAlt : palette.grass);
+        this.rect(x + 5 + ((wx * 7) % 16), y + 7 + ((wy * 5) % 13), 2, 5, palette.grassDark);
+        this.rect(x + 20, y + 22, 5, 2, palette.grassLight);
+        this.rect(x + 21, y + 19, 1, 4, palette.grassDark);
+        if (variant === 0) {
+          const accent = family === "harvest" ? "#f0cd65" : family === "spirit" ? "#9ee7cc" : family === "wind" ? "#d9eff0" : "#a5db86";
+          this.rect(x + 9, y + 24, 2, 2, accent);
+          this.rect(x + 11, y + 22, 2, 2, accent);
+        }
         break;
       case TILE.PATH:
-        this.rect(x, y, 32, 32, "#c5a26b");
-        this.rect(x + ((wx * 11) % 24), y + ((wy * 7) % 24), 5, 2, "#9c7b52");
-        this.rect(x + 17, y + 24, 3, 2, "#e2c58b");
+        this.rect(x, y, 32, 32, palette.path);
+        this.rect(x + ((wx * 11) % 24), y + ((wy * 7) % 24), 5, 2, palette.pathDark);
+        this.rect(x + 17, y + 24, 3, 2, palette.pathLight);
+        if (variant === 1) this.rect(x + 6, y + 15, 8, 1, palette.pathLight);
         break;
       case TILE.TREE:
       case TILE.ROOT:
-        this.rect(x, y, 32, 32, type === TILE.ROOT ? "#193f3d" : "#287852");
+        this.rect(x, y, 32, 32, type === TILE.ROOT ? palette.treeDark : palette.tree);
         this.rect(x + 13, y + 20, 7, 12, "#69492f");
-        this.rect(x + 3, y + 6, 26, 19, type === TILE.ROOT ? "#275a4f" : "#236d4c");
-        this.rect(x + 7, y + 2, 18, 22, type === TILE.ROOT ? "#347765" : "#348b59");
-        this.rect(x + 12, y + 5, 8, 6, type === TILE.ROOT ? "#55a184" : "#60aa69");
-        this.rect(x + 2, y + 18, 5, 6, "#163f36");
+        this.rect(x + 3, y + 6, 26, 19, palette.treeDark);
+        this.rect(x + 7, y + 2, 18, 22, palette.tree);
+        this.rect(x + 12, y + 5, 8, 6, palette.treeLight);
+        this.rect(x + 2, y + 18, 5, 6, palette.grassDark);
+        this.rect(x + 22, y + 10, 4, 4, palette.treeLight);
         break;
       case TILE.WATER:
       case TILE.REEDS:
-        this.rect(x, y, 32, 32, "#287aa3");
-        this.rect(x, y + 7 + phase, 15, 2, "#55b8cf");
-        this.rect(x + 17, y + 21 - phase, 11, 2, "#1c5c86");
+        this.rect(x, y, 32, 32, palette.water);
+        this.rect(x, y + 7 + phase, 15, 2, palette.waterLight);
+        this.rect(x + 17, y + 21 - phase, 11, 2, palette.waterDark);
+        this.rect(x + 5, y + 27 - phase, 8, 1, palette.waterLight);
         if (type === TILE.REEDS) {
           this.rect(x + 4, y + 11, 2, 17, "#477a48");
           this.rect(x + 8, y + 15, 2, 15, "#6e9b57");
@@ -157,24 +274,53 @@ export class PixelRenderer {
         this.rect(x + 29, y, 3, 32, "#382b2c");
         break;
       case TILE.STONE:
-        this.rect(x, y, 32, 32, "#626a72");
-        this.rect(x, y + 15, 32, 2, "#424b55");
-        this.rect(x + 14, y, 2, 15, "#414a54");
-        this.rect(x + 24, y + 17, 2, 15, "#414a54");
-        this.rect(x + 3, y + 3, 7, 2, "#858e92");
+        this.rect(x, y, 32, 32, variant === 4 ? palette.stoneDark : palette.stone);
+        this.rect(x, y + 15, 32, 2, palette.stoneDark);
+        this.rect(x + ((wy % 2) ? 7 : 17), y, 2, 15, palette.stoneDark);
+        this.rect(x + ((wy % 2) ? 23 : 9), y + 17, 2, 15, palette.stoneDark);
+        this.rect(x + 2, y + 2, 12, 2, palette.stoneLight);
+        this.rect(x + 18, y + 19, 9, 1, palette.stoneLight);
+        if (family === "wind") {
+          this.rect(x + 3, y + 5, 2, 6, "#b7c8c6");
+          this.rect(x + 27, y + 21, 2, 6, "#4c6877");
+        } else if (variant === 2) {
+          this.rect(x + 18, y + 9, 5, 1, palette.stoneLight);
+        }
         break;
       case TILE.FLOOR:
-        this.rect(x, y, 32, 32, "#b7b1a2");
-        this.rect(x, y + 30, 32, 2, "#8e897e");
-        this.rect(x + 30, y, 2, 32, "#8e897e");
-        this.rect(x + 4, y + 4, 3, 2, "#d1cbbb");
+        this.rect(x, y, 32, 32, family === "spirit" ? "#839c8c" : family === "wind" ? "#92a3a6" : "#b7b1a2");
+        this.rect(x, y + 30, 32, 2, palette.stoneDark);
+        this.rect(x + 30, y, 2, 32, palette.stoneDark);
+        this.rect(x + 4, y + 4, 3, 2, palette.stoneLight);
         break;
       case TILE.WALL:
-        this.rect(x, y, 32, 32, "#303946");
-        this.rect(x, y + 15, 32, 3, "#182431");
+        this.rect(
+          x,
+          y,
+          32,
+          32,
+          family === "spirit"
+            ? "#304e50"
+            : family === "wind"
+              ? "#465e70"
+              : family === "harvest"
+                ? "#574a3d"
+                : "#303946",
+        );
+        this.rect(x, y + 15, 32, 3, palette.stoneDark);
         this.rect(x + ((wy % 2) ? 7 : 21), y, 3, 15, "#1e2936");
         this.rect(x + ((wy % 2) ? 21 : 7), y + 18, 3, 14, "#1e2936");
-        this.rect(x + 3, y + 3, 10, 3, "#46505b");
+        this.rect(x + 3, y + 3, 10, 3, palette.stoneLight);
+        if (family === "harvest") {
+          this.rect(x + 2, y + 13, 28, 3, "#6c4a31");
+          this.rect(x + 14, y, 3, 32, "#755034");
+        } else if (family === "spirit") {
+          this.rect(x + 25, y + 4, 2, 13, "#4b8b70");
+          this.rect(x + 22, y + 9, 6, 2, "#71b78b");
+        } else if (family === "wind") {
+          this.rect(x + 3, y + 3, 26, 2, "#7f9ba5");
+          this.rect(x + 4, y + 20, 2, 8, "#85a4ac");
+        }
         break;
       case TILE.CAVE:
         this.rect(x, y, 32, 32, "#42515d");
@@ -191,18 +337,43 @@ export class PixelRenderer {
         this.rect(x + 20, y + 12, 4, 16, "#28779f");
         break;
       case TILE.FLOWER:
-        this.rect(x, y, 32, 32, "#459f6c");
-        this.rect(x + 15, y + 14, 2, 13, "#246f4d");
-        this.rect(x + 11, y + 11, 6, 5, "#f6d9ec");
-        this.rect(x + 16, y + 9, 6, 6, "#f4a9cf");
-        this.rect(x + 15, y + 12, 4, 4, "#ffe078");
+        this.rect(
+          x,
+          y,
+          32,
+          32,
+          family === "harvest" ? "#786d40" : palette.grass,
+        );
+        if (family === "harvest") {
+          this.rect(x + 2, y + 2, 28, 28, "#78894a");
+          for (const xx of [7, 16, 25]) {
+            this.rect(x + xx, y + 13, 2, 13, palette.grassDark);
+            this.rect(x + xx - 3, y + 10, 5, 5, "#f3c766");
+            this.rect(x + xx + 1, y + 8, 4, 6, "#f6dea0");
+          }
+        } else {
+          this.rect(x + 15, y + 14, 2, 13, palette.grassDark);
+          this.rect(x + 11, y + 11, 6, 5, family === "spirit" ? "#bcffe5" : "#f6d9ec");
+          this.rect(x + 16, y + 9, 6, 6, family === "spirit" ? "#77e1ca" : "#f4a9cf");
+          this.rect(x + 15, y + 12, 4, 4, "#ffe078");
+          if (family === "spirit") {
+            this.rect(x + 6, y + 21, 3, 3, "#8ff2d5");
+            this.rect(x + 24, y + 6, 2, 2, "#d9fff0");
+          }
+        }
         break;
       case TILE.ROOF:
-        this.rect(x, y, 32, 32, "#356b91");
-        for (let yy = 2; yy < 32; yy += 8) {
-          this.rect(x, y + yy, 32, 3, "#1f4b70");
-          this.rect(x + ((yy / 8) % 2) * 8, y + yy - 3, 14, 3, "#5592b4");
+        this.rect(x, y, 32, 32, palette.roof);
+        for (let yy = 3; yy < 32; yy += 8) {
+          this.rect(x, y + yy, 32, 3, palette.roofDark);
+          const shingleOffset = ((wy * 4 + Math.floor(yy / 8)) % 2) * 8;
+          this.rect(x + shingleOffset, y + yy - 3, 13, 3, palette.roofLight);
+          this.rect(x + shingleOffset + 16, y + yy - 3, 13, 3, palette.roofLight);
         }
+        if (family === "wind" && variant === 1)
+          this.rect(x + 13, y + 8, 6, 11, "#9dd8dd");
+        if (family === "harvest" && variant === 3)
+          this.rect(x + 5, y + 20, 7, 2, "#efbd66");
         break;
       case TILE.MUD:
         this.rect(x, y, 32, 32, "#705e46");
@@ -216,16 +387,16 @@ export class PixelRenderer {
         this.rect(x + 20, y + 18, 3, 3, "#f3c75f");
         break;
       case TILE.ROCK:
-        this.rect(x, y, 32, 32, "#3f805f");
-        this.rect(x + 4, y + 10, 24, 19, "#65717a");
-        this.rect(x + 8, y + 6, 15, 8, "#889399");
-        this.rect(x + 5, y + 24, 22, 5, "#414d56");
+        this.rect(x, y, 32, 32, palette.grassAlt);
+        this.rect(x + 4, y + 10, 24, 19, palette.stone);
+        this.rect(x + 8, y + 6, 15, 8, palette.stoneLight);
+        this.rect(x + 5, y + 24, 22, 5, palette.stoneDark);
         break;
       case TILE.MOSS:
-        this.rect(x, y, 32, 32, "#356e55");
-        this.rect(x + 4, y + 6, 5, 3, "#55a06d");
-        this.rect(x + 17, y + 18, 10, 3, "#244f43");
-        this.rect(x + 22, y + 5, 3, 6, "#6ab67a");
+        this.rect(x, y, 32, 32, palette.treeDark);
+        this.rect(x + 4, y + 6, 5, 3, palette.treeLight);
+        this.rect(x + 17, y + 18, 10, 3, palette.grassDark);
+        this.rect(x + 22, y + 5, 3, 6, palette.grassLight);
         break;
       case TILE.STAIRS:
         this.rect(x, y, 32, 32, "#4b5662");
@@ -235,9 +406,9 @@ export class PixelRenderer {
         }
         break;
       case TILE.SAND:
-        this.rect(x, y, 32, 32, "#d3bb77");
-        this.rect(x + 5, y + 8, 2, 2, "#ae945b");
-        this.rect(x + 21, y + 22, 5, 2, "#ead596");
+        this.rect(x, y, 32, 32, family === "wind" ? "#c8bd8c" : "#d3bb77");
+        this.rect(x + 5, y + 8, 2, 2, palette.pathDark);
+        this.rect(x + 21, y + 22, 5, 2, palette.pathLight);
         break;
       case TILE.WOOD:
         this.rect(x, y, 32, 32, "#8a633e");
@@ -258,21 +429,170 @@ export class PixelRenderer {
         this.rect(x + 12, y + 8, 8, 7, "#ffeaa0");
         break;
       case TILE.PILLAR:
-        this.rect(x, y, 32, 32, "#70818d");
-        this.rect(x + 5, y + 2, 22, 5, "#adb8bb");
-        this.rect(x + 9, y + 7, 14, 21, "#8e9ca1");
-        this.rect(x + 5, y + 27, 22, 5, "#586873");
+        this.rect(x, y, 32, 32, palette.stone);
+        this.rect(x + 5, y + 2, 22, 5, palette.stoneLight);
+        this.rect(x + 9, y + 7, 14, 21, family === "wind" ? "#879da6" : "#8e9ca1");
+        this.rect(x + 5, y + 27, 22, 5, palette.stoneDark);
         break;
       case TILE.VOID:
       default:
         this.rect(x, y, 32, 32, "#080c14");
         break;
     }
+    if (neighbors)
+      this.drawTileEdges(type, x, y, wx, wy, neighbors, palette, family);
+  }
+
+  drawTileEdges(type, x, y, wx, wy, neighbors, palette, family) {
+    const same = (direction, accepted) => accepted.includes(neighbors[direction]);
+    const directions = [
+      ["up", 0, 0, 32, 2],
+      ["down", 0, 30, 32, 2],
+      ["left", 0, 0, 2, 32],
+      ["right", 30, 0, 2, 32],
+    ];
+    if (type === TILE.PATH || type === TILE.SAND) {
+      const joined = [TILE.PATH, TILE.SAND, TILE.BRIDGE, TILE.DOOR, TILE.STAIRS];
+      for (const [direction, xx, yy, width, height] of directions) {
+        if (same(direction, joined)) continue;
+        this.rect(x + xx, y + yy, width, height, palette.pathDark);
+        const insetX = direction === "left" ? 2 : direction === "right" ? 29 : 0;
+        const insetY = direction === "up" ? 2 : direction === "down" ? 29 : 0;
+        const insetWidth = direction === "left" || direction === "right" ? 1 : 32;
+        const insetHeight = direction === "up" || direction === "down" ? 1 : 32;
+        this.rect(
+          x + insetX,
+          y + insetY,
+          insetWidth,
+          insetHeight,
+          palette.pathLight,
+        );
+      }
+    }
+    if (type === TILE.WATER || type === TILE.REEDS) {
+      const joined = [TILE.WATER, TILE.REEDS, TILE.BRIDGE];
+      for (const [direction, xx, yy, width, height] of directions) {
+        if (same(direction, joined)) continue;
+        this.rect(x + xx, y + yy, width, height, palette.waterLight);
+        if (direction === "down")
+          this.rect(x + 3, y + 28, 26, 1, "rgba(229,250,237,.7)");
+      }
+    }
+    if (type === TILE.ROOF) {
+      if (!same("up", [TILE.ROOF])) {
+        this.rect(x, y, 32, 3, palette.roofLight);
+        this.rect(x, y + 3, 32, 2, palette.roofDark);
+      }
+      if (!same("down", [TILE.ROOF])) {
+        this.rect(x, y + 26, 32, 6, palette.roofDark);
+        this.rect(x, y + 26, 32, 2, palette.roofLight);
+        this.rect(x + 5, y + 29, 4, 3, family === "harvest" ? "#f0c36b" : "#152e4b");
+        this.rect(x + 23, y + 29, 4, 3, family === "harvest" ? "#f0c36b" : "#152e4b");
+      }
+      if (!same("left", [TILE.ROOF])) this.rect(x, y + 2, 3, 28, palette.roofDark);
+      if (!same("right", [TILE.ROOF])) this.rect(x + 29, y + 2, 3, 28, palette.roofDark);
+      if (
+        neighbors.down === TILE.WALL &&
+        Math.abs((wx * 7 + wy * 3) % 5) === 1
+      ) {
+        const dormerDark =
+          family === "harvest" ? "#5e3b2d" : family === "spirit" ? "#183e46" : "#19364e";
+        const dormerGlass =
+          family === "harvest" ? "#ffd477" : family === "spirit" ? "#a4f7d8" : "#aee8ed";
+        this.rect(x + 8, y + 10, 16, 15, dormerDark);
+        this.rect(x + 11, y + 13, 10, 9, dormerGlass);
+        this.rect(x + 15, y + 13, 2, 9, "#f7efd2");
+        this.rect(x + 6, y + 9, 20, 3, palette.roofLight);
+      }
+    }
+    if (type === TILE.WALL) {
+      if (!same("up", [TILE.WALL, TILE.ROOF]))
+        this.rect(x, y, 32, 3, palette.stoneLight);
+      if (!same("down", [TILE.WALL, TILE.DOOR])) {
+        this.rect(x, y + 27, 32, 5, palette.stoneDark);
+        this.rect(x, y + 27, 32, 1, palette.stoneLight);
+      }
+      if (!same("left", [TILE.WALL, TILE.DOOR]))
+        this.rect(x, y + 2, 2, 28, palette.stoneLight);
+      if (!same("right", [TILE.WALL, TILE.DOOR]))
+        this.rect(x + 30, y + 2, 2, 28, "#182735");
+      if (
+        family !== "cave" &&
+        neighbors.up === TILE.ROOF &&
+        Math.abs((wx * 3 + wy * 5) % 4) === 0
+      ) {
+        const glass =
+          family === "harvest"
+            ? "#f2bf62"
+            : family === "spirit"
+              ? "#69d6bb"
+              : "#72c6dc";
+        const glow =
+          family === "harvest"
+            ? "#ffe8a8"
+            : family === "spirit"
+              ? "#c3ffe7"
+              : "#d7f8f7";
+        this.rect(x + 8, y + 7, 16, 15, "#172432");
+        this.rect(x + 10, y + 9, 12, 11, glass);
+        this.rect(x + 11, y + 10, 4, 4, glow);
+        this.rect(x + 15, y + 9, 2, 11, "#32495a");
+        this.rect(x + 10, y + 14, 12, 2, "#32495a");
+        this.rect(x + 6, y + 22, 20, 3, palette.stoneLight);
+      } else if (
+        family !== "cave" &&
+        neighbors.up === TILE.ROOF &&
+        Math.abs((wx * 11 + wy) % 7) === 2
+      ) {
+        const banner =
+          family === "harvest" ? "#d59b48" : family === "spirit" ? "#4fae8e" : "#6ac1d2";
+        this.rect(x + 13, y + 5, 7, 19, "#162b40");
+        this.rect(x + 14, y + 6, 5, 16, banner);
+        this.rect(x + 15, y + 8, 3, 3, "#f2d069");
+      }
+    }
+    if (type === TILE.STONE) {
+      if (neighbors.down === TILE.WATER)
+        this.rect(x, y + 27, 32, 5, palette.stoneDark);
+      if (neighbors.up === TILE.WATER)
+        this.rect(x, y, 32, 3, palette.stoneLight);
+    }
+    if (type === TILE.FLOOR) {
+      if (neighbors.up === TILE.WALL) this.rect(x, y, 32, 4, "rgba(6,15,25,.28)");
+      if (neighbors.left === TILE.WALL) this.rect(x, y, 4, 32, "rgba(6,15,25,.18)");
+    }
+    if (type === TILE.FLOWER && family === "harvest") {
+      const crops = [TILE.FLOWER];
+      if (!same("up", crops)) this.rect(x + 2, y + 2, 28, 2, "#b09a58");
+      if (!same("down", crops)) this.rect(x + 2, y + 28, 28, 2, "#4f5c36");
+      if (!same("left", crops)) this.rect(x + 2, y + 2, 2, 28, "#a18448");
+      if (!same("right", crops)) this.rect(x + 28, y + 2, 2, 28, "#4f5c36");
+    }
   }
 
   drawCharacter(type, x, y, dir = "down", frame = 0, scale = 1, ghost = false) {
     const ctx = this.ctx;
     const s = scale;
+    if (PARTY_ROWS[type] !== undefined && this.assetReady("party")) {
+      const direction = DIRECTION_COLUMNS[dir] ?? 0;
+      const animationFrame = ((Math.floor(frame) % 4) + 4) % 4;
+      ctx.save();
+      ctx.globalAlpha = ghost ? 0.58 : 1;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        this.assets.party,
+        (direction * 4 + animationFrame) * 32,
+        PARTY_ROWS[type] * 32,
+        32,
+        32,
+        Math.round(x - 4),
+        Math.round(y),
+        Math.round(32 * s),
+        Math.round(32 * s),
+      );
+      ctx.restore();
+      return;
+    }
     const bob = frame % 2 ? 1 * s : 0;
     const flip = dir === "left";
     ctx.save();
@@ -377,6 +697,101 @@ export class PixelRenderer {
     if (type === "child") {
       ctx.scale(0.86, 0.86);
     }
+    ctx.restore();
+  }
+
+  drawMapAtmosphere(tone, now = 0) {
+    const ctx = this.ctx;
+    const harvest = tone.includes("harvest");
+    const spirit = tone.includes("spirit");
+    const wind = tone.includes("wind") || tone === "arena";
+    const cave =
+      tone.toLowerCase().includes("cave") ||
+      ["dungeon", "granary", "granaryBoss"].includes(tone);
+    if (!harvest && !spirit && !wind && !cave) return;
+    ctx.save();
+    ctx.globalAlpha = cave ? 0.28 : 0.48;
+    for (let i = 0; i < 18; i += 1) {
+      const speed = wind ? 0.12 : harvest ? 0.055 : 0.025;
+      const px = (i * 83 + Math.floor(now * speed)) % 700 - 30;
+      const py =
+        (i * 47 +
+          (spirit ? Math.sin(now / 430 + i) * 15 : Math.floor(now * 0.012))) %
+        330;
+      if (wind) {
+        this.rect(
+          px,
+          py,
+          13 + (i % 3) * 5,
+          i % 4 === 0 ? 2 : 1,
+          i % 2 ? "#d8f2f1" : "#93d3df",
+        );
+      } else if (harvest) {
+        this.rect(px, py, 3, 2, i % 2 ? "#f0d271" : "#fff0b1");
+        this.rect(px + 2, py + 2, 1, 3, "#c39746");
+      } else if (spirit) {
+        this.rect(
+          px,
+          py,
+          i % 5 === 0 ? 3 : 2,
+          i % 5 === 0 ? 3 : 2,
+          i % 2 ? "#b9ffe0" : "#76d9c0",
+        );
+      } else {
+        this.rect(px, py, 2, 2, i % 2 ? "#8795a0" : "#baa883");
+      }
+    }
+    ctx.restore();
+  }
+
+  drawMapLighting(tone, now = 0) {
+    const ctx = this.ctx;
+    const harvest = tone.includes("harvest");
+    const spirit = tone.includes("spirit");
+    const wind = tone.includes("wind") || tone === "arena";
+    const cave =
+      tone.toLowerCase().includes("cave") ||
+      ["dungeon", "granary", "granaryBoss"].includes(tone);
+    ctx.save();
+    const daylight = ctx.createLinearGradient(0, 0, this.width, this.height);
+    if (harvest) {
+      daylight.addColorStop(0, "rgba(255,228,143,.11)");
+      daylight.addColorStop(0.56, "rgba(247,192,87,.025)");
+      daylight.addColorStop(1, "rgba(67,38,21,.08)");
+    } else if (spirit) {
+      daylight.addColorStop(0, "rgba(139,255,221,.08)");
+      daylight.addColorStop(0.54, "rgba(34,151,137,.025)");
+      daylight.addColorStop(1, "rgba(7,32,49,.1)");
+    } else if (wind) {
+      daylight.addColorStop(0, "rgba(224,251,255,.12)");
+      daylight.addColorStop(0.5, "rgba(102,196,216,.025)");
+      daylight.addColorStop(1, "rgba(24,48,78,.08)");
+    } else if (cave) {
+      daylight.addColorStop(0, "rgba(59,87,106,.03)");
+      daylight.addColorStop(0.55, "rgba(6,14,28,.07)");
+      daylight.addColorStop(1, "rgba(0,4,12,.2)");
+    } else {
+      daylight.addColorStop(0, "rgba(214,249,255,.08)");
+      daylight.addColorStop(0.6, "rgba(87,172,201,.015)");
+      daylight.addColorStop(1, "rgba(8,37,47,.07)");
+    }
+    ctx.fillStyle = daylight;
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    const pulse = 0.01 + (Math.sin(now / 1200) + 1) * 0.006;
+    const vignette = ctx.createRadialGradient(
+      this.width * 0.5,
+      this.height * 0.46,
+      this.height * 0.18,
+      this.width * 0.5,
+      this.height * 0.46,
+      this.width * 0.68,
+    );
+    vignette.addColorStop(0, "rgba(3,10,19,0)");
+    vignette.addColorStop(0.72, "rgba(3,10,19,0)");
+    vignette.addColorStop(1, `rgba(3,10,19,${cave ? 0.34 : 0.13 + pulse})`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, this.width, this.height);
     ctx.restore();
   }
 
@@ -792,13 +1207,93 @@ export class PixelRenderer {
         this.rect(x, y, 24, 3, p[2]);
         this.rect(x + 4, y + 4, 18, 2, "#142230");
       }
-    if (tone.includes("Cave") || ["cave", "dungeon"].includes(tone)) {
+    const cave = tone.toLowerCase().includes("cave") || ["dungeon", "windTower", "windBoss", "spiritSanctum", "spiritBoss"].includes(tone);
+    const harvest = tone.includes("harvest") || tone.includes("granary");
+    const spirit = tone.includes("spirit");
+    const wind = tone.includes("wind") || tone === "arena";
+    if (cave) {
       for (let x = 20; x < 640; x += 74) {
         const h = 24 + ((x * 7) % 45);
         this.rect(x, 0, 15, h, "#0a101a");
         this.rect(x + 3, h - 8, 9, 12, "#283747");
       }
+      for (let x = 18; x < 640; x += 58) {
+        const height = 24 + ((x * 11) % 38);
+        this.rect(x, 190 - height, 9, height, p[2]);
+        this.rect(x + 2, 190 - height - 9, 5, 12, p[1]);
+        if ((x / 58) % 2 < 1) {
+          const crystal = spirit ? "#75e2c3" : wind ? "#9edfec" : "#728fc0";
+          this.rect(x + 13, 185 - (x % 17), 5, 25, crystal);
+          this.rect(x + 15, 180 - (x % 17), 2, 22, "#d5f7ef");
+        }
+      }
+    } else if (harvest) {
+      for (let x = 0; x < 640; x += 13) {
+        const sway = Math.round(Math.sin(now / 310 + x) * 2);
+        this.rect(x + 5 + sway, 176, 2, 48, "#75612f");
+        this.rect(x + 1 + sway, 168 + (x % 9), 7, 11, "#d5b451");
+        this.rect(x + 7 + sway, 172 + (x % 7), 5, 9, "#f0cf69");
+      }
+      if (tone.includes("granary")) {
+        for (let x = 0; x < 640; x += 96) {
+          this.rect(x, 105, 13, 119, "#38291f");
+          this.rect(x + 4, 105, 5, 119, "#705238");
+          this.rect(x, 121, 96, 8, "#4b3526");
+        }
+      } else {
+        this.rect(0, 151, 640, 4, "#e9cb75");
+        for (let x = 20; x < 640; x += 86) {
+          this.rect(x, 137, 54, 5, "#7f6842");
+          this.rect(x + 4, 142, 4, 27, "#5a4932");
+          this.rect(x + 47, 142, 4, 27, "#5a4932");
+        }
+      }
+    } else if (spirit) {
+      for (let x = -15; x < 640; x += 92) {
+        const trunk = 17 + (x % 3) * 4;
+        this.rect(x + 28, 113, trunk, 111, "#183f3d");
+        this.rect(x + 33, 123, 5, 101, "#2d6658");
+        this.rect(x, 106 + (x % 19), 78, 46, "#1b5447");
+        this.rect(x + 12, 94 + (x % 17), 51, 45, "#33795e");
+        this.rect(x + 28, 91 + (x % 11), 24, 17, "#69b18a");
+      }
+      for (let x = 32; x < 640; x += 73) {
+        const glow = 0.45 + Math.sin(now / 280 + x) * 0.18;
+        ctx.save();
+        ctx.globalAlpha = glow;
+        this.rect(x, 196, 8, 22, "#b3f5d4");
+        this.rect(x - 4, 191, 16, 7, "#75d7b4");
+        ctx.restore();
+      }
+    } else if (wind) {
+      for (let x = -40; x < 680; x += 116) {
+        const drift = (Math.floor(now / 75) + x) % 32;
+        this.rect(x + drift, 116 + (x % 31), 74, 12, "#c6e0e2");
+        this.rect(x + 14 + drift, 108 + (x % 31), 42, 12, "#e5f1e9");
+        this.rect(x + 8 + drift, 128 + (x % 31), 58, 5, "#789daa");
+      }
+      for (let x = 24; x < 640; x += 102) {
+        this.rect(x, 151, 16, 73, "#455e6d");
+        this.rect(x - 8, 145, 32, 8, "#9eb3b5");
+        this.rect(x - 4, 153, 24, 5, "#6f8790");
+        this.rect(x + 6, 164, 4, 38, "#b9c7c1");
+      }
+      if (tone === "windBoss") {
+        this.rect(258, 45, 124, 9, "#769dac");
+        this.rect(276, 54, 88, 92, "#29485b");
+        this.rect(288, 67, 64, 70, "#79a9b5");
+        this.rect(298, 78, 44, 50, "#d2ece7");
+      }
     } else {
+      this.rect(0, 178, 640, 46, "#285a57");
+      for (let x = -60; x < 700; x += 140) {
+        ctx.fillStyle = "#285b68";
+        ctx.beginPath();
+        ctx.moveTo(x, 180);
+        ctx.lineTo(x + 70, 92 + (x % 37));
+        ctx.lineTo(x + 140, 180);
+        ctx.fill();
+      }
       for (let x = 0; x < 640; x += 80) {
         this.rect(x + 9, 183, 11, 43, "#1a433d");
         this.rect(x, 161 + (x % 21), 32, 37, "#276650");
@@ -1143,6 +1638,26 @@ export class PixelRenderer {
 
   drawPartyBack(type, x, y, frame = 0, hurt = false) {
     const ctx = this.ctx;
+    if (PARTY_ROWS[type] !== undefined && this.assetReady("party")) {
+      const animationFrame = Math.floor(frame / 320) % 4;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = hurt && Math.floor(frame / 45) % 2 ? 0.35 : 1;
+      ctx.translate(0, Math.sin(frame / 350 + x) * 1.5);
+      ctx.drawImage(
+        this.assets.party,
+        (DIRECTION_COLUMNS.up * 4 + animationFrame) * 32,
+        PARTY_ROWS[type] * 32,
+        32,
+        32,
+        Math.round(x - 20),
+        Math.round(y - 28),
+        40,
+        40,
+      );
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.translate(x, y + Math.sin(frame / 350 + x) * 1.5);
     if (hurt && Math.floor(frame / 45) % 2) ctx.globalAlpha = 0.35;
@@ -1180,12 +1695,55 @@ export class PixelRenderer {
     ctx.restore();
   }
 
+  drawHitEffect(x, y, age, element = "physical") {
+    const ctx = this.ctx;
+    const progress = Math.max(0, Math.min(1, age / 260));
+    const colors = {
+      physical: ["#fff7d0", "#f1c85e"],
+      light: ["#ffffff", "#ffe778"],
+      fire: ["#fff1a1", "#ff744f"],
+      wind: ["#e5ffff", "#69d7df"],
+      water: ["#dff8ff", "#4ca6db"],
+      earth: ["#f5d29a", "#9d7748"],
+      dark: ["#f0c9ff", "#9b5fc4"],
+    };
+    const [bright, color] = colors[element] || colors.physical;
+    ctx.save();
+    ctx.globalAlpha = 1 - progress;
+    const spread = Math.round(progress * 24);
+    for (let i = 0; i < 7; i += 1) {
+      this.rect(x - 29 + i * 8 + spread / 3, y + 25 - i * 8, 10, 3, i % 2 ? bright : color);
+      if (i < 5) this.rect(x - 22 + i * 8, y + 29 - i * 8, 5, 2, "#ffffff");
+    }
+    for (let i = 0; i < 8; i += 1) {
+      const direction = i % 2 ? -1 : 1;
+      const px = x + direction * (10 + spread + (i * 7) % 18);
+      const py = y - 22 + ((i * 13) % 43) - Math.round(progress * 12);
+      this.rect(px, py, i % 3 === 0 ? 4 : 2, i % 3 === 0 ? 4 : 2, i % 2 ? bright : color);
+    }
+    ctx.restore();
+  }
+
   drawPortrait(canvas, type) {
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const old = this.ctx;
     this.ctx = ctx;
+    const portraitId = `portrait-${type}`;
+    if (this.assetReady(portraitId)) {
+      ctx.drawImage(this.assets[portraitId], 0, 0, canvas.width, canvas.height);
+      const vignette = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      vignette.addColorStop(0, "rgba(5,18,36,0)");
+      vignette.addColorStop(0.72, "rgba(5,18,36,.04)");
+      vignette.addColorStop(1, "rgba(4,14,29,.42)");
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      this.rect(0, 0, canvas.width, 2, "#d7bd68");
+      this.rect(0, canvas.height - 2, canvas.width, 2, "#2b6e91");
+      this.ctx = old;
+      return;
+    }
     const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
     bg.addColorStop(0, "#74cbe2");
     bg.addColorStop(1, "#19375b");

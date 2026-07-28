@@ -3382,6 +3382,7 @@ export class HinatiaGame {
     }
     enemy.hp = Math.max(0, enemy.hp - damage);
     enemy.hurtAt = performance.now();
+    enemy.lastElement = element;
     this.state.stats.damageDealt += damage;
     this.damageNumbers.push({ side: "enemy", id: enemy.id, amount: damage, born: performance.now() });
     this.audio.sfx("hit");
@@ -4927,6 +4928,13 @@ export class HinatiaGame {
           x,
           y,
           now,
+          m.tone,
+          {
+            up: m.tiles[y - 1]?.[x],
+            down: m.tiles[y + 1]?.[x],
+            left: m.tiles[y]?.[x - 1],
+            right: m.tiles[y]?.[x + 1],
+          },
         );
 
     this.drawLandmarks(now);
@@ -5008,6 +5016,8 @@ export class HinatiaGame {
       this.walkFrame,
     );
 
+    this.renderer.drawMapLighting(m.tone, now);
+    this.renderer.drawMapAtmosphere(m.tone, now);
     if (m.tone === "deepCave" && this.state.lightSteps <= 0) this.drawDarkness();
     if (this.state.settings.hint === "guided") this.drawCompassHint();
   }
@@ -5168,6 +5178,9 @@ export class HinatiaGame {
         now,
         now - enemy.hurtAt < 220,
       );
+      const hitAge = now - enemy.hurtAt;
+      if (hitAge >= 0 && hitAge < 260)
+        this.renderer.drawHitEffect(x, y - 8, hitAge, enemy.lastElement || "physical");
     });
     activeParty(this.state).forEach((member, index) => {
       if (member.hp <= 0) return;

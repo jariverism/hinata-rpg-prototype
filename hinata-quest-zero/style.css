@@ -345,10 +345,13 @@ button.primary {
 }
 
 .title-menu {
+  position: absolute;
+  top: 49%;
+  right: 4%;
   display: grid;
   gap: 5px;
   width: clamp(180px, 31%, 285px);
-  margin-top: auto;
+  margin: 0;
 }
 
 .title-menu button {
@@ -375,17 +378,28 @@ button.primary {
 }
 
 .title-tip {
-  margin: 10px 0 3px;
+  position: absolute;
+  right: 4%;
+  bottom: 8%;
+  width: min(38%, 340px);
+  margin: 0;
   color: #e9f9ef;
   font-size: clamp(7px, 1.05vw, 12px);
+  text-align: right;
   text-shadow: 0 1px 2px #06101f;
 }
 
 .notice {
-  margin: 2px 0 0;
+  position: absolute;
+  bottom: 2%;
+  left: 2%;
+  max-width: 48%;
+  margin: 0;
   color: rgba(232, 244, 247, 0.78);
   font-size: clamp(6px, 0.85vw, 10px);
   line-height: 1.45;
+  text-align: left;
+  text-shadow: 0 1px 2px #06101f;
 }
 
 .overlay {
@@ -1458,7 +1472,15 @@ button.primary {
     display: none;
   }
 
+  .title-menu {
+    top: 47%;
+    right: 3%;
+    width: 34%;
+    min-width: 150px;
+  }
+
   .notice {
+    max-width: 55%;
     line-height: 1.25;
   }
 
