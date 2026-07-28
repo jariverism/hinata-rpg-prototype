@@ -65,6 +65,13 @@ const STATUS_NAMES = {
   spiritWard: "精護",
   evade: "回避",
 };
+const CUTIN_SKILLS = Object.freeze({
+  promiseAura: "hero",
+  formation: "kumi",
+  happyBreadSkill: "mirei",
+  sarimakashi: "sarina",
+  skyDance: "katoshi",
+});
 
 const $ = (id) => document.getElementById(id);
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -2181,6 +2188,7 @@ export class HinatiaGame {
       windBreakRounds: 0,
       enemyIntents: [],
       formation: false,
+      cutIn: null,
       log: options.preemptive
         ? "背後を取った！　こちらが先に動ける。"
         : options.ambush
@@ -2472,7 +2480,11 @@ export class HinatiaGame {
     if (entry.side === "party") this.executePartyAction(entry.actor, entry.action);
     else this.executeEnemyAction(entry.actor, entry.action);
     this.renderBattleUi();
-    this.delay(430, () => this.executeQueue(queue, index + 1, done));
+    const actionDelay =
+      this.battle.cutIn && performance.now() - this.battle.cutIn.born < this.battle.cutIn.duration
+        ? this.battle.cutIn.duration
+        : 430;
+    this.delay(actionDelay, () => this.executeQueue(queue, index + 1, done));
   }
 
   executePartyAction(actor, action) {
@@ -2526,6 +2538,17 @@ export class HinatiaGame {
     }
   }
 
+  triggerSkillCutIn(actor, skill, skillId) {
+    if (!this.battle || CUTIN_SKILLS[skillId] !== actor.id) return;
+    this.battle.cutIn = {
+      actorId: actor.id,
+      actorName: actor.name,
+      skillName: skill.name,
+      born: performance.now(),
+      duration: 920,
+    };
+  }
+
   executeSkill(actor, action) {
     const skill = SKILLS[action.id];
     if (!skill) return;
@@ -2535,6 +2558,7 @@ export class HinatiaGame {
         return;
       }
       this.state.happy = 0;
+      this.triggerSkillCutIn(actor, skill, action.id);
       let total = 0;
       for (const enemy of this.battle.enemies.filter((entry) => entry.hp > 0)) {
         const damage = this.calculateDamage(
@@ -2563,6 +2587,7 @@ export class HinatiaGame {
       return;
     }
     actor.mp -= skill.mp;
+    this.triggerSkillCutIn(actor, skill, action.id);
     if (skill.effect === "cheer") {
       const target = this.state.party[action.target];
       if (!target) return;
@@ -4937,6 +4962,7 @@ export class HinatiaGame {
           },
         );
 
+    this.renderer.drawRegionalLandmark(m.id, this.camera.x, this.camera.y, now);
     this.drawLandmarks(now);
     for (const special of m.specials) {
       if (special.type === "boss" && this.state.flags.bossWon) continue;
@@ -5017,6 +5043,7 @@ export class HinatiaGame {
     );
 
     this.renderer.drawMapLighting(m.tone, now);
+    this.renderer.drawWeather(m.id, m.tone, now);
     this.renderer.drawMapAtmosphere(m.tone, now);
     if (m.tone === "deepCave" && this.state.lightSteps <= 0) this.drawDarkness();
     if (this.state.settings.hint === "guided") this.drawCompassHint();
@@ -5199,6 +5226,17 @@ export class HinatiaGame {
         const index = activeParty(this.state).findIndex((member) => member.id === number.id);
         this.renderer.text(String(number.amount), 93 + index * 78, 170 - age * 24, "#ff8d9f", 14, "center");
       }
+    }
+    if (this.battle.cutIn) {
+      const age = now - this.battle.cutIn.born;
+      if (age >= this.battle.cutIn.duration) this.battle.cutIn = null;
+      else
+        this.renderer.drawSkillCutIn(
+          this.battle.cutIn.actorId,
+          this.battle.cutIn.actorName,
+          this.battle.cutIn.skillName,
+          age / this.battle.cutIn.duration,
+        );
     }
   }
 

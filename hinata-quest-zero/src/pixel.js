@@ -1,13 +1,15 @@
 import { TILE } from "./data.js";
+import {
+  ENEMY_SPRITE_IDS,
+  NPC_SPRITE_IDS,
+  PARTY_SPRITE_IDS,
+  rowMap,
+} from "./art-manifest.js";
 
 const TWO_PI = Math.PI * 2;
-const PARTY_ROWS = Object.freeze({
-  hero: 0,
-  kumi: 1,
-  mirei: 2,
-  sarina: 3,
-  katoshi: 4,
-});
+const PARTY_ROWS = rowMap(PARTY_SPRITE_IDS);
+const NPC_ROWS = rowMap(NPC_SPRITE_IDS);
+const ENEMY_CELLS = rowMap(ENEMY_SPRITE_IDS);
 const DIRECTION_COLUMNS = Object.freeze({
   down: 0,
   left: 1,
@@ -17,17 +19,24 @@ const DIRECTION_COLUMNS = Object.freeze({
 const ART_URLS = Object.freeze({
   title: new URL("../assets/art/title-hinatia.png", import.meta.url).href,
   party: new URL("../assets/art/party-sprites.png", import.meta.url).href,
+  npc: new URL("../assets/art/npc-sprites.png", import.meta.url).href,
+  enemies: new URL("../assets/art/enemy-atlas.png", import.meta.url).href,
   "portrait-hero": new URL("../assets/art/portraits/hero.png", import.meta.url).href,
   "portrait-kumi": new URL("../assets/art/portraits/kumi.png", import.meta.url).href,
   "portrait-mirei": new URL("../assets/art/portraits/mirei.png", import.meta.url).href,
   "portrait-sarina": new URL("../assets/art/portraits/sarina.png", import.meta.url).href,
   "portrait-katoshi": new URL("../assets/art/portraits/katoshi.png", import.meta.url).href,
+  "cutin-hero": new URL("../assets/art/cutins/hero.png", import.meta.url).href,
+  "cutin-kumi": new URL("../assets/art/cutins/kumi.png", import.meta.url).href,
+  "cutin-mirei": new URL("../assets/art/cutins/mirei.png", import.meta.url).href,
+  "cutin-sarina": new URL("../assets/art/cutins/sarina.png", import.meta.url).href,
+  "cutin-katoshi": new URL("../assets/art/cutins/katoshi.png", import.meta.url).href,
 });
 
 export class PixelRenderer {
-  constructor(canvas) {
+  constructor(canvas, { alpha = false } = {}) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext("2d", { alpha: false });
+    this.ctx = canvas.getContext("2d", { alpha });
     this.ctx.imageSmoothingEnabled = false;
     this.width = canvas.width;
     this.height = canvas.height;
@@ -573,16 +582,18 @@ export class PixelRenderer {
   drawCharacter(type, x, y, dir = "down", frame = 0, scale = 1, ghost = false) {
     const ctx = this.ctx;
     const s = scale;
-    if (PARTY_ROWS[type] !== undefined && this.assetReady("party")) {
+    const atlasId = PARTY_ROWS[type] !== undefined ? "party" : NPC_ROWS[type] !== undefined ? "npc" : null;
+    const atlasRow = atlasId === "party" ? PARTY_ROWS[type] : NPC_ROWS[type];
+    if (atlasId && this.assetReady(atlasId)) {
       const direction = DIRECTION_COLUMNS[dir] ?? 0;
       const animationFrame = ((Math.floor(frame) % 4) + 4) % 4;
       ctx.save();
       ctx.globalAlpha = ghost ? 0.58 : 1;
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
-        this.assets.party,
+        this.assets[atlasId],
         (direction * 4 + animationFrame) * 32,
-        PARTY_ROWS[type] * 32,
+        atlasRow * 32,
         32,
         32,
         Math.round(x - 4),
@@ -696,6 +707,296 @@ export class PixelRenderer {
     }
     if (type === "child") {
       ctx.scale(0.86, 0.86);
+    }
+    ctx.restore();
+  }
+
+  drawRegionalLandmark(mapId, cameraX = 0, cameraY = 0, now = 0) {
+    const ctx = this.ctx;
+    const locations = {
+      solaido: { x: 20, y: 9, kind: "castle" },
+      mileria: { x: 21.5, y: 9, kind: "bakery" },
+      sarinaria: { x: 21.5, y: 9, kind: "worldTree" },
+      katoshia: { x: 22.5, y: 9, kind: "windHall" },
+      sunmill: { x: 30, y: 12, kind: "windmill" },
+      skyArena: { x: 21, y: 11, kind: "arena" },
+    };
+    const landmark = locations[mapId];
+    if (!landmark) return;
+    const x = landmark.x * 32 - cameraX;
+    const y = landmark.y * 32 - cameraY;
+    if (x < -150 || x > this.width + 150 || y < -170 || y > this.height + 80) return;
+    const shadow = (width, height = 8) => {
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      ctx.fillStyle = "#06111d";
+      ctx.beginPath();
+      ctx.ellipse(Math.round(x), Math.round(y - 3), width, height, 0, 0, TWO_PI);
+      ctx.fill();
+      ctx.restore();
+    };
+    const flag = (fx, fy, color) => {
+      const wave = Math.round(Math.sin(now / 180 + fx) * 2);
+      this.rect(fx, fy, 2, 31, "#efd58a");
+      this.rect(fx + 2, fy + 2, 17 + wave, 4, color);
+      this.rect(fx + 2, fy + 6, 13 - wave, 4, color);
+      this.rect(fx + 2, fy + 10, 8, 3, "#f5d36f");
+    };
+    const drawRotor = (cx, cy, radius, color, hub = "#f0d16d") => {
+      ctx.save();
+      ctx.translate(Math.round(cx), Math.round(cy));
+      ctx.rotate(now / 1900);
+      for (let blade = 0; blade < 4; blade += 1) {
+        ctx.rotate(Math.PI / 2);
+        this.rect(3, -3, radius - 4, 6, "#213b52");
+        this.rect(10, -7, radius - 13, 12, color);
+        this.rect(radius - 8, -5, 6, 8, "#e9f3e8");
+      }
+      this.outline(-6, -6, 12, 12, hub, "#15283b", 2);
+      this.rect(-2, -2, 4, 4, "#fff1a4");
+      ctx.restore();
+    };
+
+    if (landmark.kind === "castle") {
+      shadow(82, 10);
+      this.rect(x - 71, y - 81, 142, 77, "#1c3d60");
+      this.rect(x - 66, y - 76, 132, 70, "#d8e3df");
+      this.rect(x - 60, y - 69, 120, 63, "#9ab6bf");
+      for (const offset of [-58, 58]) {
+        this.rect(x + offset - 18, y - 112, 36, 106, "#496f8f");
+        this.rect(x + offset - 14, y - 105, 28, 96, "#b9ced0");
+        this.rect(x + offset - 22, y - 119, 44, 12, "#193654");
+        this.rect(x + offset - 18, y - 116, 36, 7, "#67c3d9");
+        this.rect(x + offset - 8, y - 91, 16, 22, "#203e5c");
+        this.rect(x + offset - 5, y - 87, 10, 15, "#78d0df");
+      }
+      this.rect(x - 42, y - 103, 84, 18, "#23496b");
+      this.rect(x - 36, y - 112, 72, 10, "#69c8df");
+      this.rect(x - 28, y - 124, 56, 12, "#dceae5");
+      this.rect(x - 21, y - 132, 42, 9, "#6bc5dc");
+      this.rect(x - 18, y - 80, 36, 74, "#385b77");
+      this.rect(x - 12, y - 67, 24, 61, "#0c2036");
+      this.rect(x - 8, y - 57, 16, 51, "#203c53");
+      this.rect(x - 4, y - 38, 8, 32, "#071624");
+      this.rect(x - 31, y - 72, 13, 18, "#1d405d");
+      this.rect(x + 18, y - 72, 13, 18, "#1d405d");
+      this.rect(x - 27, y - 69, 5, 11, "#ffe49a");
+      this.rect(x + 22, y - 69, 5, 11, "#ffe49a");
+      flag(x - 60, y - 151, "#69c9e0");
+      flag(x + 56, y - 151, "#6a9cce");
+      this.rect(x - 9, y - 106, 18, 18, "#1b3855");
+      this.rect(x - 5, y - 102, 10, 10, "#f2d26e");
+    } else if (landmark.kind === "bakery") {
+      shadow(88, 10);
+      this.rect(x - 82, y - 75, 164, 69, "#694139");
+      this.rect(x - 76, y - 68, 152, 62, "#e1c997");
+      this.rect(x - 87, y - 85, 174, 19, "#70423b");
+      this.rect(x - 78, y - 94, 156, 15, "#c17b54");
+      this.rect(x - 66, y - 101, 132, 10, "#e2ab63");
+      this.rect(x - 54, y - 61, 32, 31, "#6e493a");
+      this.rect(x - 49, y - 56, 22, 20, "#f6d37b");
+      this.rect(x + 22, y - 61, 32, 31, "#6e493a");
+      this.rect(x + 27, y - 56, 22, 20, "#f6d37b");
+      this.rect(x - 18, y - 51, 36, 45, "#4d3332");
+      this.rect(x - 11, y - 42, 22, 36, "#281f25");
+      this.rect(x - 41, y - 83, 82, 20, "#72403b");
+      this.rect(x - 35, y - 79, 70, 12, "#fff0b5");
+      this.rect(x - 21, y - 76, 42, 7, "#db9e4d");
+      this.rect(x - 7, y - 89, 14, 14, "#e5ae58");
+      this.rect(x - 4, y - 86, 8, 7, "#fff0a8");
+      this.rect(x + 55, y - 121, 19, 45, "#67413b");
+      this.rect(x + 51, y - 125, 27, 8, "#b87850");
+      for (let puff = 0; puff < 4; puff += 1) {
+        const drift = Math.sin(now / 700 + puff) * 7;
+        ctx.save();
+        ctx.globalAlpha = 0.2 - puff * 0.03;
+        ctx.fillStyle = "#fff1d1";
+        ctx.beginPath();
+        ctx.arc(x + 64 + drift, y - 136 - puff * 13, 8 + puff * 2, 0, TWO_PI);
+        ctx.fill();
+        ctx.restore();
+      }
+    } else if (landmark.kind === "worldTree") {
+      shadow(88, 11);
+      this.rect(x - 25, y - 92, 50, 87, "#403d34");
+      this.rect(x - 18, y - 104, 36, 100, "#775f42");
+      this.rect(x - 11, y - 98, 13, 89, "#a18252");
+      this.rect(x - 75, y - 69, 59, 15, "#5b5137");
+      this.rect(x + 17, y - 72, 61, 15, "#5b5137");
+      for (let leaf = 0; leaf < 18; leaf += 1) {
+        const angle = (leaf / 18) * TWO_PI;
+        const radius = 36 + (leaf % 4) * 11;
+        const lx = x + Math.cos(angle) * radius;
+        const ly = y - 113 + Math.sin(angle) * radius * 0.58;
+        this.rect(lx - 19, ly - 15, 38, 30, leaf % 3 === 0 ? "#4d9b72" : leaf % 3 === 1 ? "#347b62" : "#6db789");
+        this.rect(lx - 12, ly - 20, 24, 30, leaf % 2 ? "#72c79a" : "#56ad80");
+      }
+      this.rect(x - 38, y - 16, 76, 10, "#426b61");
+      this.rect(x - 29, y - 23, 58, 9, "#8bc8a7");
+      this.rect(x - 17, y - 31, 34, 9, "#d6d270");
+      for (let mote = 0; mote < 12; mote += 1) {
+        const mx = x + Math.sin(now / 530 + mote * 1.7) * (35 + (mote % 4) * 11);
+        const my = y - 65 - ((now / 28 + mote * 19) % 100);
+        this.rect(mx, my, mote % 4 === 0 ? 3 : 2, mote % 4 === 0 ? 3 : 2, mote % 2 ? "#b8ffe0" : "#f5eb8a");
+      }
+    } else if (landmark.kind === "windHall") {
+      shadow(81, 10);
+      this.rect(x - 75, y - 67, 150, 61, "#304e6b");
+      this.rect(x - 69, y - 61, 138, 55, "#b9d3d5");
+      this.rect(x - 82, y - 77, 164, 17, "#365a78");
+      this.rect(x - 74, y - 86, 148, 13, "#dce9e4");
+      this.rect(x - 59, y - 92, 118, 10, "#77c7da");
+      for (const offset of [-46, -16, 16, 46]) {
+        this.rect(x + offset - 4, y - 59, 8, 53, "#6c8996");
+        this.rect(x + offset - 2, y - 55, 4, 45, "#e1ece6");
+      }
+      this.rect(x - 13, y - 44, 26, 38, "#152a42");
+      this.rect(x - 7, y - 36, 14, 30, "#31536b");
+      this.rect(x - 9, y - 129, 18, 43, "#395d79");
+      this.rect(x - 5, y - 141, 10, 56, "#d3e4df");
+      drawRotor(x, y - 120, 46, "#9fced5");
+      flag(x - 69, y - 119, "#69bdd2");
+      flag(x + 65, y - 119, "#537fa7");
+    } else if (landmark.kind === "windmill") {
+      shadow(54, 9);
+      this.rect(x - 38, y - 78, 76, 73, "#6e503e");
+      this.rect(x - 31, y - 72, 62, 66, "#d8c8a1");
+      this.rect(x - 43, y - 88, 86, 19, "#714744");
+      this.rect(x - 34, y - 98, 68, 15, "#c18159");
+      this.rect(x - 10, y - 49, 20, 43, "#3a2d2d");
+      this.rect(x - 24, y - 59, 13, 17, "#496d75");
+      this.rect(x + 12, y - 59, 13, 17, "#496d75");
+      drawRotor(x, y - 76, 58, "#e9dfc1", "#e1b95c");
+    } else if (landmark.kind === "arena") {
+      shadow(91, 11);
+      this.rect(x - 88, y - 58, 176, 52, "#574850");
+      this.rect(x - 82, y - 53, 164, 47, "#b9a780");
+      this.rect(x - 94, y - 70, 188, 15, "#55435a");
+      this.rect(x - 86, y - 81, 172, 13, "#d0b66e");
+      this.rect(x - 73, y - 91, 146, 12, "#6b7e8f");
+      this.rect(x - 26, y - 47, 52, 41, "#312c3c");
+      this.rect(x - 19, y - 39, 38, 33, "#101827");
+      for (const offset of [-68, -43, 43, 68]) {
+        this.rect(x + offset - 5, y - 53, 10, 47, "#756b61");
+        this.rect(x + offset - 3, y - 50, 6, 42, "#d6c69f");
+      }
+      flag(x - 83, y - 119, "#72c4d8");
+      flag(x + 79, y - 119, "#c38b58");
+      this.rect(x - 12, y - 78, 24, 19, "#475d72");
+      this.rect(x - 7, y - 74, 14, 10, "#f0d269");
+    }
+  }
+
+  drawWeather(mapId, tone, now = 0) {
+    const ctx = this.ctx;
+    const harvest = tone.includes("harvest");
+    const spirit = tone.includes("spirit");
+    const wind = tone.includes("wind") || tone === "arena";
+    const cave =
+      tone.toLowerCase().includes("cave") ||
+      ["dungeon", "granary", "granaryBoss"].includes(tone);
+    const outdoor = !cave && !["house", "castle"].some((word) => tone.includes(word));
+    const phase = Math.floor(now / 12000) % 4;
+    ctx.save();
+
+    if (outdoor && !spirit) {
+      const drift = (now * (wind ? 0.02 : 0.009)) % (this.width + 240);
+      ctx.globalAlpha = wind ? 0.11 : 0.07;
+      for (let band = 0; band < 3; band += 1) {
+        ctx.fillStyle = "#082238";
+        ctx.beginPath();
+        const bx = drift - 220 + band * 280;
+        ctx.ellipse(bx, 62 + band * 97, 118, 24, -0.18, 0, TWO_PI);
+        ctx.fill();
+      }
+    }
+
+    if ((mapId === "highroad" || mapId === "solaido") && phase === 2) {
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = "#b8e6ed";
+      ctx.lineWidth = 1;
+      for (let drop = 0; drop < 46; drop += 1) {
+        const rx = (drop * 83 + now * 0.19) % (this.width + 50) - 25;
+        const ry = (drop * 47 + now * 0.42) % (this.height + 38) - 19;
+        ctx.beginPath();
+        ctx.moveTo(Math.round(rx), Math.round(ry));
+        ctx.lineTo(Math.round(rx - 5), Math.round(ry + 12));
+        ctx.stroke();
+      }
+    } else if (harvest) {
+      const ray = ctx.createLinearGradient(0, 0, this.width, this.height);
+      ray.addColorStop(0, "rgba(255,238,157,.14)");
+      ray.addColorStop(0.34, "rgba(255,222,112,.03)");
+      ray.addColorStop(0.62, "rgba(255,216,96,0)");
+      ctx.fillStyle = ray;
+      ctx.beginPath();
+      ctx.moveTo(40, 0);
+      ctx.lineTo(210, 0);
+      ctx.lineTo(390, this.height);
+      ctx.lineTo(225, this.height);
+      ctx.fill();
+      ctx.globalAlpha = 0.18;
+      for (let wave = 0; wave < 5; wave += 1) {
+        const wy = 70 + wave * 54 + Math.sin(now / 500 + wave) * 5;
+        ctx.strokeStyle = "#fff0ad";
+        ctx.beginPath();
+        ctx.moveTo(0, wy);
+        for (let wx = 0; wx <= this.width; wx += 32)
+          ctx.lineTo(wx, wy + Math.sin(wx / 45 + now / 800 + wave) * 3);
+        ctx.stroke();
+      }
+    } else if (spirit) {
+      ctx.globalAlpha = 0.12;
+      for (let mist = 0; mist < 4; mist += 1) {
+        const my = 92 + mist * 64 + Math.sin(now / 900 + mist) * 10;
+        const gradient = ctx.createLinearGradient(0, my, this.width, my + 22);
+        gradient.addColorStop(0, "rgba(190,255,229,0)");
+        gradient.addColorStop(0.5, "rgba(190,255,229,.8)");
+        gradient.addColorStop(1, "rgba(190,255,229,0)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(-30, my, this.width + 60, 18);
+      }
+      ctx.globalAlpha = 0.75;
+      for (let light = 0; light < 9; light += 1) {
+        const lx = (light * 89 + Math.sin(now / 530 + light) * 32 + 640) % 640;
+        const ly = 48 + ((light * 53 + now * 0.018) % 250);
+        const pulse = 1 + (Math.sin(now / 170 + light) + 1);
+        this.rect(lx, ly, pulse, pulse, light % 2 ? "#c9ffe3" : "#f4e985");
+      }
+    } else if (wind) {
+      ctx.globalAlpha = 0.38;
+      ctx.strokeStyle = "#e4f9f5";
+      ctx.lineWidth = 2;
+      for (let gust = 0; gust < 8; gust += 1) {
+        const gx = ((gust * 123 + now * 0.18) % 820) - 150;
+        const gy = 42 + ((gust * 57) % 275);
+        ctx.beginPath();
+        ctx.moveTo(gx, gy);
+        ctx.bezierCurveTo(gx + 34, gy - 9, gx + 75, gy + 9, gx + 116, gy - 2);
+        ctx.stroke();
+      }
+      for (let leaf = 0; leaf < 11; leaf += 1) {
+        const lx = ((leaf * 91 + now * 0.13) % 710) - 35;
+        const ly = (leaf * 49 + now * 0.035) % 350;
+        this.rect(lx, ly, 4, 2, leaf % 2 ? "#78ad8a" : "#d2c86d");
+      }
+    } else if (cave) {
+      ctx.globalAlpha = 0.18;
+      for (let dust = 0; dust < 20; dust += 1) {
+        const dx = (dust * 73 + Math.sin(now / 700 + dust) * 17 + 640) % 640;
+        const dy = (dust * 41 + now * 0.009) % 340;
+        this.rect(dx, dy, dust % 5 === 0 ? 2 : 1, dust % 5 === 0 ? 2 : 1, dust % 2 ? "#aeb8aa" : "#d2bb83");
+      }
+      const shaft = ctx.createLinearGradient(0, 0, 0, this.height);
+      shaft.addColorStop(0, "rgba(137,186,192,.09)");
+      shaft.addColorStop(1, "rgba(137,186,192,0)");
+      ctx.fillStyle = shaft;
+      ctx.beginPath();
+      ctx.moveTo(160, 0);
+      ctx.lineTo(238, 0);
+      ctx.lineTo(320, this.height);
+      ctx.lineTo(214, this.height);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -1305,6 +1606,27 @@ export class PixelRenderer {
   drawBattleEnemy(sprite, x, y, scale = 1, now = 0, hurt = false) {
     const ctx = this.ctx;
     const bob = Math.sin(now / 280 + x) * 2;
+    if (ENEMY_CELLS[sprite] !== undefined && this.assetReady("enemies")) {
+      const index = ENEMY_CELLS[sprite];
+      const sourceX = (index % 8) * 192;
+      const sourceY = Math.floor(index / 8) * 160;
+      ctx.save();
+      ctx.globalAlpha = hurt && Math.floor(now / 45) % 2 ? 0.35 : 1;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        this.assets.enemies,
+        sourceX,
+        sourceY,
+        192,
+        160,
+        Math.round(x - 96 * scale),
+        Math.round(y + bob - 86 * scale),
+        Math.round(192 * scale),
+        Math.round(160 * scale),
+      );
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y + bob));
     if (hurt && Math.floor(now / 45) % 2) ctx.globalAlpha = 0.35;
@@ -1720,6 +2042,75 @@ export class PixelRenderer {
       const px = x + direction * (10 + spread + (i * 7) % 18);
       const py = y - 22 + ((i * 13) % 43) - Math.round(progress * 12);
       this.rect(px, py, i % 3 === 0 ? 4 : 2, i % 3 === 0 ? 4 : 2, i % 2 ? bright : color);
+    }
+    ctx.restore();
+  }
+
+  drawSkillCutIn(actorId, actorName, skillName, progress = 0) {
+    const ctx = this.ctx;
+    const t = Math.max(0, Math.min(1, progress));
+    const enter = Math.min(1, t / 0.18);
+    const exit = Math.max(0, (t - 0.78) / 0.22);
+    const easeIn = 1 - (1 - enter) ** 3;
+    const offset = Math.round((1 - easeIn) * 700 - exit * 760);
+    const accent = {
+      hero: "#75d8ee",
+      kumi: "#70bee7",
+      mirei: "#f4c95f",
+      sarina: "#7fe0bc",
+      katoshi: "#9be6ef",
+    }[actorId] || "#78d5eb";
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, enter * 1.8, (1 - t) * 5);
+    ctx.fillStyle = "rgba(2,8,20,.74)";
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.translate(offset, 0);
+    ctx.fillStyle = "#061226";
+    ctx.beginPath();
+    ctx.moveTo(-40, 79);
+    ctx.lineTo(this.width + 40, 64);
+    ctx.lineTo(this.width + 40, 212);
+    ctx.lineTo(-40, 227);
+    ctx.closePath();
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(-30, 91);
+    ctx.lineTo(this.width + 30, 77);
+    ctx.lineTo(this.width + 30, 190);
+    ctx.lineTo(-30, 205);
+    ctx.closePath();
+    ctx.clip();
+    if (this.assetReady(`cutin-${actorId}`)) {
+      ctx.drawImage(this.assets[`cutin-${actorId}`], 0, 91, this.width, 72);
+      const shade = ctx.createLinearGradient(0, 0, this.width, 0);
+      shade.addColorStop(0, "rgba(2,8,20,.82)");
+      shade.addColorStop(0.26, "rgba(2,8,20,.12)");
+      shade.addColorStop(0.72, "rgba(2,8,20,.05)");
+      shade.addColorStop(1, "rgba(2,8,20,.72)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, 91, this.width, 72);
+    } else {
+      const fallback = ctx.createLinearGradient(0, 91, this.width, 163);
+      fallback.addColorStop(0, "#102b4d");
+      fallback.addColorStop(0.52, accent);
+      fallback.addColorStop(1, "#18213e");
+      ctx.fillStyle = fallback;
+      ctx.fillRect(0, 91, this.width, 72);
+    }
+    ctx.restore();
+    this.rect(0, 77, this.width, 4, "#10233d");
+    this.rect(0, 81, this.width, 3, accent);
+    this.rect(0, 190, this.width, 3, "#f1d271");
+    this.rect(0, 193, this.width, 4, "#10233d");
+    this.rect(22, 163, 207, 27, "rgba(3,12,27,.86)");
+    this.rect(26, 167, 6, 18, accent);
+    this.text(actorName, 40, 165, "#e8faff", 13);
+    this.text(skillName, this.width - 22, 164, "#fff0a3", 19, "right");
+    for (let spark = 0; spark < 18; spark += 1) {
+      const sx = (spark * 73 + Math.round(t * 820)) % 680 - 20;
+      const sy = 71 + ((spark * 31) % 135);
+      this.rect(sx, sy, spark % 5 === 0 ? 5 : 2, spark % 5 === 0 ? 2 : 1, spark % 2 ? accent : "#fff2a5");
     }
     ctx.restore();
   }

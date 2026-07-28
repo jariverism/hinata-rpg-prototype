@@ -102,11 +102,18 @@ test("刷新した専用画像アセットとタッチUIがリリース構成に
   const expectedImages = [
     ["assets/art/title-hinatia.png", 640, 360],
     ["assets/art/party-sprites.png", 512, 160],
+    ["assets/art/npc-sprites.png", 512, 832],
+    ["assets/art/enemy-atlas.png", 1536, 800],
     ["assets/art/portraits/hero.png", 192, 192],
     ["assets/art/portraits/kumi.png", 192, 192],
     ["assets/art/portraits/mirei.png", 192, 192],
     ["assets/art/portraits/sarina.png", 192, 192],
     ["assets/art/portraits/katoshi.png", 192, 192],
+    ["assets/art/cutins/hero.png", 1280, 144],
+    ["assets/art/cutins/kumi.png", 1280, 144],
+    ["assets/art/cutins/mirei.png", 1280, 144],
+    ["assets/art/cutins/sarina.png", 1280, 144],
+    ["assets/art/cutins/katoshi.png", 1280, 144],
   ];
   for (const [relative, width, height] of expectedImages) {
     const image = fs.readFileSync(path.join(root, relative));
@@ -117,9 +124,30 @@ test("刷新した専用画像アセットとタッチUIがリリース構成に
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
   assert.match(html, /id="touch-controls"/);
-  assert.match(html, /VISUAL REMASTER/);
+  assert.match(html, /VISUAL REMASTER II/);
   assert.match(css, /@media \(pointer: coarse\)/);
   assert.match(css, /\.title-menu\s*\{[\s\S]*position: absolute/);
+});
+
+test("奥義は専用カットインを起動し、戦闘描画へ重ねられる", async () => {
+  const { game } = await createGame();
+  game.state.happy = 100;
+  game.startBattle(["softSlime"], { canEscape: true });
+  const hero = game.state.party.hero;
+  game.executeSkill(hero, {
+    type: "skill",
+    id: "promiseAura",
+    targetType: "allEnemies",
+  });
+  assert.equal(game.battle.cutIn.actorId, "hero");
+  assert.equal(game.battle.cutIn.skillName, "約束のハッピーオーラ");
+  game.triggerSkillCutIn(
+    { id: "kumi", name: "久美" },
+    { name: "鉄壁のフォーメーション" },
+    "formation",
+  );
+  assert.equal(game.battle.cutIn.actorId, "kumi");
+  assert.doesNotThrow(() => game.renderBattleCanvas(performance.now()));
 });
 
 test("全マップが一画面より広く、主要地点へ到達可能で、地形が使い回しではない", async () => {

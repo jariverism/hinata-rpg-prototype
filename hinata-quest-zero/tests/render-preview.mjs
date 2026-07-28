@@ -12,11 +12,18 @@ const art = path.join(root, "assets", "art");
 const loadedAssets = {
   title: await loadImage(path.join(art, "title-hinatia.png")),
   party: await loadImage(path.join(art, "party-sprites.png")),
+  npc: await loadImage(path.join(art, "npc-sprites.png")),
+  enemies: await loadImage(path.join(art, "enemy-atlas.png")),
   "portrait-hero": await loadImage(path.join(art, "portraits", "hero.png")),
   "portrait-kumi": await loadImage(path.join(art, "portraits", "kumi.png")),
   "portrait-mirei": await loadImage(path.join(art, "portraits", "mirei.png")),
   "portrait-sarina": await loadImage(path.join(art, "portraits", "sarina.png")),
   "portrait-katoshi": await loadImage(path.join(art, "portraits", "katoshi.png")),
+  "cutin-hero": await loadImage(path.join(art, "cutins", "hero.png")),
+  "cutin-kumi": await loadImage(path.join(art, "cutins", "kumi.png")),
+  "cutin-mirei": await loadImage(path.join(art, "cutins", "mirei.png")),
+  "cutin-sarina": await loadImage(path.join(art, "cutins", "sarina.png")),
+  "cutin-katoshi": await loadImage(path.join(art, "cutins", "katoshi.png")),
 };
 
 function tileNeighbors(map, x, y) {
@@ -62,6 +69,7 @@ save("field", (renderer) => {
   renderer.drawCharacter("kumi", 25 * 32 + 4 - camera.x, 25 * 32 + 1 - camera.y, "up", 0, 1, true);
   renderer.drawCharacter("hero", 26 * 32 + 4 - camera.x, 24 * 32 + 1 - camera.y, "up", 1);
   renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawWeather(map.id, map.tone, 25000);
 });
 
 save("battle", (renderer) => {
@@ -104,6 +112,7 @@ save("mirelia-field", (renderer) => {
   renderer.drawCharacter("kumi", 11 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
   renderer.drawCharacter("hero", 12 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
   renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawWeather(map.id, map.tone, 1250);
   renderer.drawMapAtmosphere(map.tone, 1250);
 });
 
@@ -148,6 +157,7 @@ save("sarinaria-field", (renderer) => {
   renderer.drawCharacter("kumi", 13 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 0);
   renderer.drawCharacter("hero", 14 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 1);
   renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawWeather(map.id, map.tone, 1250);
   renderer.drawMapAtmosphere(map.tone, 1250);
 });
 
@@ -194,6 +204,7 @@ save("katoshia-field", (renderer) => {
   renderer.drawCharacter("kumi", 23 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 1);
   renderer.drawCharacter("hero", 24 * 32 + 4 - camera.x, 13 * 32 + 1 - camera.y, "up", 0);
   renderer.drawMapLighting(map.tone, 1250);
+  renderer.drawWeather(map.id, map.tone, 1250);
   renderer.drawMapAtmosphere(map.tone, 1250);
 });
 
@@ -225,6 +236,62 @@ save("portraits", (renderer) => {
     renderer.drawPortrait(portrait, type);
     renderer.ctx.drawImage(portrait, 54 + index * 112, 116, 84, 84);
     renderer.text(type.toUpperCase(), 96 + index * 112, 208, "#e7f8ff", 9, "center");
+  });
+});
+
+function drawTownPreview(renderer, mapId, camera, now) {
+  const map = MAPS[mapId];
+  const startX = Math.max(0, Math.floor(camera.x / 32) - 1);
+  const startY = Math.max(0, Math.floor(camera.y / 32) - 1);
+  for (let y = startY; y <= Math.min(map.height - 1, startY + 13); y += 1)
+    for (let x = startX; x <= Math.min(map.width - 1, startX + 21); x += 1)
+      renderer.drawTile(
+        map.tiles[y][x],
+        x * 32 - camera.x,
+        y * 32 - camera.y,
+        x,
+        y,
+        now,
+        map.tone,
+        tileNeighbors(map, x, y),
+      );
+  renderer.drawRegionalLandmark(map.id, camera.x, camera.y, now);
+  for (const npc of map.npcs)
+    renderer.drawCharacter(
+      npc.type,
+      npc.x * 32 + 4 - camera.x,
+      npc.y * 32 + 1 - camera.y,
+      npc.dir,
+      1,
+    );
+  renderer.drawMapLighting(map.tone, now);
+  renderer.drawWeather(map.id, map.tone, now);
+  renderer.drawMapAtmosphere(map.tone, now);
+}
+
+save("solaido-landmark", (renderer) =>
+  drawTownPreview(renderer, "solaido", { x: 10 * 32, y: 0 }, 25250),
+);
+save("mileria-landmark", (renderer) =>
+  drawTownPreview(renderer, "mileria", { x: 11 * 32, y: 0 }, 5250),
+);
+save("sarinaria-landmark", (renderer) =>
+  drawTownPreview(renderer, "sarinaria", { x: 11 * 32, y: 0 }, 5250),
+);
+save("katoshia-landmark", (renderer) =>
+  drawTownPreview(renderer, "katoshia", { x: 12 * 32, y: 0 }, 5250),
+);
+
+[
+  ["hero", "トシ", "約束のハッピーオーラ"],
+  ["kumi", "久美", "鉄壁のフォーメーション"],
+  ["mirei", "美玲", "ハッピーブレッド"],
+  ["sarina", "紗理菜", "サリマカシー"],
+  ["katoshi", "史帆", "天空の剣舞"],
+].forEach(([id, name, skill]) => {
+  save(`cutin-${id}`, (renderer) => {
+    renderer.drawBattleBackground(id === "mirei" ? "granaryBoss" : id === "sarina" ? "spiritBoss" : id === "katoshi" ? "windBoss" : "bossCave", 1250);
+    renderer.drawSkillCutIn(id, name, skill, 0.48);
   });
 });
 

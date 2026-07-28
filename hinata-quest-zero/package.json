@@ -1,6 +1,6 @@
 {
   "name": "hinata-quest-zero",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "build": "vite build",
     "test": "node --test tests/smoke.mjs",
     "render:qa": "node tests/render-preview.mjs",
-    "assets:build": "node scripts/generate-sprite-atlas.mjs"
+    "assets:build": "node scripts/generate-sprite-atlas.mjs && node scripts/generate-npc-atlas.mjs && node scripts/generate-enemy-atlas.mjs"
   },
   "devDependencies": {
     "@napi-rs/canvas": "^0.1.80",
