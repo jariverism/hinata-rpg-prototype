@@ -88,6 +88,7 @@ export function createState(name = "トシ") {
       paddedVest: 0,
       windRing: 0,
       captainCharm: 0,
+      oathBadge: 0,
       legacyEmblem: 0,
     },
     flags: {
@@ -107,6 +108,7 @@ export function createState(name = "トシ") {
       groveEliteWon: false,
       minerFound: false,
       ironDiscount: false,
+      campRested: false,
     },
     quests: {
       chapter1: "active",
@@ -280,7 +282,8 @@ export function clampVitals(state) {
 
 export function expFloor(level) {
   if (level <= 1) return 0;
-  return Math.round(18 * (level - 1) ** 2 + 12 * (level - 1));
+  const n = level - 1;
+  return Math.round(27 * n ** 2 + 18 * n);
 }
 
 export function expNext(level) {
