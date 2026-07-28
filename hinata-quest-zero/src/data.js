@@ -146,6 +146,7 @@ function highroad() {
     [47, 18],
     [47, 7],
   ]);
+  hline(m, 1, 8, 18, TILE.PATH, 2);
   pathPoints(m, [
     [14, 28],
     [14, 24],
@@ -188,6 +189,28 @@ function highroad() {
   );
 
   m.warps.push(
+    {
+      x: 1,
+      y: 18,
+      to: "mireRoad",
+      tx: 47,
+      ty: 16,
+      dir: "left",
+      label: "陽だまり街道",
+      requires: "chapter1Clear",
+      denied: "西へ続く関所は閉じている。王都を覆う闇を退けなければ通れそうにない。",
+    },
+    {
+      x: 1,
+      y: 19,
+      to: "mireRoad",
+      tx: 47,
+      ty: 17,
+      dir: "left",
+      label: "陽だまり街道",
+      requires: "chapter1Clear",
+      denied: "西へ続く関所は閉じている。王都を覆う闇を退けなければ通れそうにない。",
+    },
     { x: 25, y: 2, to: "solaido", tx: 19, ty: 27, dir: "up", label: "王都ソラシド" },
     { x: 8, y: 9, to: "echoGrove", tx: 29, ty: 13, dir: "left", label: "こだまの森" },
     { x: 47, y: 7, to: "cave1", tx: 3, ty: 22, dir: "right", label: "空泣き洞 B1" },
@@ -489,6 +512,240 @@ function cave3() {
   return m;
 }
 
+function mireRoad() {
+  const m = map("mireRoad", "陽だまり街道", 50, 34, TILE.GRASS, "harvest");
+  border(m, TILE.TREE);
+  hline(m, 1, 48, 16, TILE.PATH, 2);
+  pathPoints(m, [[24, 17], [24, 4]], TILE.PATH, 2);
+  pathPoints(m, [[36, 16], [36, 8], [42, 8], [42, 5]], TILE.PATH, 2);
+  pathPoints(m, [[8, 16], [8, 9], [14, 9]], TILE.PATH, 2);
+  fill(m, 4, 4, 15, 8, TILE.SAND);
+  for (let y = 5; y < 11; y += 2)
+    for (let x = 5; x < 18; x += 3) put(m, x, y, TILE.FLOWER);
+  fill(m, 29, 22, 13, 7, TILE.MUD);
+  hline(m, 29, 41, 24, TILE.WOOD);
+  fill(m, 20, 26, 6, 5, TILE.WATER);
+  put(m, 22, 26, TILE.REEDS);
+  put(m, 25, 29, TILE.REEDS);
+  scatter(m, 812, TILE.TREE, 105, (x, y, t) =>
+    t === TILE.GRASS && Math.abs(y - 16) > 3 && !(x > 20 && x < 28 && y < 20),
+  );
+  scatter(m, 413, TILE.FLOWER, 54, (_x, _y, t) => t === TILE.GRASS);
+  scatter(m, 219, TILE.ROCK, 28, (_x, _y, t) => t === TILE.GRASS);
+
+  m.warps.push(
+    { x: 48, y: 16, to: "highroad", tx: 2, ty: 18, dir: "right", label: "ソラシド近郊" },
+    { x: 48, y: 17, to: "highroad", tx: 2, ty: 19, dir: "right", label: "ソラシド近郊" },
+    { x: 2, y: 16, to: "mileria", tx: 20, ty: 27, dir: "up", label: "パンの国ミレリア" },
+    { x: 2, y: 17, to: "mileria", tx: 21, ty: 27, dir: "up", label: "パンの国ミレリア" },
+    { x: 24, y: 3, to: "sunmill", tx: 18, ty: 24, dir: "up", label: "風車の丘" },
+    {
+      x: 42,
+      y: 5,
+      to: "granary1",
+      tx: 3,
+      ty: 21,
+      dir: "right",
+      label: "封じられた地下穀倉",
+      requires: "granaryOpen",
+      denied: "黒い蔓が入口を塞いでいる。人の心を温める香りがあれば退けられそうだ。",
+    },
+  );
+  m.npcs.push(
+    { id: "westFarmer", type: "farmer", x: 30, y: 17, dir: "left" },
+    { id: "hungryTraveler", type: "pilgrim", x: 17, y: 17, dir: "right" },
+    { id: "fieldWatcher", type: "farmer", x: 11, y: 12, dir: "up" },
+  );
+  m.chests.push(
+    { id: "mire-road-herb", x: 31, y: 27, loot: { item: "herb", qty: 3 }, label: "薬草を3個" },
+    { id: "mire-road-gold", x: 45, y: 25, loot: { gold: 82 }, label: "82ゴールド" },
+    { id: "mire-road-bread", x: 7, y: 6, loot: { item: "happyBread", qty: 1 }, label: "ハッピーブレッド" },
+  );
+  m.specials.push(
+    { id: "west-sign", type: "sign", x: 39, y: 17, text: "東：ソラシド　西：ミレリア　北：風車の丘" },
+    { id: "golden-wheat", type: "goldenWheat", x: 12, y: 8 },
+    { id: "dry-field", type: "sign", x: 33, y: 23, text: "土は乾き、種は眠ったままだ。地下から冷たい気配がする。" },
+  );
+  m.enemies.push(
+    { id: "mire-01", x: 43, y: 18, group: ["hungryCrow", "cropSprout"], awareness: 5 },
+    { id: "mire-02", x: 34, y: 13, group: ["cropSprout", "cropSprout"], awareness: 3 },
+    { id: "mire-03", x: 28, y: 20, group: ["mudGolem", "hungryCrow"], awareness: 4 },
+    { id: "mire-04", x: 20, y: 13, group: ["hungryCrow", "hungryCrow"], awareness: 5 },
+    { id: "mire-05", x: 10, y: 19, group: ["cropSprout", "mudGolem"], awareness: 4 },
+    {
+      id: "wheat-scarecrow",
+      x: 14,
+      y: 10,
+      kind: "blightScarecrow",
+      unique: true,
+      story: "scarecrow",
+      awareness: 2,
+    },
+  );
+  m.start = [47, 16];
+  return m;
+}
+
+function mileria() {
+  const m = map("mileria", "パンの国ミレリア", 42, 30, TILE.STONE, "harvestTown");
+  border(m, TILE.WALL);
+  hline(m, 18, 23, 28, TILE.PATH);
+  vline(m, 19, 8, 28, TILE.PATH, 4);
+  hline(m, 3, 38, 19, TILE.PATH, 3);
+  hline(m, 7, 35, 10, TILE.PATH, 2);
+  building(m, 4, 4, 10, 6, 9, TILE.ROOF);
+  building(m, 16, 3, 10, 6, 21, TILE.ROOF);
+  building(m, 29, 4, 9, 6, 33, TILE.ROOF);
+  building(m, 4, 13, 9, 6, 8, TILE.ROOF);
+  building(m, 29, 13, 9, 6, 33, TILE.ROOF);
+  building(m, 5, 23, 10, 5, 10, TILE.ROOF);
+  building(m, 28, 23, 9, 5, 32, TILE.ROOF);
+  fill(m, 15, 14, 4, 4, TILE.FLOWER);
+  fill(m, 24, 14, 4, 4, TILE.FLOWER);
+  put(m, 18, 15, TILE.LANTERN);
+  put(m, 24, 15, TILE.LANTERN);
+  put(m, 17, 21, TILE.LANTERN);
+  put(m, 25, 21, TILE.LANTERN);
+
+  m.warps.push(
+    { x: 20, y: 28, to: "mireRoad", tx: 3, ty: 16, dir: "right", label: "陽だまり街道" },
+    { x: 21, y: 28, to: "mireRoad", tx: 3, ty: 17, dir: "right", label: "陽だまり街道" },
+  );
+  m.npcs.push(
+    { id: "mirei", type: "mirei", x: 23, y: 10, dir: "left" },
+    { id: "mireBaker", type: "baker", x: 9, y: 10, dir: "down" },
+    { id: "mireShop", type: "merchant", x: 33, y: 10, dir: "down" },
+    { id: "mireInn", type: "inn", x: 8, y: 19, dir: "down" },
+    { id: "mirePriest", type: "priest", x: 33, y: 19, dir: "down" },
+    { id: "mireChild", type: "child", x: 26, y: 12, dir: "left" },
+    { id: "mireFarmerA", type: "farmer", x: 15, y: 12, dir: "right" },
+    { id: "mireFarmerB", type: "farmer", x: 27, y: 24, dir: "left" },
+    { id: "windScholar", type: "scholar", x: 14, y: 20, dir: "right" },
+  );
+  m.chests.push(
+    { id: "mirelia-bread", x: 3, y: 25, loot: { item: "happyBread", qty: 2 }, label: "ハッピーブレッドを2個" },
+    { id: "mirelia-gold", x: 39, y: 24, loot: { gold: 64 }, label: "64ゴールド" },
+  );
+  m.specials.push(
+    { id: "mire-armory", type: "shop", shop: "mireArmory", x: 9, y: 9 },
+    { id: "mire-item", type: "shop", shop: "mireItem", x: 33, y: 9 },
+    { id: "mire-inn", type: "inn", x: 8, y: 18 },
+    { id: "mire-church", type: "church", x: 33, y: 18 },
+    { id: "mire-save", type: "save", x: 14, y: 9 },
+    { id: "bakery-oven", type: "oven", x: 21, y: 8 },
+    { id: "mire-board", type: "mireBoard", x: 17, y: 23 },
+  );
+  m.start = [20, 27];
+  return m;
+}
+
+function sunmill() {
+  const m = map("sunmill", "風車の丘", 38, 28, TILE.GRASS, "harvest");
+  border(m, TILE.TREE);
+  pathPoints(m, [[18, 25], [18, 12], [30, 12]], TILE.PATH, 2);
+  pathPoints(m, [[18, 18], [6, 18]], TILE.PATH, 2);
+  fill(m, 25, 5, 9, 7, TILE.STONE);
+  building(m, 27, 5, 6, 6, 30, TILE.ROOF);
+  fill(m, 3, 15, 7, 7, TILE.WATER);
+  hline(m, 6, 10, 18, TILE.BRIDGE);
+  scatter(m, 777, TILE.TREE, 85, (x, y, t) =>
+    t === TILE.GRASS && !(x > 14 && x < 34 && y > 7 && y < 22),
+  );
+  scatter(m, 278, TILE.FLOWER, 48, (_x, _y, t) => t === TILE.GRASS);
+  scatter(m, 479, TILE.ROCK, 22, (_x, _y, t) => t === TILE.GRASS);
+
+  m.warps.push({ x: 18, y: 25, to: "mireRoad", tx: 24, ty: 4, dir: "down", label: "陽だまり街道" });
+  m.npcs.push(
+    { id: "millKeeper", type: "miller", x: 24, y: 13, dir: "right" },
+    { id: "springSpirit", type: "spirit", x: 10, y: 20, dir: "up" },
+  );
+  m.chests.push(
+    { id: "mill-aura", x: 34, y: 7, loot: { item: "auraDrop", qty: 1 }, label: "オーラの雫" },
+    { id: "mill-coins", x: 12, y: 23, loot: { gold: 96 }, label: "96ゴールド" },
+  );
+  m.specials.push(
+    { id: "spring-water", type: "springWater", x: 6, y: 18 },
+    { id: "sun-yeast", type: "sunYeast", x: 30, y: 10 },
+    { id: "mill-sign", type: "sign", x: 20, y: 16, text: "清水は低きへ、酵母は陽の当たる高きへ宿る。" },
+  );
+  m.enemies.push(
+    { id: "mill-01", x: 15, y: 20, group: ["hungryCrow", "hungryCrow"], awareness: 5 },
+    { id: "mill-02", x: 21, y: 15, group: ["cropSprout", "hungryCrow"], awareness: 4 },
+    { id: "mill-03", x: 28, y: 14, group: ["mudGolem", "cropSprout"], awareness: 3 },
+  );
+  m.start = [18, 24];
+  return m;
+}
+
+function granary1() {
+  const m = map("granary1", "封じられた地下穀倉 B1", 40, 26, TILE.WALL, "granary");
+  border(m, TILE.WALL);
+  fill(m, 2, 18, 10, 6, TILE.FLOOR);
+  fill(m, 9, 14, 10, 8, TILE.FLOOR);
+  fill(m, 16, 6, 8, 13, TILE.FLOOR);
+  fill(m, 21, 4, 14, 8, TILE.FLOOR);
+  fill(m, 29, 10, 8, 12, TILE.FLOOR);
+  fill(m, 19, 19, 14, 5, TILE.FLOOR);
+  for (const [x, y] of [[6,20],[13,17],[19,10],[28,7],[33,16],[24,21]])
+    put(m, x, y, TILE.WOOD);
+  put(m, 3, 21, TILE.STAIRS);
+  put(m, 33, 6, TILE.STAIRS);
+  scatter(m, 911, TILE.MOSS, 24, (_x, _y, t) => t === TILE.WALL);
+
+  m.warps.push(
+    { x: 2, y: 21, to: "mireRoad", tx: 41, ty: 6, dir: "left", label: "陽だまり街道" },
+    { x: 33, y: 6, to: "granary2", tx: 4, ty: 22, dir: "right", label: "地下穀倉 B2" },
+  );
+  m.npcs.push({ id: "granaryKeeper", type: "farmer", x: 11, y: 18, dir: "right" });
+  m.chests.push(
+    { id: "granary1-vest", x: 21, y: 7, loot: { item: "bakerApron", qty: 1 }, label: "祝福のエプロン" },
+    { id: "granary1-bread", x: 31, y: 20, loot: { item: "happyBread", qty: 2 }, label: "ハッピーブレッドを2個" },
+  );
+  m.specials.push(
+    { id: "granary-shortcut", type: "granaryLever", x: 23, y: 20 },
+    { id: "granary-lift", type: "shortcut", x: 24, y: 20, requires: "granaryShortcut", target: [4, 21] },
+    { id: "granary-note", type: "sign", x: 18, y: 8, text: "『根を焼かず、まず土へ光を。芯は二本の根に守られる』" },
+  );
+  m.enemies.push(
+    { id: "granary1-01", x: 10, y: 20, group: ["flourGhost", "cropSprout"], awareness: 4 },
+    { id: "granary1-02", x: 17, y: 16, group: ["mudGolem", "flourGhost"], awareness: 4 },
+    { id: "granary1-03", x: 22, y: 9, group: ["hungryCrow", "flourGhost", "hungryCrow"], awareness: 5 },
+    { id: "granary1-04", x: 32, y: 14, group: ["mudGolem", "cropSprout"], awareness: 3 },
+  );
+  m.start = [3, 21];
+  return m;
+}
+
+function granary2() {
+  const m = map("granary2", "封じられた地下穀倉・根の間", 38, 26, TILE.WALL, "granaryBoss");
+  border(m, TILE.WALL);
+  fill(m, 2, 18, 10, 6, TILE.FLOOR);
+  fill(m, 9, 12, 9, 11, TILE.FLOOR);
+  fill(m, 16, 7, 8, 10, TILE.FLOOR);
+  fill(m, 21, 4, 14, 10, TILE.FLOOR);
+  fill(m, 24, 12, 10, 11, TILE.FLOOR);
+  hline(m, 12, 29, 20, TILE.FLOOR, 3);
+  put(m, 4, 22, TILE.STAIRS);
+  fill(m, 27, 6, 5, 5, TILE.MUD);
+  put(m, 29, 8, TILE.CRYSTAL);
+  for (const [x, y] of [[8,20],[14,15],[20,10],[27,18],[32,14]]) put(m, x, y, TILE.LANTERN);
+  scatter(m, 612, TILE.MOSS, 28, (_x, _y, t) => t === TILE.WALL);
+
+  m.warps.push({ x: 3, y: 22, to: "granary1", tx: 32, ty: 6, dir: "left", label: "地下穀倉 B1" });
+  m.chests.push(
+    { id: "granary2-pan", x: 14, y: 14, loot: { item: "sunPan", qty: 1 }, label: "陽光のフライパン" },
+    { id: "granary2-wing", x: 26, y: 20, loot: { item: "wing", qty: 1 }, label: "風渡りの羽" },
+  );
+  m.specials.push({ id: "chapter2-boss", type: "boss2", x: 29, y: 8 });
+  m.enemies.push(
+    { id: "granary2-01", x: 10, y: 20, group: ["dryRoot", "flourGhost"], awareness: 4 },
+    { id: "granary2-02", x: 17, y: 13, group: ["mudGolem", "dryRoot"], awareness: 4 },
+    { id: "granary2-03", x: 25, y: 17, group: ["flourGhost", "flourGhost", "cropSprout"], awareness: 5 },
+  );
+  m.start = [4, 22];
+  return m;
+}
+
 export const MAPS = Object.freeze({
   highroad: highroad(),
   solaido: solaido(),
@@ -497,6 +754,11 @@ export const MAPS = Object.freeze({
   cave1: cave1(),
   cave2: cave2(),
   cave3: cave3(),
+  mireRoad: mireRoad(),
+  mileria: mileria(),
+  sunmill: sunmill(),
+  granary1: granary1(),
+  granary2: granary2(),
 });
 
 export const ITEMS = Object.freeze({
@@ -521,6 +783,14 @@ export const ITEMS = Object.freeze({
   windRing: { name: "そよ風の指輪", type: "accessory", sell: 70, spd: 4, description: "身のこなしを軽くする指輪。" },
   captainCharm: { name: "団結のお守り", type: "accessory", sell: 90, maxHp: 10, description: "隣に仲間がいると温かくなる。" },
   oathBadge: { name: "騎士の誓章", type: "accessory", sell: 120, atk: 3, def: 3, description: "洞窟の最深部に残された、攻守を高める騎士の証。" },
+  happyBread: { name: "ハッピーブレッド", type: "usable", price: 48, sell: 22, description: "味方全体のHPを25回復する焼きたてパン。" },
+  goldenWheat: { name: "黄金麦", type: "key", description: "陽を蓄えたミレリア特産の麦。" },
+  springWater: { name: "風車丘の清水", type: "key", description: "冷たく澄んだ、パン作りに適した水。" },
+  sunYeast: { name: "陽だまり酵母", type: "key", description: "風車の羽根に宿る、ほのかに光る酵母。" },
+  holyPan: { name: "聖火のフライパン", type: "weapon", sell: 145, atk: 7, mag: 8, element: "fire", description: "食卓を守ってきた、炎と癒やしを導く調理具。" },
+  sunPan: { name: "陽光のフライパン", type: "weapon", sell: 210, atk: 10, mag: 11, element: "fire", description: "地下穀倉に眠っていた、陽の力を蓄える調理具。" },
+  bakerApron: { name: "祝福のエプロン", type: "body", sell: 105, def: 7, mag: 4, description: "温かな祈りが縫い込まれた丈夫な衣。" },
+  wheatCharm: { name: "麦穂のお守り", type: "accessory", sell: 95, mag: 3, maxHp: 8, description: "実りを願う人々の祈りを束ねたお守り。" },
   legacyEmblem: { name: "旅人のしるし", type: "accessory", sell: 0, def: 2, maxHp: 5, description: "旧ヒナティアを歩いた冒険者の証。" },
 });
 
@@ -536,6 +806,14 @@ export const SHOPS = Object.freeze({
   camp: {
     name: "街道の行商",
     goods: ["herb", "moonwort", "torch", "wing"],
+  },
+  mireItem: {
+    name: "小麦通りの道具屋",
+    goods: ["herb", "moonwort", "auraDrop", "happyBread", "smokeBomb", "wing"],
+  },
+  mireArmory: {
+    name: "実りの鍛冶店",
+    goods: ["ironSpear", "oakStaff", "blueBuckler", "travelCoat"],
   },
 });
 
@@ -614,6 +892,36 @@ export const SKILLS = Object.freeze({
     target: "allAllies",
     effect: "formation",
     description: "このターン、味方全体が受ける傷を半減する。",
+  },
+  bakedHeal: {
+    name: "焼きたてヒール",
+    owner: "mirei",
+    level: 1,
+    mp: 4,
+    target: "ally",
+    effect: "mireiHeal",
+    power: 48,
+    description: "味方ひとりを大きく回復し、毒も治す。",
+  },
+  happyBreadSkill: {
+    name: "ハッピーブレッド",
+    owner: "mirei",
+    level: 3,
+    mp: 7,
+    target: "allAllies",
+    effect: "breadWard",
+    description: "味方全体を少し回復し、毒・恐怖を治して再生を与える。",
+  },
+  panSmash: {
+    name: "聖火のひと振り",
+    owner: "mirei",
+    level: 3,
+    mp: 4,
+    target: "enemy",
+    effect: "panBreak",
+    power: 1.55,
+    element: "fire",
+    description: "炎の一撃。敵の攻撃力を下げ、植物の守りを崩す。",
   },
 });
 
@@ -742,6 +1050,104 @@ export const ENEMIES = Object.freeze({
     weakness: "light",
     actions: ["attack", "sigh", "darkWhisper", "smileDrain"],
   },
+  cropSprout: {
+    name: "カレハミノ",
+    sprite: "sprout",
+    hp: 58,
+    mp: 8,
+    atk: 18,
+    mag: 17,
+    def: 9,
+    spd: 10,
+    exp: 15,
+    gold: 12,
+    weakness: "fire",
+    pattern: ["seedShot", "attack", "rootBind"],
+  },
+  hungryCrow: {
+    name: "ハラペコガラス",
+    sprite: "crow",
+    hp: 51,
+    mp: 0,
+    atk: 20,
+    def: 8,
+    spd: 19,
+    exp: 14,
+    gold: 13,
+    weakness: "wind",
+    pattern: ["stealBread", "attack", "double"],
+  },
+  mudGolem: {
+    name: "ヒビワレゴーレム",
+    sprite: "mud",
+    hp: 86,
+    mp: 0,
+    atk: 23,
+    def: 18,
+    spd: 5,
+    exp: 21,
+    gold: 18,
+    weakness: "wind",
+    pattern: ["guard", "heavy", "attack"],
+  },
+  flourGhost: {
+    name: "コナユキゴースト",
+    sprite: "flour",
+    hp: 63,
+    mp: 14,
+    atk: 17,
+    mag: 23,
+    def: 10,
+    spd: 14,
+    exp: 19,
+    gold: 16,
+    weakness: "fire",
+    pattern: ["flourCloud", "attack", "auraDown"],
+  },
+  blightScarecrow: {
+    name: "枯れ穂の番人",
+    sprite: "scarecrow",
+    elite: true,
+    hp: 190,
+    mp: 24,
+    atk: 25,
+    mag: 21,
+    def: 13,
+    spd: 11,
+    exp: 58,
+    gold: 54,
+    weakness: "fire",
+    pattern: ["rootBind", "heavy", "seedStorm"],
+  },
+  dryRoot: {
+    name: "渇きの根",
+    sprite: "root",
+    hp: 112,
+    mp: 18,
+    atk: 22,
+    mag: 22,
+    def: 14,
+    spd: 9,
+    exp: 28,
+    gold: 21,
+    weakness: "fire",
+    pattern: ["rootBind", "drain", "attack"],
+  },
+  blightHeart: {
+    name: "飢渇核グラノア",
+    sprite: "blightHeart",
+    boss: true,
+    hp: 470,
+    mp: 100,
+    atk: 27,
+    mag: 29,
+    def: 16,
+    spd: 10,
+    exp: 175,
+    gold: 220,
+    weakness: "fire",
+    actions: ["attack", "rotBurst", "seedStorm", "devour"],
+  },
 });
 
 export const EQUIP_SLOTS = Object.freeze(["weapon", "shield", "body", "accessory"]);
@@ -788,6 +1194,31 @@ export const RUMORS = Object.freeze({
     text: "深い洞窟ではMPが尽きる前に戻るのも立派な判断。風渡りの羽なら王都へ帰れる。",
     region: "旅の心得",
   },
+  westRoad: {
+    title: "麦の香りが消えた西街道",
+    text: "ソラシド近郊の西関所から、パンの国ミレリアへ続く街道へ出られる。",
+    region: "ソラシド近郊・西端",
+  },
+  mirelia: {
+    title: "笑わないパンの国",
+    text: "ミレリアでは麦が枯れ、人々を笑顔にしていたパン職人も材料を失っている。",
+    region: "パンの国ミレリア",
+  },
+  windmill: {
+    title: "風車丘の二つの恵み",
+    text: "低地の泉には清水、高台の風車には陽だまり酵母が残る。どちらからでも探せる。",
+    region: "風車の丘",
+  },
+  granary: {
+    title: "黒い蔓の地下穀倉",
+    text: "枯れた畑の地下に古い穀倉がある。焼きたてパンの香りなら蔓を退けられる。",
+    region: "陽だまり街道・北東",
+  },
+  blightCore: {
+    title: "二本の根に守られた核",
+    text: "地下の飢渇核は二本の根に守られる。炎で根を崩し、全体攻撃には防御と回復を合わせる。",
+    region: "地下穀倉・根の間",
+  },
 });
 
 export const QUESTS = Object.freeze({
@@ -810,6 +1241,21 @@ export const QUESTS = Object.freeze({
     name: "帰らない坑夫",
     description: "空泣き洞B1で迷った坑夫を見つける。",
     reward: "鉄の槍を割引",
+  },
+  chapter2: {
+    name: "枯れた麦畑と奇跡のパン",
+    description: "ミレリアの実りを奪う黒い蔓の根源を探る。",
+    main: true,
+  },
+  miracleBread: {
+    name: "三つの恵み",
+    description: "黄金麦・風車丘の清水・陽だまり酵母を好きな順で集め、美玲へ届ける。",
+    reward: "美玲の加入と地下穀倉への道",
+  },
+  hungryChildren: {
+    name: "おなかの鳴る帰り道",
+    description: "街道で空腹の旅人へハッピーブレッドを届ける。",
+    reward: "麦穂のお守り",
   },
 });
 
