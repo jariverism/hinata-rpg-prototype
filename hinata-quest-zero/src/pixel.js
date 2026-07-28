@@ -288,6 +288,7 @@ export class PixelRenderer {
       hero: { hair: "#293243", skin: "#f0bf99", main: "#68c3df", dark: "#18385a", trim: "#f4cf61" },
       kumi: { hair: "#3d2a30", skin: "#efbd98", main: "#4f9fce", dark: "#182f58", trim: "#f2d27c" },
       mirei: { hair: "#49342c", skin: "#f0bd98", main: "#f2c95f", dark: "#7a4b3d", trim: "#fff1b0" },
+      sarina: { hair: "#3f3036", skin: "#efbd99", main: "#72c8aa", dark: "#354d68", trim: "#f4d778" },
       guard: { hair: "#5a4534", skin: "#dca77f", main: "#6c88a4", dark: "#303e55", trim: "#d3bd78" },
       merchant: { hair: "#80613e", skin: "#ecc29b", main: "#b66f55", dark: "#5a3440", trim: "#f0cc78" },
       pilgrim: { hair: "#c6c2ad", skin: "#dcb18c", main: "#73658f", dark: "#3a3658", trim: "#c6b9e8" },
@@ -309,6 +310,8 @@ export class PixelRenderer {
       baker: { hair: "#7b5138", skin: "#edbb94", main: "#e3bb63", dark: "#704855", trim: "#fff0bd" },
       farmer: { hair: "#6f4d32", skin: "#dfa77d", main: "#9b8b4f", dark: "#4d5338", trim: "#e0c66b" },
       miller: { hair: "#c9bda4", skin: "#e0ad84", main: "#8fa4a0", dark: "#475b5d", trim: "#e8d69b" },
+      shrine: { hair: "#dad2c1", skin: "#e4b690", main: "#7fb8a0", dark: "#40566b", trim: "#ecd276" },
+      ranger: { hair: "#564331", skin: "#dfab84", main: "#4f846c", dark: "#304c48", trim: "#b9d77e" },
     };
     const q = palettes[type] || palettes.town;
     if (dir === "up") {
@@ -350,6 +353,12 @@ export class PixelRenderer {
       p(20, 18, 5, 8, "#4d4040");
       p(21, 15, 3, 4, "#d9dde1");
       p(19, 24, 7, 3, "#bd704f");
+    }
+    if (type === "sarina") {
+      p(20, 14, 3, 13, "#d7b64f");
+      p(18, 12, 7, 6, "#f2d968");
+      p(20, 13, 3, 3, "#f8f1b0");
+      p(3, 17, 4, 8, "#73bfa9");
     }
     if (type === "guard") {
       p(5, 3, 15, 4, "#8598aa");
@@ -393,12 +402,15 @@ export class PixelRenderer {
       this.rect(x + 14, y + 7, 4, 14, "#507987");
       this.rect(x + 10, y + 9 + pulse, 3, 10, "#77d0df");
       this.rect(x + 20, y + 10 - pulse, 3, 9, "#77d0df");
-    } else if (type === "boss" || type === "boss2") {
+    } else if (type === "boss" || type === "boss2" || type === "boss3") {
       this.rect(x + 2, y + 24, 28, 5, "#15101d");
-      this.rect(x + 6, y + 13, 20, 13, type === "boss2" ? "#4b3a1d" : "#291836");
-      this.rect(x + 9, y + 7 + pulse, 14, 13, type === "boss2" ? "#7c6427" : "#4c245e");
-      this.rect(x + 11, y + 9 + pulse, 3, 3, type === "boss2" ? "#f0d34f" : "#ed5a88");
-      this.rect(x + 19, y + 9 + pulse, 3, 3, type === "boss2" ? "#f0d34f" : "#ed5a88");
+      const body = type === "boss2" ? "#4b3a1d" : type === "boss3" ? "#23485a" : "#291836";
+      const crown = type === "boss2" ? "#7c6427" : type === "boss3" ? "#3c7c79" : "#4c245e";
+      const eye = type === "boss2" ? "#f0d34f" : type === "boss3" ? "#a7f3d0" : "#ed5a88";
+      this.rect(x + 6, y + 13, 20, 13, body);
+      this.rect(x + 9, y + 7 + pulse, 14, 13, crown);
+      this.rect(x + 11, y + 9 + pulse, 3, 3, eye);
+      this.rect(x + 19, y + 9 + pulse, 3, 3, eye);
     } else if (type === "gather") {
       this.rect(x + 14, y + 15, 3, 14, "#2b694d");
       this.rect(x + 8, y + 14, 8, 5, "#75bb83");
@@ -435,6 +447,27 @@ export class PixelRenderer {
       this.rect(x + 7, y + 14, 18, 16, "#3d2a29");
       this.rect(x + 10, y + 19, 12, 8, "#e66b3e");
       this.rect(x + 13, y + 17 + pulse, 6, 8, "#ffd15c");
+    } else if (["waterChime", "windChime", "lightChime"].includes(type)) {
+      const color =
+        type === "waterChime" ? "#7dd8e4" : type === "windChime" ? "#8ee0aa" : "#f4df72";
+      this.rect(x + 9, y + 23, 14, 5, "#3b5360");
+      this.rect(x + 14, y + 8 + pulse, 4, 16, "#d6b95b");
+      this.rect(x + 9, y + 6 + pulse, 14, 9, color);
+      this.rect(x + 12, y + 8 + pulse, 8, 4, "#efffe6");
+    } else if (type === "spiritAltar" || type === "spiritGate") {
+      this.rect(x + 4, y + 22, 24, 7, "#52636a");
+      this.rect(x + 8, y + 7, 5, 17, "#6ca79a");
+      this.rect(x + 19, y + 7, 5, 17, "#6ca79a");
+      this.rect(x + 11, y + 5 + pulse, 10, 12, active ? "#f4df72" : "#7dd8d8");
+      this.rect(x + 14, y + 3 + pulse, 4, 14, "#e8fff1");
+    } else if (type === "spiritCamp") {
+      this.rect(x + 4, y + 22, 24, 5, "#35514b");
+      this.rect(x + 10, y + 12 + pulse, 12, 12, "#62c6ad");
+      this.rect(x + 14, y + 8 + pulse, 5, 13, "#d9ffe9");
+    } else if (type === "sanctumLever") {
+      this.rect(x + 7, y + 21, 18, 8, "#44565d");
+      this.rect(x + 15, y + 7, 3, 14, "#c0a45a");
+      this.rect(x + 12, y + 5, 9, 5, active ? "#71d5ad" : "#d96778");
     }
   }
 
@@ -455,6 +488,17 @@ export class PixelRenderer {
       blightScarecrow: "scarecrow",
       dryRoot: "root",
       blightHeart: "blightHeart",
+      whisperMushroom: "mushroom",
+      streamSprite: "stream",
+      galeWolf: "galeWolf",
+      prismBeetle: "prismBeetle",
+      hollowMask: "hollowMask",
+      echoArmor: "echoArmor",
+      rippleGuardian: "rippleGuardian",
+      gustGuardian: "gustGuardian",
+      prismGuardian: "prismGuardian",
+      muteTotem: "muteTotem",
+      hushAvatar: "hushAvatar",
     }[kind] || "shade";
     const bob = Math.sin(now / 230 + x) * 2;
     this.ctx.save();
@@ -541,6 +585,50 @@ export class PixelRenderer {
       this.rect(3, -6, 3, 3, "#f0cf4d");
       this.rect(-14, -15, 5, 22, "#4c4228");
       this.rect(9, -15, 5, 22, "#4c4228");
+    } else if (sprite === "mushroom") {
+      this.rect(-10, -1, 20, 13, "#6f5b75");
+      this.rect(-14, -12, 28, 13, "#b17b96");
+      this.rect(-8, -9, 5, 4, "#efc7b8");
+      this.rect(4, -7, 4, 3, "#efc7b8");
+      this.rect(-5, 2, 3, 3, "#f5df72");
+      this.rect(3, 2, 3, 3, "#f5df72");
+    } else if (sprite === "stream" || sprite === "rippleGuardian") {
+      this.rect(-11, -7, 22, 18, sprite === "rippleGuardian" ? "#3d8793" : "#57b6c4");
+      this.rect(-7, -14, 14, 11, "#9aede5");
+      this.rect(-5, -4, 3, 3, "#25455d");
+      this.rect(3, -4, 3, 3, "#25455d");
+      this.rect(-14, 8, 28, 5, "#367187");
+    } else if (sprite === "galeWolf" || sprite === "gustGuardian") {
+      this.rect(-12, -7, 24, 17, sprite === "gustGuardian" ? "#5c8b6d" : "#607b72");
+      this.rect(-10, -14, 8, 9, "#8fc79b");
+      this.rect(2, -14, 8, 9, "#8fc79b");
+      this.rect(-6, -5, 3, 3, "#f4dc68");
+      this.rect(3, -5, 3, 3, "#f4dc68");
+      this.rect(8, 6, 12, 4, "#bce4a5");
+    } else if (sprite === "prismBeetle" || sprite === "prismGuardian") {
+      this.rect(-12, -8, 24, 19, sprite === "prismGuardian" ? "#5e5190" : "#426b76");
+      this.rect(-7, -13, 14, 9, "#8ac8b7");
+      this.rect(-10, -5, 20, 3, "#efd66c");
+      this.rect(-15, 7, 8, 4, "#82588a");
+      this.rect(7, 7, 8, 4, "#4f91a3");
+    } else if (sprite === "hollowMask" || sprite === "muteTotem") {
+      this.rect(-10, -13, 20, 25, sprite === "muteTotem" ? "#3f5960" : "#d5d0bc");
+      this.rect(-6, -7, 4, 5, "#172839");
+      this.rect(3, -7, 4, 5, "#172839");
+      this.rect(-5, 4, 10, 3, "#6a5366");
+      this.rect(-14, 9, 28, 5, "#30464c");
+    } else if (sprite === "echoArmor") {
+      this.rect(-11, -10, 22, 22, "#5f7480");
+      this.rect(-8, -15, 16, 8, "#8fa5a8");
+      this.rect(-5, -7, 10, 4, "#182b38");
+      this.rect(-14, 0, 7, 14, "#40545e");
+      this.rect(7, 0, 7, 14, "#40545e");
+    } else if (sprite === "hushAvatar") {
+      this.rect(-15, -13, 30, 25, "#244b59");
+      this.rect(-11, -18, 22, 10, "#397873");
+      this.rect(-7, -8, 5, 4, "#a7f2d1");
+      this.rect(3, -8, 5, 4, "#a7f2d1");
+      this.rect(-18, 8, 36, 6, "#162e38");
     } else if (sprite === "orc") {
       this.rect(-10, -10, 20, 20, "#613653");
       this.rect(-7, -13, 14, 7, "#8d536e");
@@ -581,6 +669,11 @@ export class PixelRenderer {
       harvestTown: ["#315873", "#c59c63", "#74654d", "#3e4438"],
       granary: ["#201d19", "#685a43", "#3f3529", "#171512"],
       granaryBoss: ["#21170f", "#76582b", "#46331d", "#140e0a"],
+      spiritPass: ["#244f68", "#659b79", "#416a5b", "#203f3a"],
+      spiritTown: ["#315d72", "#79a78e", "#527463", "#294c47"],
+      spiritForest: ["#102f38", "#367963", "#275346", "#102e32"],
+      spiritSanctum: ["#111d27", "#426a6c", "#28464d", "#09161d"],
+      spiritBoss: ["#10222c", "#3b7873", "#24545a", "#08171d"],
     };
     const p = palettes[tone] || palettes.field;
     const g = ctx.createLinearGradient(0, 0, 0, 250);
@@ -744,6 +837,77 @@ export class PixelRenderer {
       p(-23, -4, 46, 22, "#b69747");
       for (let i = 0; i < 6; i += 1) p(-18 + i * 7, -2, 3, 16, "#5e4827");
       p(-8, 20, 16, 18, "#2f261a");
+    } else if (sprite === "mushroom") {
+      p(-28, 22, 56, 7, "#152329");
+      p(-18, -2, 36, 27, "#705c76");
+      p(-34, -31, 68, 34, "#ad7895");
+      p(-23, -24, 11, 8, "#efc7b8");
+      p(9, -20, 10, 7, "#efc7b8");
+      p(-10, 4, 7, 6, "#f2dd72");
+      p(4, 4, 7, 6, "#f2dd72");
+      p(-5, 15, 11, 4, "#493f51");
+    } else if (sprite === "stream" || sprite === "rippleGuardian") {
+      const body = sprite === "rippleGuardian" ? "#3d8994" : "#55b4c3";
+      p(-32, 27, 64, 7, "#10242d");
+      p(-27, -16, 54, 46, body);
+      p(-18, -35, 36, 25, "#99ece4");
+      p(-12, -12, 8, 7, "#23465b");
+      p(5, -12, 8, 7, "#23465b");
+      p(-8, 4, 16, 5, "#306675");
+      p(-38, 13, 24, 9, "#438ba0");
+      p(14, 13, 24, 9, "#438ba0");
+    } else if (sprite === "galeWolf" || sprite === "gustGuardian") {
+      const body = sprite === "gustGuardian" ? "#568d69" : "#617d73";
+      p(-38, 25, 76, 8, "#13242a");
+      p(-29, -12, 58, 40, body);
+      p(-25, -32, 18, 25, "#8fc79b");
+      p(7, -32, 18, 25, "#8fc79b");
+      p(-13, -9, 8, 7, "#f3dc69");
+      p(6, -9, 8, 7, "#f3dc69");
+      p(-8, 6, 16, 6, "#243c40");
+      p(25, 7, 30, 10, "#b9e3a2");
+      p(-40, 14, 17, 15, "#45665f");
+    } else if (sprite === "prismBeetle" || sprite === "prismGuardian") {
+      const shell = sprite === "prismGuardian" ? "#62518f" : "#426c77";
+      p(-38, 25, 76, 8, "#132128");
+      p(-29, -19, 58, 46, shell);
+      p(-18, -36, 36, 22, "#8bc8b7");
+      p(-25, -8, 50, 7, "#efd66b");
+      p(-43, 10, 24, 10, "#835989");
+      p(19, 10, 24, 10, "#4e91a3");
+      p(-12, -26, 7, 6, "#172d3a");
+      p(5, -26, 7, 6, "#172d3a");
+    } else if (sprite === "hollowMask" || sprite === "muteTotem") {
+      const body = sprite === "muteTotem" ? "#405a61" : "#d4cfba";
+      p(-30, 29, 60, 8, "#111f28");
+      p(-25, -38, 50, 69, body);
+      p(-15, -20, 11, 14, "#172839");
+      p(5, -20, 11, 14, "#172839");
+      p(-13, 7, 26, 7, "#6a5266");
+      p(-37, 18, 74, 12, "#30464c");
+      if (sprite === "muteTotem") {
+        p(-5, -52, 10, 18, "#d2b95a");
+        p(-13, -49, 26, 8, "#78c7ad");
+      }
+    } else if (sprite === "echoArmor") {
+      p(-35, 31, 70, 8, "#101d24");
+      p(-27, -26, 54, 60, "#5f7580");
+      p(-20, -43, 40, 23, "#91a6a9");
+      p(-12, -23, 24, 8, "#182c39");
+      p(-43, -5, 18, 39, "#40555f");
+      p(25, -5, 18, 39, "#40555f");
+      p(-17, 9, 34, 7, "#d0b65c");
+    } else if (sprite === "hushAvatar") {
+      p(-64, 42, 128, 11, "#071117");
+      p(-51, -39, 102, 83, "#244b59");
+      p(-38, -58, 76, 28, "#397873");
+      p(-62, -18, 25, 59, "#183944");
+      p(37, -18, 25, 59, "#183944");
+      p(-25, -33, 16, 13, "#a8f2d2");
+      p(9, -33, 16, 13, "#a8f2d2");
+      p(-30, -6, 60, 9, "#102730");
+      p(-21, 1, 42, 19, "#7cc7aa");
+      p(-8, 23, 16, 19, "#0e2730");
     } else if (sprite === "shade") {
       p(-20, 15, 40, 7, "#100e1c");
       p(-16, -18, 32, 36, "#302a48");
@@ -800,9 +964,12 @@ export class PixelRenderer {
     ctx.save();
     ctx.translate(x, y + Math.sin(frame / 350 + x) * 1.5);
     if (hurt && Math.floor(frame / 45) % 2) ctx.globalAlpha = 0.35;
-    const main = type === "kumi" ? "#4f9fce" : type === "mirei" ? "#f0c85c" : "#65c3dd";
-    const dark = type === "kumi" ? "#172d53" : type === "mirei" ? "#78483b" : "#193c5c";
-    const hair = type === "kumi" ? "#3d2931" : type === "mirei" ? "#49342c" : "#293243";
+    const main =
+      type === "kumi" ? "#4f9fce" : type === "mirei" ? "#f0c85c" : type === "sarina" ? "#71c7a8" : "#65c3dd";
+    const dark =
+      type === "kumi" ? "#172d53" : type === "mirei" ? "#78483b" : type === "sarina" ? "#354d68" : "#193c5c";
+    const hair =
+      type === "kumi" ? "#3d2931" : type === "mirei" ? "#49342c" : type === "sarina" ? "#3f3036" : "#293243";
     this.rect(-8, -27, 16, 12, hair);
     this.rect(-10, -19, 20, 9, main);
     this.rect(-9, -10, 18, 19, dark);
@@ -816,6 +983,10 @@ export class PixelRenderer {
       this.rect(10, -11, 10, 5, "#64666b");
       this.rect(13, -16, 4, 11, "#d7d9dc");
       this.rect(9, -6, 12, 4, "#b96d4b");
+    } else if (type === "sarina") {
+      this.rect(11, -19, 4, 30, "#d7b650");
+      this.rect(7, -23, 12, 9, "#73c6ac");
+      this.rect(11, -21, 4, 5, "#eff7a4");
     } else {
       this.rect(9, -14, 7, 20, "#a6b7c1");
       this.rect(10, -17, 5, 5, "#e9d070");
@@ -848,9 +1019,10 @@ export class PixelRenderer {
     }
     const kumi = type === "kumi";
     const mirei = type === "mirei";
-    const hair = kumi ? "#3e2831" : mirei ? "#49342c" : "#293243";
+    const sarina = type === "sarina";
+    const hair = kumi ? "#3e2831" : mirei ? "#49342c" : sarina ? "#3f3036" : "#293243";
     const skin = "#efbd99";
-    const main = kumi ? "#4f9fce" : mirei ? "#f0c75a" : "#64c2dc";
+    const main = kumi ? "#4f9fce" : mirei ? "#f0c75a" : sarina ? "#71c7a8" : "#64c2dc";
     this.rect(12, 67, 60, 17, "#10213a");
     this.rect(19, 54, 46, 30, main);
     this.rect(22, 18, 42, 44, hair);
@@ -859,7 +1031,7 @@ export class PixelRenderer {
     this.rect(55, 18, 10, 33, hair);
     this.rect(31, 37, 5, 5, "#253043");
     this.rect(49, 37, 5, 5, "#253043");
-    this.rect(38, 51, 10, 3, kumi ? "#b85f72" : mirei ? "#c5656f" : "#a95869");
+    this.rect(38, 51, 10, 3, kumi ? "#b85f72" : mirei ? "#c5656f" : sarina ? "#bd6575" : "#a95869");
     this.rect(28, 31, 10, 3, hair);
     this.rect(47, 31, 10, 3, hair);
     this.rect(35, 58, 15, 8, skin);
@@ -870,6 +1042,10 @@ export class PixelRenderer {
     } else if (mirei) {
       this.rect(18, 62, 48, 7, "#fff0b5");
       this.rect(57, 54, 10, 8, "#b96c4b");
+    } else if (sarina) {
+      this.rect(17, 64, 50, 6, "#39566b");
+      this.rect(57, 51, 8, 15, "#d8b750");
+      this.rect(54, 48, 14, 7, "#77c9ad");
     }
     this.ctx = old;
   }
