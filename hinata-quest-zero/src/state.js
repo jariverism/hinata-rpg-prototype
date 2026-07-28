@@ -77,6 +77,30 @@ const mireiBase = () => ({
   status: {},
 });
 
+const sarinaBase = () => ({
+  id: "sarina",
+  name: "紗理菜",
+  fullName: "潮紗理菜",
+  role: "精霊巫女",
+  level: 4,
+  exp: 378,
+  hp: 76,
+  mp: 48,
+  maxHp: 76,
+  maxMp: 48,
+  atk: 11,
+  def: 12,
+  mag: 26,
+  spd: 15,
+  equipment: {
+    weapon: "spiritBell",
+    shield: null,
+    body: "shrineRobe",
+    accessory: null,
+  },
+  status: {},
+});
+
 export function createState(name = "トシ") {
   return {
     version: SAVE_VERSION,
@@ -90,6 +114,7 @@ export function createState(name = "トシ") {
       hero: heroBase(name),
       kumi: kumiBase(),
       mirei: mireiBase(),
+      sarina: sarinaBase(),
       order: ["hero"],
     },
     inventory: {
@@ -122,6 +147,14 @@ export function createState(name = "トシ") {
       sunPan: 0,
       bakerApron: 0,
       wheatCharm: 0,
+      waterChime: 0,
+      windChime: 0,
+      lightChime: 0,
+      spiritBell: 0,
+      rainbowBell: 0,
+      shrineRobe: 0,
+      rainbowCharm: 0,
+      spiritNectar: 0,
       legacyEmblem: 0,
     },
     flags: {
@@ -154,6 +187,21 @@ export function createState(name = "トシ") {
       chapter2Clear: false,
       mireliaRested: false,
       breadChoice: "",
+      chapter3Started: false,
+      metSarina: false,
+      waterGuardianWon: false,
+      windGuardianWon: false,
+      lightGuardianWon: false,
+      lostSpiritFound: false,
+      sarinaJoined: false,
+      spiritTongue: false,
+      spiritGateOpen: false,
+      spiritPuzzleFailed: false,
+      spiritCampRested: false,
+      sanctumShortcut: false,
+      chapter3BossSeen: false,
+      chapter3BossWon: false,
+      chapter3Clear: false,
     },
     quests: {
       chapter1: "active",
@@ -163,6 +211,9 @@ export function createState(name = "トシ") {
       chapter2: "locked",
       miracleBread: "locked",
       hungryChildren: "locked",
+      chapter3: "locked",
+      threeChimes: "locked",
+      lostSpirit: "locked",
     },
     rumors: {
       city: true,
@@ -172,6 +223,12 @@ export function createState(name = "トシ") {
       windmill: false,
       granary: false,
       blightCore: false,
+      southTrail: false,
+      sarinaria: false,
+      threeChimes: false,
+      spiritLanguage: false,
+      silentSanctum: false,
+      resonanceCore: false,
     },
     opened: {},
     gathered: {},
@@ -246,6 +303,7 @@ export function normalizeState(value) {
       hero: mergeCharacter(base.party.hero, value.party?.hero),
       kumi: mergeCharacter(base.party.kumi, value.party?.kumi),
       mirei: mergeCharacter(base.party.mirei, value.party?.mirei),
+      sarina: mergeCharacter(base.party.sarina, value.party?.sarina),
       order: Array.isArray(value.party?.order) ? [...value.party.order] : ["hero"],
     },
     lastSafe: { ...base.lastSafe, ...(value.lastSafe || {}) },
@@ -260,9 +318,11 @@ export function normalizeState(value) {
     result.party.order.push("kumi");
   if (result.flags.mireiJoined && !result.party.order.includes("mirei"))
     result.party.order.push("mirei");
+  if (result.flags.sarinaJoined && !result.party.order.includes("sarina"))
+    result.party.order.push("sarina");
   result.party.order = result.party.order.filter(
     (id, index, array) =>
-      ["hero", "kumi", "mirei"].includes(id) && array.indexOf(id) === index,
+      ["hero", "kumi", "mirei", "sarina"].includes(id) && array.indexOf(id) === index,
   );
   if (!result.party.order.includes("hero")) result.party.order.unshift("hero");
   clampVitals(result);
@@ -301,6 +361,7 @@ export function serialize(state) {
       hero: { ...state.party.hero, status: {} },
       kumi: { ...state.party.kumi, status: {} },
       mirei: { ...state.party.mirei, status: {} },
+      sarina: { ...state.party.sarina, status: {} },
       order: [...state.party.order],
     },
   };
@@ -386,6 +447,19 @@ export function applyMireiGrowth(character, level, heal = true) {
   }
 }
 
+export function applySarinaGrowth(character, level, heal = true) {
+  character.maxHp += 7;
+  character.maxMp += 4;
+  character.atk += 1;
+  character.def += 2;
+  character.mag += 4;
+  character.spd += level % 2 ? 2 : 1;
+  if (heal) {
+    character.hp = maxHp(character);
+    character.mp = character.maxMp;
+  }
+}
+
 export function grantExperience(state, amount) {
   const levels = [];
   for (const character of activeParty(state)) {
@@ -394,7 +468,8 @@ export function grantExperience(state, amount) {
       character.level += 1;
       if (character.id === "hero") applyHeroGrowth(character, character.level);
       else if (character.id === "kumi") applyKumiGrowth(character, character.level);
-      else applyMireiGrowth(character, character.level);
+      else if (character.id === "mirei") applyMireiGrowth(character, character.level);
+      else applySarinaGrowth(character, character.level);
       levels.push({
         id: character.id,
         name: character.name,
