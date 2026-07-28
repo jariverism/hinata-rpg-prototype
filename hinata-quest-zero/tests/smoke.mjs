@@ -483,6 +483,7 @@ test("第一章公開版のv5セーブに第二章データを補い、育成値
   oldSave.party.kumi.level = 4;
   oldSave.party.order = ["hero", "kumi"];
   delete oldSave.party.mirei;
+  delete oldSave.party.sarina;
   oldSave.gold = 345;
   oldSave.inventory.herb = 7;
   delete oldSave.inventory.happyBread;
@@ -507,6 +508,7 @@ test("第一章公開版のv5セーブに第二章データを補い、育成値
   assert.equal(restored.quests.chapter2, "locked");
   assert.equal(restored.rumors.mirelia, false);
   assert.equal(restored.party.mirei.name, "美玲");
+  assert.equal(restored.party.sarina.name, "紗理菜");
 });
 
 test("美玲の回復と炎スキルを使えば第二章ボスを攻略できる", async () => {
@@ -554,6 +556,166 @@ test("美玲の回復と炎スキルを使えば第二章ボスを攻略でき�
   }
   assert.ok(decisions < 120, "第二章ボス戦が有限ターンで終了する");
   assert.notEqual(game.mode, "gameover", "役割を使い分ければ全滅しない");
+  assert.equal(game.state.victories, 1);
+});
+
+test("第二章フィールドから第三章へ進み、三響・紗理菜加入・神域・章終了まで通る", async () => {
+  const { game, document, window } = await createGame();
+  game.state.flags.prologueSeen = true;
+  game.state.flags.chapter1Clear = true;
+  game.state.flags.chapter2Started = true;
+  game.state.flags.chapter2Clear = true;
+  game.state.flags.chapter2BossWon = true;
+  game.state.flags.kumiJoined = true;
+  game.state.flags.mireiJoined = true;
+  game.state.flags.postClear = true;
+  game.state.party.order = ["hero", "kumi", "mirei"];
+  game.state.party.hero.level = 6;
+  game.state.party.hero.exp = 890;
+  game.state.party.hero.atk = 30;
+  game.state.gold = 512;
+  game.state.inventory.herb = 6;
+  game.state.inventory.happyBread = 3;
+  game.state.map = "mireRoad";
+  game.state.x = 24;
+  game.state.y = 31;
+  game.buildMapEnemies();
+  game.setMode("map");
+
+  const south = game.currentMap().warps.find(
+    (warp) => warp.to === "spiritPass" && warp.x === 24,
+  );
+  game.useWarp(south);
+  assert.equal(game.state.map, "spiritPass");
+  assert.equal(game.state.party.hero.level, 6);
+  assert.equal(game.state.party.hero.exp, 890);
+  assert.equal(game.state.party.hero.atk, 30);
+  assert.equal(game.state.gold, 512);
+  assert.equal(game.state.inventory.herb, 6);
+  assert.equal(game.state.inventory.happyBread, 3);
+  assert.equal(game.state.quests.chapter3, "active");
+
+  window.__HQ0_TEST__.teleport("sarinaria", 22, 10);
+  window.__HQ0_TEST__.talk("sarina");
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.metSarina, true);
+  assert.equal(game.state.quests.threeChimes, "active");
+
+  for (const [story, enemy, special, item] of [
+    ["windTrial", "gustGuardian", "wind-chime", "windChime"],
+    ["waterTrial", "rippleGuardian", "water-chime", "waterChime"],
+    ["lightTrial", "prismGuardian", "light-chime", "lightChime"],
+  ]) {
+    game.startBattle([enemy], { story, canEscape: false });
+    window.__HQ0_TEST__.winBattle();
+    drainDialogue(game, document);
+    window.__HQ0_TEST__.special(special);
+    drainDialogue(game, document);
+    assert.equal(game.state.inventory[item], 1);
+  }
+
+  window.__HQ0_TEST__.teleport("sarinaria", 22, 10);
+  window.__HQ0_TEST__.talk("sarina");
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.sarinaJoined, true);
+  assert.equal(game.state.flags.spiritTongue, true);
+  assert.deepEqual(game.state.party.order, ["hero", "kumi", "mirei", "sarina"]);
+
+  window.__HQ0_TEST__.teleport("spiritSanctum", 29, 8);
+  window.__HQ0_TEST__.special("resonance-gate");
+  const correct = [...document.querySelectorAll("#dialogue-choices button")].find(
+    (button) => button.textContent.includes("水 → 風 → 光"),
+  );
+  assert.ok(correct, "精霊会話から導く共鳴順を選択できる");
+  correct.click();
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.spiritGateOpen, true);
+
+  window.__HQ0_TEST__.teleport("spiritHeart", 27, 7);
+  window.__HQ0_TEST__.special("chapter3-boss");
+  drainDialogue(game, document);
+  assert.equal(game.mode, "battle");
+  assert.deepEqual(
+    game.battle.enemies.map((enemy) => enemy.kind),
+    ["hushAvatar", "muteTotem", "muteTotem"],
+  );
+  assert.equal(game.battle.resonance, "fire");
+  window.__HQ0_TEST__.winBattle();
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.chapter3Clear, true);
+  assert.equal(game.state.quests.chapter3, "complete");
+  assert.equal(game.mode, "clear");
+  assert.equal(document.querySelector("#clear-heading").textContent, "虹鈴の精霊巫女");
+
+  game.showSavePicker("clear");
+  document.querySelector('[data-save-slot="3"]').click();
+  game.goTitle();
+  game.openLoadScreen("title");
+  document.querySelector('[data-load-slot="3"]').click();
+  assert.equal(game.mode, "clear");
+  assert.equal(game.state.flags.chapter3Clear, true);
+  assert.deepEqual(game.state.party.order, ["hero", "kumi", "mirei", "sarina"]);
+});
+
+test("四人の属性・回復・防御役割を使えば第三章ボスを攻略できる", async () => {
+  const { game } = await createGame();
+  const hero = game.state.party.hero;
+  const kumi = game.state.party.kumi;
+  const mirei = game.state.party.mirei;
+  const sarina = game.state.party.sarina;
+  Object.assign(hero, { level: 7, hp: 108, maxHp: 108, mp: 40, maxMp: 40, atk: 34, def: 19, mag: 23, spd: 20 });
+  Object.assign(kumi, { level: 6, hp: 122, maxHp: 122, mp: 44, maxMp: 44, atk: 32, def: 24, mag: 12, spd: 17 });
+  Object.assign(mirei, { level: 6, hp: 92, maxHp: 92, mp: 58, maxMp: 58, atk: 18, def: 16, mag: 32, spd: 14 });
+  Object.assign(sarina, { level: 6, hp: 90, maxHp: 90, mp: 66, maxMp: 66, atk: 14, def: 17, mag: 36, spd: 19 });
+  game.state.party.order = ["hero", "kumi", "mirei", "sarina"];
+  game.state.flags.prologueSeen = true;
+  game.state.flags.sarinaJoined = true;
+  game.state.inventory.spiritNectar = 3;
+  game.state.inventory.happyBread = 3;
+  game.state.happy = 30;
+  game.setMode("map");
+  game.startBattle(["hushAvatar", "muteTotem", "muteTotem"], {
+    story: "chapter3Boss",
+    canEscape: false,
+  });
+
+  let decisions = 0;
+  while (game.mode === "battle" && decisions < 180) {
+    const actor = game.currentBattleActor();
+    if (!actor) break;
+    const alive = game.state.party.order
+      .map((id) => game.state.party[id])
+      .filter((member) => member.hp > 0);
+    const wounded = alive.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    const target =
+      game.battle.enemies.find((enemy) => enemy.kind === "muteTotem" && enemy.hp > 0) ||
+      game.battle.enemies.find((enemy) => enemy.hp > 0);
+    const telegraph = game.battle.telegraph === "silenceNova";
+    if (actor.id === "sarina" && wounded.hp / wounded.maxHp < 0.58 && actor.mp >= 5) {
+      game.commitPlan({ type: "skill", id: "sacredBell", targetType: "allAllies" });
+    } else if (actor.id === "sarina" && !alive.every((member) => member.status.spiritWard) && actor.mp >= 6) {
+      game.commitPlan({ type: "skill", id: "spiritWard", targetType: "allAllies" });
+    } else if (actor.id === "sarina" && actor.mp >= 7) {
+      game.commitPlan({ type: "skill", id: "rainbowPrayer", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "mirei" && wounded.hp / wounded.maxHp < 0.48 && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "bakedHeal", target: wounded.id, targetType: "ally" });
+    } else if (actor.id === "mirei" && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "panSmash", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "kumi" && telegraph && actor.mp >= 7) {
+      game.commitPlan({ type: "skill", id: "formation", targetType: "allAllies" });
+    } else if (telegraph) {
+      game.commitPlan({ type: "guard" });
+    } else if (actor.id === "kumi" && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "skyThrust", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "hero" && actor.mp >= 3) {
+      game.commitPlan({ type: "skill", id: "auraBlade", target: target.id, targetType: "enemy" });
+    } else {
+      game.commitPlan({ type: "attack", target: target.id, targetType: "enemy" });
+    }
+    decisions += 1;
+  }
+  assert.ok(decisions < 180, "第三章ボス戦が有限ターンで終了する");
+  assert.notEqual(game.mode, "gameover", "属性・防御・回復を使えば全滅しない");
   assert.equal(game.state.victories, 1);
 });
 
