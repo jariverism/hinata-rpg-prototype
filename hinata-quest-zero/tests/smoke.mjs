@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Window } from "happy-dom";
+import { createState, normalizeState } from "../src/state.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
@@ -387,6 +388,173 @@ test("成長曲線、消耗品、ゲージ持越しを第一章向けに抑え�
     targetType: "allAllies",
   });
   assert.equal(game.state.inventory.brightBell, 0, "光鳴りの鈴は一度使うとなくなる");
+});
+
+test("第一章のフィールドから地続きで第二章へ進み、能力と所持品を引き継ぐ", async () => {
+  const { game, document, window } = await createGame();
+  game.state.flags.prologueSeen = true;
+  game.state.flags.chapter1Clear = true;
+  game.state.flags.postClear = true;
+  game.state.flags.kumiJoined = true;
+  game.state.party.order = ["hero", "kumi"];
+  game.state.party.hero.level = 4;
+  game.state.party.hero.exp = 320;
+  game.state.party.hero.atk = 24;
+  game.state.gold = 237;
+  game.state.inventory.herb = 5;
+  game.state.map = "highroad";
+  game.state.x = 2;
+  game.state.y = 18;
+  game.buildMapEnemies();
+  game.setMode("map");
+
+  const west = game.currentMap().warps.find(
+    (warp) => warp.to === "mireRoad" && warp.y === 18,
+  );
+  game.useWarp(west);
+  assert.equal(game.state.map, "mireRoad", "西端からロードを挟まず街道へ接続");
+  assert.equal(game.state.party.hero.level, 4);
+  assert.equal(game.state.party.hero.exp, 320);
+  assert.equal(game.state.party.hero.atk, 24);
+  assert.equal(game.state.gold, 237);
+  assert.equal(game.state.inventory.herb, 5);
+  assert.equal(game.state.quests.chapter2, "active");
+
+  window.__HQ0_TEST__.teleport("mileria", 20, 10);
+  window.__HQ0_TEST__.talk("mirei");
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.metMirei, true);
+  assert.equal(game.state.quests.miracleBread, "active");
+
+  game.state.flags.scarecrowWon = true;
+  window.__HQ0_TEST__.teleport("mireRoad", 12, 9);
+  window.__HQ0_TEST__.special("golden-wheat");
+  drainDialogue(game, document);
+  window.__HQ0_TEST__.teleport("sunmill", 6, 19);
+  window.__HQ0_TEST__.special("spring-water");
+  drainDialogue(game, document);
+  window.__HQ0_TEST__.special("sun-yeast");
+  drainDialogue(game, document);
+  assert.equal(game.state.inventory.goldenWheat, 1);
+  assert.equal(game.state.inventory.springWater, 1);
+  assert.equal(game.state.inventory.sunYeast, 1);
+
+  window.__HQ0_TEST__.teleport("mileria", 21, 9);
+  window.__HQ0_TEST__.special("bakery-oven");
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.mireiJoined, true);
+  assert.equal(game.state.flags.granaryOpen, true);
+  assert.deepEqual(game.state.party.order, ["hero", "kumi", "mirei"]);
+  assert.equal(game.state.party.hero.level, 4, "加入後も主人公のレベルを維持");
+  assert.equal(game.state.quests.miracleBread, "complete");
+
+  window.__HQ0_TEST__.teleport("granary2", 28, 8);
+  window.__HQ0_TEST__.special("chapter2-boss");
+  drainDialogue(game, document);
+  assert.equal(game.mode, "battle");
+  assert.deepEqual(
+    game.battle.enemies.map((enemy) => enemy.kind),
+    ["blightHeart", "dryRoot", "dryRoot"],
+  );
+  window.__HQ0_TEST__.winBattle();
+  drainDialogue(game, document);
+  assert.equal(game.state.flags.chapter2Clear, true);
+  assert.equal(game.state.quests.chapter2, "complete");
+  assert.equal(game.mode, "clear");
+  assert.equal(document.querySelector("#clear-heading").textContent, "枯れた麦畑と奇跡のパン");
+  const clearedLevel = game.state.party.hero.level;
+
+  game.showSavePicker("clear");
+  document.querySelector('[data-save-slot="2"]').click();
+  game.goTitle();
+  game.openLoadScreen("title");
+  document.querySelector('[data-load-slot="2"]').click();
+  assert.equal(game.mode, "clear");
+  assert.equal(game.state.flags.chapter2Clear, true);
+  assert.equal(game.state.party.hero.level, clearedLevel);
+  assert.deepEqual(game.state.party.order, ["hero", "kumi", "mirei"]);
+});
+
+test("第一章公開版のv5セーブに第二章データを補い、育成値は変えない", () => {
+  const oldSave = createState("空色ファン");
+  oldSave.party.hero.level = 5;
+  oldSave.party.hero.exp = 612;
+  oldSave.party.hero.atk = 28;
+  oldSave.party.kumi.level = 4;
+  oldSave.party.order = ["hero", "kumi"];
+  delete oldSave.party.mirei;
+  oldSave.gold = 345;
+  oldSave.inventory.herb = 7;
+  delete oldSave.inventory.happyBread;
+  oldSave.flags.chapter1Clear = true;
+  delete oldSave.flags.chapter2Started;
+  delete oldSave.flags.mireiJoined;
+  delete oldSave.quests.chapter2;
+  delete oldSave.rumors.mirelia;
+
+  const restored = normalizeState(JSON.parse(JSON.stringify(oldSave)));
+  assert.equal(restored.name, "空色ファン");
+  assert.equal(restored.party.hero.level, 5);
+  assert.equal(restored.party.hero.exp, 612);
+  assert.equal(restored.party.hero.atk, 28);
+  assert.equal(restored.party.kumi.level, 4);
+  assert.deepEqual(restored.party.order, ["hero", "kumi"]);
+  assert.equal(restored.gold, 345);
+  assert.equal(restored.inventory.herb, 7);
+  assert.equal(restored.inventory.happyBread, 0);
+  assert.equal(restored.flags.chapter1Clear, true);
+  assert.equal(restored.flags.chapter2Started, false);
+  assert.equal(restored.quests.chapter2, "locked");
+  assert.equal(restored.rumors.mirelia, false);
+  assert.equal(restored.party.mirei.name, "美玲");
+});
+
+test("美玲の回復と炎スキルを使えば第二章ボスを攻略できる", async () => {
+  const { game } = await createGame();
+  const hero = game.state.party.hero;
+  const kumi = game.state.party.kumi;
+  const mirei = game.state.party.mirei;
+  Object.assign(hero, { level: 5, hp: 94, maxHp: 94, mp: 31, maxMp: 31, atk: 25, def: 15, mag: 18, spd: 17 });
+  Object.assign(kumi, { level: 4, hp: 104, maxHp: 104, mp: 34, maxMp: 34, atk: 25, def: 19, spd: 14 });
+  Object.assign(mirei, { level: 4, hp: 78, maxHp: 78, mp: 42, maxMp: 42, atk: 14, def: 12, mag: 24, spd: 11 });
+  game.state.party.order = ["hero", "kumi", "mirei"];
+  game.state.flags.prologueSeen = true;
+  game.state.flags.mireiJoined = true;
+  game.state.flags.breadChoice = "crisp";
+  game.state.inventory.happyBread = 3;
+  game.setMode("map");
+  game.startBattle(["blightHeart", "dryRoot", "dryRoot"], { canEscape: false });
+
+  let decisions = 0;
+  while (game.mode === "battle" && decisions < 120) {
+    const actor = game.currentBattleActor();
+    if (!actor) break;
+    const wounded = game.state.party.order
+      .map((id) => game.state.party[id])
+      .filter((member) => member.hp > 0)
+      .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    const target =
+      game.battle.enemies.find((enemy) => enemy.kind === "dryRoot" && enemy.hp > 0) ||
+      game.battle.enemies.find((enemy) => enemy.hp > 0);
+    const telegraph = game.battle.telegraph === "rotBurst";
+    if (actor.id === "mirei" && wounded.hp / wounded.maxHp < 0.48 && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "bakedHeal", target: wounded.id, targetType: "ally" });
+    } else if (actor.id === "mirei" && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "panSmash", target: target.id, targetType: "enemy" });
+    } else if (telegraph) {
+      game.commitPlan({ type: "guard" });
+    } else if (actor.id === "hero" && actor.mp >= 3) {
+      game.commitPlan({ type: "skill", id: "auraBlade", target: target.id, targetType: "enemy" });
+    } else if (actor.id === "kumi" && actor.mp >= 4) {
+      game.commitPlan({ type: "skill", id: "skyThrust", target: target.id, targetType: "enemy" });
+    } else {
+      game.commitPlan({ type: "attack", target: target.id, targetType: "enemy" });
+    }
+    decisions += 1;
+  }
+  assert.ok(decisions < 120, "第二章ボス戦が有限ターンで終了する");
+  assert.notEqual(game.mode, "gameover", "役割を使い分ければ全滅しない");
+  assert.equal(game.state.victories, 1);
 });
 
 test("旧版セーブを消さず、名前・進行実績・記念装備へ移行する", async () => {
