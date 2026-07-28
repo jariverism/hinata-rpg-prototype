@@ -517,6 +517,7 @@ function mireRoad() {
   border(m, TILE.TREE);
   hline(m, 1, 48, 16, TILE.PATH, 2);
   pathPoints(m, [[24, 17], [24, 4]], TILE.PATH, 2);
+  vline(m, 24, 17, 32, TILE.PATH, 2);
   pathPoints(m, [[36, 16], [36, 8], [42, 8], [42, 5]], TILE.PATH, 2);
   pathPoints(m, [[8, 16], [8, 9], [14, 9]], TILE.PATH, 2);
   fill(m, 4, 4, 15, 8, TILE.SAND);
@@ -549,6 +550,28 @@ function mireRoad() {
       label: "封じられた地下穀倉",
       requires: "granaryOpen",
       denied: "黒い蔓が入口を塞いでいる。人の心を温める香りがあれば退けられそうだ。",
+    },
+    {
+      x: 24,
+      y: 32,
+      to: "spiritPass",
+      tx: 24,
+      ty: 2,
+      dir: "down",
+      label: "虹風の峠",
+      requires: "chapter2Clear",
+      denied: "南の吊り橋は瘴気に沈んでいる。地下穀倉の黒い根を断たなければ渡れない。",
+    },
+    {
+      x: 25,
+      y: 32,
+      to: "spiritPass",
+      tx: 25,
+      ty: 2,
+      dir: "down",
+      label: "虹風の峠",
+      requires: "chapter2Clear",
+      denied: "南の吊り橋は瘴気に沈んでいる。地下穀倉の黒い根を断たなければ渡れない。",
     },
   );
   m.npcs.push(
@@ -746,6 +769,256 @@ function granary2() {
   return m;
 }
 
+function spiritPass() {
+  const m = map("spiritPass", "虹風の峠", 50, 34, TILE.GRASS, "spiritPass");
+  border(m, TILE.TREE);
+  pathPoints(m, [[24, 1], [24, 17], [4, 17]], TILE.PATH, 2);
+  pathPoints(m, [[24, 17], [47, 17]], TILE.PATH, 2);
+  pathPoints(m, [[36, 17], [36, 25]], TILE.PATH, 2);
+  fill(m, 6, 5, 10, 7, TILE.WATER);
+  hline(m, 13, 20, 9, TILE.BRIDGE, 2);
+  fill(m, 31, 23, 12, 6, TILE.MOSS);
+  for (const [x, y] of [[18,9],[24,12],[30,17],[37,25]]) put(m, x, y, TILE.LANTERN);
+  scatter(m, 1351, TILE.TREE, 126, (x, y, t) =>
+    t === TILE.GRASS &&
+    !(x > 20 && x < 29) &&
+    !(y > 13 && y < 21) &&
+    !(x > 29 && y > 21),
+  );
+  scatter(m, 743, TILE.FLOWER, 64, (_x, _y, t) => t === TILE.GRASS);
+  scatter(m, 377, TILE.ROCK, 30, (_x, _y, t) => t === TILE.GRASS);
+  m.warps.push(
+    { x: 24, y: 1, to: "mireRoad", tx: 24, ty: 31, dir: "up", label: "陽だまり街道" },
+    { x: 25, y: 1, to: "mireRoad", tx: 25, ty: 31, dir: "up", label: "陽だまり街道" },
+    { x: 3, y: 17, to: "sarinaria", tx: 20, ty: 27, dir: "left", label: "精霊樹の里サリナリア" },
+    { x: 3, y: 18, to: "sarinaria", tx: 21, ty: 27, dir: "left", label: "精霊樹の里サリナリア" },
+    { x: 47, y: 17, to: "whisperWood", tx: 2, ty: 17, dir: "right", label: "三響の森" },
+    { x: 47, y: 18, to: "whisperWood", tx: 2, ty: 18, dir: "right", label: "三響の森" },
+  );
+  m.npcs.push(
+    { id: "ridgeRanger", type: "ranger", x: 18, y: 18, dir: "right" },
+    { id: "bellPilgrim", type: "pilgrim", x: 34, y: 18, dir: "left" },
+    { id: "lostWisp", type: "spirit", x: 38, y: 26, dir: "up" },
+  );
+  m.chests.push(
+    { id: "pass-nectar", x: 18, y: 8, loot: { item: "spiritNectar", qty: 2 }, label: "精霊蜜を2個" },
+    { id: "pass-gold", x: 40, y: 27, loot: { gold: 118 }, label: "118ゴールド" },
+    { id: "pass-ring", x: 23, y: 25, loot: { item: "rainbowCharm", qty: 1 }, label: "虹結びのお守り" },
+  );
+  m.specials.push(
+    { id: "pass-sign", type: "sign", x: 27, y: 17, text: "西：精霊樹の里　東：三響の森　北：ミレリア" },
+    { id: "pass-camp", type: "spiritCamp", x: 34, y: 25 },
+  );
+  m.enemies.push(
+    { id: "pass-01", x: 29, y: 13, group: ["galeWolf", "whisperMushroom"], awareness: 5 },
+    { id: "pass-02", x: 39, y: 16, group: ["streamSprite", "galeWolf"], awareness: 5 },
+    { id: "pass-03", x: 20, y: 23, group: ["prismBeetle", "whisperMushroom"], awareness: 4 },
+    { id: "pass-04", x: 10, y: 18, group: ["streamSprite", "streamSprite"], awareness: 4 },
+  );
+  m.start = [24, 2];
+  return m;
+}
+
+function sarinaria() {
+  const m = map("sarinaria", "精霊樹の里サリナリア", 42, 30, TILE.MOSS, "spiritTown");
+  border(m, TILE.TREE);
+  hline(m, 18, 23, 28, TILE.PATH);
+  vline(m, 19, 7, 28, TILE.PATH, 4);
+  hline(m, 3, 38, 19, TILE.PATH, 3);
+  hline(m, 7, 35, 10, TILE.PATH, 2);
+  building(m, 4, 4, 9, 6, 8, TILE.ROOF);
+  building(m, 16, 2, 11, 7, 21, TILE.ROOF);
+  building(m, 30, 4, 8, 6, 34, TILE.ROOF);
+  building(m, 4, 13, 9, 6, 8, TILE.ROOF);
+  building(m, 29, 13, 9, 6, 33, TILE.ROOF);
+  building(m, 5, 23, 9, 5, 9, TILE.ROOF);
+  building(m, 29, 23, 8, 5, 33, TILE.ROOF);
+  fill(m, 14, 13, 5, 5, TILE.WATER);
+  fill(m, 24, 13, 4, 5, TILE.FLOWER);
+  put(m, 16, 15, TILE.BRIDGE);
+  for (const [x, y] of [[16,10],[25,10],[17,21],[25,21]]) put(m, x, y, TILE.LANTERN);
+  m.warps.push(
+    { x: 20, y: 28, to: "spiritPass", tx: 4, ty: 17, dir: "right", label: "虹風の峠" },
+    { x: 21, y: 28, to: "spiritPass", tx: 4, ty: 18, dir: "right", label: "虹風の峠" },
+  );
+  m.npcs.push(
+    { id: "sarina", type: "sarina", x: 23, y: 10, dir: "left" },
+    { id: "shrineElder", type: "shrine", x: 21, y: 8, dir: "down" },
+    { id: "sarinaMerchant", type: "merchant", x: 34, y: 10, dir: "down" },
+    { id: "sarinaSmith", type: "smith", x: 8, y: 10, dir: "down" },
+    { id: "sarinaInn", type: "inn", x: 8, y: 19, dir: "down" },
+    { id: "sarinaPriest", type: "priest", x: 33, y: 19, dir: "down" },
+    { id: "sarinaChild", type: "child", x: 27, y: 12, dir: "left" },
+    { id: "spiritKeeper", type: "spirit", x: 15, y: 20, dir: "right" },
+  );
+  m.chests.push(
+    { id: "sarina-nectar", x: 3, y: 25, loot: { item: "spiritNectar", qty: 2 }, label: "精霊蜜を2個" },
+    { id: "sarina-gold", x: 39, y: 24, loot: { gold: 86 }, label: "86ゴールド" },
+  );
+  m.specials.push(
+    { id: "sarina-armory", type: "shop", shop: "sarinaArmory", x: 8, y: 9 },
+    { id: "sarina-item", type: "shop", shop: "sarinaItem", x: 34, y: 9 },
+    { id: "sarina-inn", type: "inn", x: 8, y: 18 },
+    { id: "sarina-church", type: "church", x: 33, y: 18 },
+    { id: "sarina-save", type: "save", x: 16, y: 9 },
+    { id: "spirit-altar", type: "spiritAltar", x: 21, y: 7 },
+    { id: "sarina-board", type: "spiritBoard", x: 17, y: 23 },
+  );
+  m.start = [20, 27];
+  return m;
+}
+
+function whisperWood() {
+  const m = map("whisperWood", "三響の森", 46, 36, TILE.MOSS, "spiritForest");
+  border(m, TILE.TREE);
+  scatter(m, 2217, TILE.TREE, 245, (x, y, t) =>
+    t === TILE.MOSS && x > 2 && x < 43 && y > 2 && y < 33,
+  );
+  pathPoints(m, [[1,17],[12,17],[12,8]], TILE.MOSS, 3);
+  pathPoints(m, [[12,17],[24,17],[24,8],[35,8]], TILE.MOSS, 3);
+  pathPoints(m, [[24,17],[35,17],[35,28]], TILE.MOSS, 3);
+  pathPoints(m, [[24,17],[24,34]], TILE.MOSS, 3);
+  fill(m, 8, 5, 10, 7, TILE.WATER);
+  hline(m, 12, 18, 9, TILE.BRIDGE, 2);
+  fill(m, 31, 4, 9, 8, TILE.FLOWER);
+  fill(m, 31, 25, 9, 7, TILE.CRYSTAL);
+  scatter(m, 918, TILE.FLOWER, 36, (_x, _y, t) => t === TILE.MOSS);
+  m.warps.push(
+    { x: 1, y: 17, to: "spiritPass", tx: 46, ty: 17, dir: "left", label: "虹風の峠" },
+    { x: 1, y: 18, to: "spiritPass", tx: 46, ty: 18, dir: "left", label: "虹風の峠" },
+    {
+      x: 24,
+      y: 34,
+      to: "spiritSanctum",
+      tx: 3,
+      ty: 25,
+      dir: "down",
+      label: "無音の神域",
+      requires: "sarinaJoined",
+      denied: "古い精霊文字が道を閉ざしている。三つの音と、その言葉を結ぶ巫女が必要だ。",
+    },
+    {
+      x: 25,
+      y: 34,
+      to: "spiritSanctum",
+      tx: 4,
+      ty: 25,
+      dir: "down",
+      label: "無音の神域",
+      requires: "sarinaJoined",
+      denied: "古い精霊文字が道を閉ざしている。三つの音と、その言葉を結ぶ巫女が必要だ。",
+    },
+  );
+  m.npcs.push(
+    { id: "waterSpirit", type: "spirit", x: 7, y: 14, dir: "right" },
+    { id: "windSpirit", type: "spirit", x: 29, y: 13, dir: "left" },
+    { id: "lightSpirit", type: "spirit", x: 29, y: 29, dir: "right" },
+  );
+  m.chests.push(
+    { id: "wood-robe", x: 18, y: 8, loot: { item: "shrineRobe", qty: 1 }, label: "精霊織りの装束" },
+    { id: "wood-nectar", x: 40, y: 17, loot: { item: "spiritNectar", qty: 2 }, label: "精霊蜜を2個" },
+    { id: "wood-gold", x: 8, y: 29, loot: { gold: 146 }, label: "146ゴールド" },
+  );
+  m.specials.push(
+    { id: "water-chime", type: "waterChime", x: 13, y: 8 },
+    { id: "wind-chime", type: "windChime", x: 35, y: 7 },
+    { id: "light-chime", type: "lightChime", x: 35, y: 28 },
+    { id: "wood-inscription", type: "sign", x: 23, y: 21, text: "『水は風を呼び、風は雲を払い、光は最後に虹を結ぶ』" },
+  );
+  m.enemies.push(
+    { id: "wood-01", x: 8, y: 18, group: ["whisperMushroom", "streamSprite"], awareness: 4 },
+    { id: "wood-02", x: 20, y: 16, group: ["galeWolf", "prismBeetle"], awareness: 5 },
+    { id: "wood-03", x: 29, y: 18, group: ["hollowMask", "whisperMushroom"], awareness: 5 },
+    { id: "wood-04", x: 24, y: 28, group: ["prismBeetle", "streamSprite", "whisperMushroom"], awareness: 4 },
+    { id: "water-trial", x: 13, y: 11, kind: "rippleGuardian", unique: true, story: "waterTrial", awareness: 2 },
+    { id: "wind-trial", x: 32, y: 10, kind: "gustGuardian", unique: true, story: "windTrial", awareness: 2 },
+    { id: "light-trial", x: 35, y: 24, kind: "prismGuardian", unique: true, story: "lightTrial", awareness: 2 },
+  );
+  m.start = [2, 17];
+  return m;
+}
+
+function spiritSanctum() {
+  const m = map("spiritSanctum", "無音の神域", 42, 30, TILE.WALL, "spiritSanctum");
+  border(m, TILE.WALL);
+  fill(m, 2, 21, 10, 7, TILE.FLOOR);
+  fill(m, 9, 15, 10, 10, TILE.FLOOR);
+  fill(m, 16, 9, 9, 11, TILE.FLOOR);
+  fill(m, 22, 4, 15, 10, TILE.FLOOR);
+  fill(m, 27, 12, 10, 12, TILE.FLOOR);
+  fill(m, 18, 21, 13, 7, TILE.FLOOR);
+  fill(m, 5, 5, 8, 8, TILE.FLOOR);
+  fill(m, 10, 11, 8, 6, TILE.FLOOR);
+  put(m, 3, 25, TILE.STAIRS);
+  put(m, 34, 6, TILE.STAIRS);
+  for (const [x, y] of [[7,23],[13,18],[20,13],[29,8],[33,18],[24,24]])
+    put(m, x, y, TILE.CRYSTAL);
+  scatter(m, 553, TILE.MOSS, 30, (_x, _y, t) => t === TILE.WALL);
+  m.warps.push(
+    { x: 2, y: 25, to: "whisperWood", tx: 24, ty: 33, dir: "up", label: "三響の森" },
+    {
+      x: 34,
+      y: 6,
+      to: "spiritHeart",
+      tx: 4,
+      ty: 23,
+      dir: "right",
+      label: "虹泉の心室",
+      requires: "spiritGateOpen",
+      denied: "三つの響石は沈黙したままだ。精霊たちが語った順で共鳴させる必要がある。",
+    },
+  );
+  m.npcs.push({ id: "sanctumEcho", type: "spirit", x: 12, y: 17, dir: "right" });
+  m.chests.push(
+    { id: "sanctum-bell", x: 7, y: 7, loot: { item: "rainbowBell", qty: 1 }, label: "七色の精霊鈴" },
+    { id: "sanctum-nectar", x: 30, y: 22, loot: { item: "spiritNectar", qty: 2 }, label: "精霊蜜を2個" },
+    { id: "sanctum-wing", x: 23, y: 26, loot: { item: "wing", qty: 1 }, label: "風渡りの羽" },
+  );
+  m.specials.push(
+    { id: "resonance-gate", type: "spiritGate", x: 30, y: 8 },
+    { id: "sanctum-shortcut", type: "sanctumLever", x: 24, y: 23 },
+    { id: "sanctum-lift", type: "shortcut", x: 25, y: 23, requires: "sanctumShortcut", target: [4, 25] },
+    { id: "sanctum-tablet", type: "sign", x: 19, y: 11, text: "最初の音は渇きを癒やす。次の音は空を渡る。最後の音は二つを虹にする。" },
+  );
+  m.enemies.push(
+    { id: "sanctum-01", x: 10, y: 23, group: ["hollowMask", "streamSprite"], awareness: 4 },
+    { id: "sanctum-02", x: 17, y: 17, group: ["echoArmor", "whisperMushroom"], awareness: 4 },
+    { id: "sanctum-03", x: 23, y: 11, group: ["hollowMask", "hollowMask"], awareness: 5 },
+    { id: "sanctum-04", x: 31, y: 18, group: ["echoArmor", "prismBeetle"], awareness: 4 },
+  );
+  m.start = [3, 25];
+  return m;
+}
+
+function spiritHeart() {
+  const m = map("spiritHeart", "虹泉の心室", 36, 28, TILE.WALL, "spiritBoss");
+  border(m, TILE.WALL);
+  fill(m, 2, 19, 10, 7, TILE.FLOOR);
+  fill(m, 9, 13, 9, 10, TILE.FLOOR);
+  fill(m, 16, 7, 8, 11, TILE.FLOOR);
+  fill(m, 21, 3, 12, 10, TILE.FLOOR);
+  fill(m, 23, 11, 10, 12, TILE.FLOOR);
+  fill(m, 16, 20, 11, 6, TILE.FLOOR);
+  fill(m, 26, 5, 5, 6, TILE.WATER);
+  hline(m, 24, 28, 7, TILE.BRIDGE);
+  put(m, 4, 23, TILE.STAIRS);
+  put(m, 28, 7, TILE.CRYSTAL);
+  for (const [x, y] of [[8,22],[13,17],[20,11],[25,18]]) put(m, x, y, TILE.LANTERN);
+  scatter(m, 730, TILE.CRYSTAL, 26, (_x, _y, t) => t === TILE.WALL);
+  m.warps.push({ x: 3, y: 23, to: "spiritSanctum", tx: 33, ty: 6, dir: "left", label: "無音の神域" });
+  m.chests.push(
+    { id: "heart-charm", x: 24, y: 20, loot: { item: "rainbowCharm", qty: 1 }, label: "虹結びのお守り" },
+    { id: "heart-nectar", x: 21, y: 4, loot: { item: "spiritNectar", qty: 2 }, label: "精霊蜜を2個" },
+  );
+  m.specials.push({ id: "chapter3-boss", type: "boss3", x: 28, y: 7 });
+  m.enemies.push(
+    { id: "heart-01", x: 11, y: 19, group: ["echoArmor", "hollowMask"], awareness: 4 },
+    { id: "heart-02", x: 19, y: 13, group: ["galeWolf", "prismBeetle", "galeWolf"], awareness: 5 },
+  );
+  m.start = [4, 23];
+  return m;
+}
+
 export const MAPS = Object.freeze({
   highroad: highroad(),
   solaido: solaido(),
@@ -759,6 +1032,11 @@ export const MAPS = Object.freeze({
   sunmill: sunmill(),
   granary1: granary1(),
   granary2: granary2(),
+  spiritPass: spiritPass(),
+  sarinaria: sarinaria(),
+  whisperWood: whisperWood(),
+  spiritSanctum: spiritSanctum(),
+  spiritHeart: spiritHeart(),
 });
 
 export const ITEMS = Object.freeze({
@@ -791,6 +1069,14 @@ export const ITEMS = Object.freeze({
   sunPan: { name: "陽光のフライパン", type: "weapon", sell: 210, atk: 10, mag: 11, element: "fire", description: "地下穀倉に眠っていた、陽の力を蓄える調理具。" },
   bakerApron: { name: "祝福のエプロン", type: "body", sell: 105, def: 7, mag: 4, description: "温かな祈りが縫い込まれた丈夫な衣。" },
   wheatCharm: { name: "麦穂のお守り", type: "accessory", sell: 95, mag: 3, maxHp: 8, description: "実りを願う人々の祈りを束ねたお守り。" },
+  waterChime: { name: "水鏡の音", type: "key", description: "清水の精霊が託した、最初の響き。" },
+  windChime: { name: "追風の音", type: "key", description: "空を渡る精霊が託した、二番目の響き。" },
+  lightChime: { name: "陽虹の音", type: "key", description: "水と風を虹に結ぶ、最後の響き。" },
+  spiritNectar: { name: "精霊蜜", type: "usable", price: 72, sell: 34, description: "味方ひとりのHPを55、MPを8回復する。" },
+  spiritBell: { name: "木霊の鈴", type: "weapon", sell: 170, atk: 4, mag: 12, element: "light", description: "小さな精霊の声を戦う力へ変える鈴。" },
+  rainbowBell: { name: "七色の精霊鈴", type: "weapon", sell: 255, atk: 6, mag: 16, spd: 2, element: "light", description: "三つの響きを束ね、弱点の音色を奏でる鈴。" },
+  shrineRobe: { name: "精霊織りの装束", type: "body", sell: 138, def: 9, mag: 5, description: "森の光を編み込んだ巫女の装束。" },
+  rainbowCharm: { name: "虹結びのお守り", type: "accessory", sell: 125, def: 2, mag: 3, maxHp: 6, resist: "silence", description: "沈黙に抗い、精霊との縁を守るお守り。" },
   legacyEmblem: { name: "旅人のしるし", type: "accessory", sell: 0, def: 2, maxHp: 5, description: "旧ヒナティアを歩いた冒険者の証。" },
 });
 
@@ -814,6 +1100,14 @@ export const SHOPS = Object.freeze({
   mireArmory: {
     name: "実りの鍛冶店",
     goods: ["ironSpear", "oakStaff", "blueBuckler", "travelCoat"],
+  },
+  sarinaItem: {
+    name: "木漏れ日の道具屋",
+    goods: ["herb", "moonwort", "auraDrop", "spiritNectar", "smokeBomb", "wing"],
+  },
+  sarinaArmory: {
+    name: "虹枝の武具店",
+    goods: ["skyBlade", "ironSpear", "holyPan", "spiritBell", "shrineRobe", "blueBuckler"],
   },
 });
 
@@ -922,6 +1216,43 @@ export const SKILLS = Object.freeze({
     power: 1.55,
     element: "fire",
     description: "炎の一撃。敵の攻撃力を下げ、植物の守りを崩す。",
+  },
+  sacredBell: {
+    name: "聖なる鈴",
+    owner: "sarina",
+    level: 1,
+    mp: 5,
+    target: "allAllies",
+    effect: "sacredBell",
+    description: "味方全体を回復し、沈黙・恐怖・鈍足を治す。",
+  },
+  spiritWard: {
+    name: "精霊の守り",
+    owner: "sarina",
+    level: 4,
+    mp: 6,
+    target: "allAllies",
+    effect: "spiritWard",
+    description: "味方全体が3ターン、属性攻撃から受ける傷を減らす。",
+  },
+  rainbowPrayer: {
+    name: "虹色の祈り",
+    owner: "sarina",
+    level: 4,
+    mp: 7,
+    target: "enemy",
+    effect: "rainbowPrayer",
+    power: 1.62,
+    description: "精霊が敵の現在の弱点を選び、障壁へ響く魔法を放つ。",
+  },
+  sarimakashi: {
+    name: "サリマカシー",
+    owner: "sarina",
+    level: 5,
+    mp: 10,
+    target: "allAllies",
+    effect: "sarimakashi",
+    description: "全員を大きく癒やし、再生と属性の守りを与える。",
   },
 });
 
@@ -1148,6 +1479,164 @@ export const ENEMIES = Object.freeze({
     weakness: "fire",
     actions: ["attack", "rotBurst", "seedStorm", "devour"],
   },
+  whisperMushroom: {
+    name: "ヒソヒソタケ",
+    sprite: "mushroom",
+    hp: 72,
+    mp: 18,
+    atk: 20,
+    mag: 25,
+    def: 11,
+    spd: 10,
+    exp: 22,
+    gold: 18,
+    weakness: "fire",
+    pattern: ["sporeSilence", "attack", "mist"],
+  },
+  streamSprite: {
+    name: "ナミダマ",
+    sprite: "stream",
+    hp: 68,
+    mp: 20,
+    atk: 19,
+    mag: 27,
+    def: 10,
+    spd: 14,
+    exp: 23,
+    gold: 19,
+    weakness: "light",
+    pattern: ["spiritSplash", "attack", "drain"],
+  },
+  galeWolf: {
+    name: "カゼカミ",
+    sprite: "galeWolf",
+    hp: 82,
+    mp: 10,
+    atk: 28,
+    mag: 20,
+    def: 12,
+    spd: 23,
+    exp: 25,
+    gold: 21,
+    weakness: "fire",
+    pattern: ["galeFang", "double", "attack"],
+  },
+  prismBeetle: {
+    name: "ニジカブト",
+    sprite: "prismBeetle",
+    hp: 105,
+    mp: 12,
+    atk: 25,
+    mag: 23,
+    def: 21,
+    spd: 8,
+    exp: 29,
+    gold: 24,
+    weakness: "wind",
+    pattern: ["prismGuard", "spiritBolt", "attack"],
+  },
+  hollowMask: {
+    name: "シジマ面",
+    sprite: "hollowMask",
+    hp: 78,
+    mp: 24,
+    atk: 22,
+    mag: 30,
+    def: 13,
+    spd: 16,
+    exp: 28,
+    gold: 22,
+    weakness: "light",
+    pattern: ["muteSong", "auraDown", "spiritBolt"],
+  },
+  echoArmor: {
+    name: "木霊ヨロイ",
+    sprite: "echoArmor",
+    hp: 122,
+    mp: 18,
+    atk: 30,
+    mag: 24,
+    def: 23,
+    spd: 7,
+    exp: 34,
+    gold: 29,
+    weakness: "wind",
+    pattern: ["guard", "heavy", "spiritBolt"],
+  },
+  rippleGuardian: {
+    name: "水鏡の守り手",
+    sprite: "rippleGuardian",
+    elite: true,
+    hp: 220,
+    mp: 32,
+    atk: 28,
+    mag: 31,
+    def: 15,
+    spd: 14,
+    exp: 64,
+    gold: 58,
+    weakness: "wind",
+    pattern: ["spiritSplash", "mist", "heavy"],
+  },
+  gustGuardian: {
+    name: "追風の守り手",
+    sprite: "gustGuardian",
+    elite: true,
+    hp: 212,
+    mp: 28,
+    atk: 31,
+    mag: 28,
+    def: 14,
+    spd: 24,
+    exp: 64,
+    gold: 58,
+    weakness: "fire",
+    pattern: ["galeFang", "double", "wind"],
+  },
+  prismGuardian: {
+    name: "陽虹の守り手",
+    sprite: "prismGuardian",
+    elite: true,
+    hp: 235,
+    mp: 36,
+    atk: 27,
+    mag: 33,
+    def: 18,
+    spd: 15,
+    exp: 68,
+    gold: 62,
+    weakness: "light",
+    pattern: ["prismGuard", "spiritBolt", "muteSong"],
+  },
+  muteTotem: {
+    name: "沈黙の依代",
+    sprite: "muteTotem",
+    hp: 138,
+    mp: 28,
+    atk: 24,
+    mag: 31,
+    def: 16,
+    spd: 12,
+    exp: 38,
+    gold: 28,
+    weakness: "fire",
+    pattern: ["muteSong", "spiritBolt", "auraDown"],
+  },
+  hushAvatar: {
+    name: "無響獣サイレント",
+    sprite: "hushAvatar",
+    boss: true,
+    hp: 650,
+    mp: 140,
+    atk: 32,
+    mag: 38,
+    def: 20,
+    spd: 14,
+    exp: 245,
+    gold: 310,
+    weakness: "fire",
+    actions: ["attack", "muteSong", "silenceNova", "spiritDevour"],
+  },
 });
 
 export const EQUIP_SLOTS = Object.freeze(["weapon", "shield", "body", "accessory"]);
@@ -1219,6 +1708,36 @@ export const RUMORS = Object.freeze({
     text: "地下の飢渇核は二本の根に守られる。炎で根を崩し、全体攻撃には防御と回復を合わせる。",
     region: "地下穀倉・根の間",
   },
+  southTrail: {
+    title: "鈴の音が流れる南の峠",
+    text: "陽だまり街道の南端から虹風の峠へ渡れる。精霊樹の里は峠の西にある。",
+    region: "陽だまり街道・南",
+  },
+  sarinaria: {
+    title: "言葉を失った精霊の里",
+    text: "サリナリアでは精霊の声が途切れ、鈴を持つ巫女が三響の森を見つめている。",
+    region: "精霊樹の里サリナリア",
+  },
+  threeChimes: {
+    title: "森に散った三つの音",
+    text: "水鏡・追風・陽虹の音は三響の森の別々の場所にある。どの守り手から挑んでもよい。",
+    region: "三響の森",
+  },
+  spiritLanguage: {
+    title: "虹を結ぶ響きの順",
+    text: "水は風を呼び、風は雲を払い、光が最後に虹を結ぶ。精霊の言葉は順序を示す。",
+    region: "三響の森",
+  },
+  silentSanctum: {
+    title: "森の底の無音神域",
+    text: "三つの音と巫女が揃えば、三響の森の南から古い神域へ入れる。",
+    region: "三響の森・南",
+  },
+  resonanceCore: {
+    title: "属性を巡らせる無響獣",
+    text: "無響獣は炎・風・光の順に共鳴を変える。依代を崩すか、現在の響きへ弱点属性を合わせる。",
+    region: "虹泉の心室",
+  },
 });
 
 export const QUESTS = Object.freeze({
@@ -1256,6 +1775,21 @@ export const QUESTS = Object.freeze({
     name: "おなかの鳴る帰り道",
     description: "街道で空腹の旅人へハッピーブレッドを届ける。",
     reward: "麦穂のお守り",
+  },
+  chapter3: {
+    name: "虹鈴の精霊巫女",
+    description: "声を失った精霊の森で、三つの響きと巫女の記憶を取り戻す。",
+    main: true,
+  },
+  threeChimes: {
+    name: "水・風・光の三響",
+    description: "三響の森で三人の精霊と話し、守り手を越えて三つの音を好きな順で集める。",
+    reward: "紗理菜の加入と無音神域への道",
+  },
+  lostSpirit: {
+    name: "帰れない小さな灯",
+    description: "虹風の峠で迷った精霊を見つけ、里の精霊守へ知らせる。",
+    reward: "虹結びのお守り",
   },
 });
 
