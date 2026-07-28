@@ -96,4 +96,45 @@ save("mirelia-boss", (renderer) => {
   renderer.drawPartyBack("mirei", 249, 214, 1250);
 });
 
+save("sarinaria-field", (renderer) => {
+  const map = MAPS.sarinaria;
+  const camera = { x: 4 * 32, y: 3 * 32 };
+  for (let y = 2; y < 16; y += 1)
+    for (let x = 3; x < 25; x += 1)
+      renderer.drawTile(
+        map.tiles[y][x],
+        x * 32 - camera.x,
+        y * 32 - camera.y,
+        x,
+        y,
+        1250,
+      );
+  renderer.drawSpecial("spiritAltar", 14 * 32 - camera.x, 6 * 32 - camera.y, false, 1250);
+  renderer.drawCharacter("spirit", 10 * 32 + 4 - camera.x, 10 * 32 + 1 - camera.y, "right", 1);
+  renderer.drawCharacter("sarina", 14 * 32 + 4 - camera.x, 9 * 32 + 1 - camera.y, "down", 0);
+  renderer.drawCharacter("mirei", 12 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 1);
+  renderer.drawCharacter("kumi", 13 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 0);
+  renderer.drawCharacter("hero", 14 * 32 + 4 - camera.x, 12 * 32 + 1 - camera.y, "up", 1);
+});
+
+save("sarinaria-boss", (renderer) => {
+  renderer.drawBattleBackground("spiritBoss", 1250);
+  const ctx = renderer.ctx;
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.strokeStyle = "#75f1d0";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.ellipse(410, 130, 78, 80, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  renderer.drawBattleEnemy("muteTotem", 278, 151, 0.82, 1250);
+  renderer.drawBattleEnemy("hushAvatar", 410, 132, 1.08, 1250);
+  renderer.drawBattleEnemy("muteTotem", 535, 151, 0.82, 1250);
+  renderer.drawPartyBack("hero", 65, 214, 1250);
+  renderer.drawPartyBack("kumi", 137, 214, 1250);
+  renderer.drawPartyBack("mirei", 209, 214, 1250);
+  renderer.drawPartyBack("sarina", 281, 214, 1250);
+});
+
 console.log(output);
