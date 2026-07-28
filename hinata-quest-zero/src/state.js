@@ -53,6 +53,30 @@ const kumiBase = () => ({
   status: {},
 });
 
+const mireiBase = () => ({
+  id: "mirei",
+  name: "美玲",
+  fullName: "佐々木美玲",
+  role: "パン聖女",
+  level: 3,
+  exp: 162,
+  hp: 70,
+  mp: 34,
+  maxHp: 70,
+  maxMp: 34,
+  atk: 12,
+  def: 10,
+  mag: 21,
+  spd: 10,
+  equipment: {
+    weapon: "holyPan",
+    shield: null,
+    body: "bakerApron",
+    accessory: null,
+  },
+  status: {},
+});
+
 export function createState(name = "トシ") {
   return {
     version: SAVE_VERSION,
@@ -65,6 +89,7 @@ export function createState(name = "トシ") {
     party: {
       hero: heroBase(name),
       kumi: kumiBase(),
+      mirei: mireiBase(),
       order: ["hero"],
     },
     inventory: {
@@ -89,6 +114,14 @@ export function createState(name = "トシ") {
       windRing: 0,
       captainCharm: 0,
       oathBadge: 0,
+      happyBread: 0,
+      goldenWheat: 0,
+      springWater: 0,
+      sunYeast: 0,
+      holyPan: 0,
+      sunPan: 0,
+      bakerApron: 0,
+      wheatCharm: 0,
       legacyEmblem: 0,
     },
     flags: {
@@ -109,16 +142,36 @@ export function createState(name = "トシ") {
       minerFound: false,
       ironDiscount: false,
       campRested: false,
+      chapter2Started: false,
+      metMirei: false,
+      breadQuestReady: false,
+      mireiJoined: false,
+      granaryOpen: false,
+      granaryShortcut: false,
+      scarecrowWon: false,
+      chapter2BossSeen: false,
+      chapter2BossWon: false,
+      chapter2Clear: false,
+      mireliaRested: false,
+      breadChoice: "",
     },
     quests: {
       chapter1: "active",
       dewMedicine: "locked",
       lostRibbon: "locked",
       lostMiner: "locked",
+      chapter2: "locked",
+      miracleBread: "locked",
+      hungryChildren: "locked",
     },
     rumors: {
       city: true,
       retreat: true,
+      westRoad: false,
+      mirelia: false,
+      windmill: false,
+      granary: false,
+      blightCore: false,
     },
     opened: {},
     gathered: {},
@@ -192,6 +245,7 @@ export function normalizeState(value) {
     party: {
       hero: mergeCharacter(base.party.hero, value.party?.hero),
       kumi: mergeCharacter(base.party.kumi, value.party?.kumi),
+      mirei: mergeCharacter(base.party.mirei, value.party?.mirei),
       order: Array.isArray(value.party?.order) ? [...value.party.order] : ["hero"],
     },
     lastSafe: { ...base.lastSafe, ...(value.lastSafe || {}) },
@@ -204,9 +258,11 @@ export function normalizeState(value) {
   result.party.hero.name = result.name;
   if (result.flags.kumiJoined && !result.party.order.includes("kumi"))
     result.party.order.push("kumi");
+  if (result.flags.mireiJoined && !result.party.order.includes("mirei"))
+    result.party.order.push("mirei");
   result.party.order = result.party.order.filter(
     (id, index, array) =>
-      ["hero", "kumi"].includes(id) && array.indexOf(id) === index,
+      ["hero", "kumi", "mirei"].includes(id) && array.indexOf(id) === index,
   );
   if (!result.party.order.includes("hero")) result.party.order.unshift("hero");
   clampVitals(result);
@@ -244,6 +300,7 @@ export function serialize(state) {
       ...state.party,
       hero: { ...state.party.hero, status: {} },
       kumi: { ...state.party.kumi, status: {} },
+      mirei: { ...state.party.mirei, status: {} },
       order: [...state.party.order],
     },
   };
@@ -316,6 +373,19 @@ export function applyKumiGrowth(character, level, heal = true) {
   }
 }
 
+export function applyMireiGrowth(character, level, heal = true) {
+  character.maxHp += 7;
+  character.maxMp += level % 2 ? 4 : 3;
+  character.atk += 2;
+  character.def += 2;
+  character.mag += 3;
+  character.spd += 1;
+  if (heal) {
+    character.hp = maxHp(character);
+    character.mp = character.maxMp;
+  }
+}
+
 export function grantExperience(state, amount) {
   const levels = [];
   for (const character of activeParty(state)) {
@@ -323,7 +393,8 @@ export function grantExperience(state, amount) {
     while (character.level < 12 && character.exp >= expNext(character.level)) {
       character.level += 1;
       if (character.id === "hero") applyHeroGrowth(character, character.level);
-      else applyKumiGrowth(character, character.level);
+      else if (character.id === "kumi") applyKumiGrowth(character, character.level);
+      else applyMireiGrowth(character, character.level);
       levels.push({
         id: character.id,
         name: character.name,
