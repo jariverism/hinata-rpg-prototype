@@ -60,6 +60,8 @@ const STATUS_NAMES = {
   bright: "光護",
   regen: "再生",
   rooted: "鈍足",
+  silence: "沈黙",
+  spiritWard: "精護",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -628,15 +630,21 @@ export class HinatiaGame {
         this.state.quests.chapter2 = "active";
         discoverRumor(this.state, "westRoad");
       }
-      if (["solaido", "mileria"].includes(id)) {
+      if (id === "spiritPass" && !this.state.flags.chapter3Started) {
+        this.state.flags.chapter3Started = true;
+        this.state.quests.chapter2 = "complete";
+        this.state.quests.chapter3 = "active";
+        discoverRumor(this.state, "southTrail");
+      }
+      if (["solaido", "mileria", "sarinaria"].includes(id)) {
         this.state.lastSafe = { map: id, x, y, dir };
         this.audio.play("town");
-      } else if (["cave1", "cave2", "cave3", "oldWell", "granary1", "granary2"].includes(id)) {
+      } else if (["cave1", "cave2", "cave3", "oldWell", "granary1", "granary2", "spiritSanctum", "spiritHeart"].includes(id)) {
         this.audio.play("cave");
-        const floor = { oldWell: 1, cave1: 1, cave2: 2, cave3: 3, granary1: 1, granary2: 2 }[id] || 0;
+        const floor = { oldWell: 1, cave1: 1, cave2: 2, cave3: 3, granary1: 1, granary2: 2, spiritSanctum: 2, spiritHeart: 3 }[id] || 0;
         this.state.stats.deepestFloor = Math.max(this.state.stats.deepestFloor, floor);
       } else {
-        this.audio.play(id === "echoGrove" ? "cave" : "field");
+        this.audio.play(["echoGrove", "whisperWood"].includes(id) ? "cave" : "field");
       }
       this.buildMapEnemies();
       this.setMode("map");
@@ -669,6 +677,11 @@ export class HinatiaGame {
       reveal("oldWell", 5, 14, 28);
       reveal("cave1", 8, 47, 7);
       if (x > 34) discoverRumor(this.state, "cave");
+    } else if (id === "mireRoad" && y > 25) {
+      discoverRumor(this.state, "southTrail");
+    } else if (id === "spiritPass") {
+      reveal("sarinaria", 7, 3, 17);
+      reveal("whisperWood", 7, 47, 17);
     }
   }
 
@@ -1186,6 +1199,134 @@ export class HinatiaGame {
       const fresh = discoverRumor(this.state, "blightCore");
       simple("穀倉番", "farmer", "奥の核は二本の根から力を吸う。先に根を焼けば核の殻が薄くなる。" +
         (fresh ? "——『二本の根に守られた核』の噂を記録した。" : ""));
+    } else if (id === "sarina") {
+      if (!this.state.flags.metSarina) {
+        this.state.flags.metSarina = true;
+        this.state.quests.threeChimes = "active";
+        discoverRumor(this.state, "sarinaria");
+        discoverRumor(this.state, "threeChimes");
+        this.dialogue([
+          {
+            speaker: "鈴を持つ巫女",
+            portrait: "sarina",
+            text: "精霊たちの声が、言葉になる直前で消えてしまうんです。水、風、光……三つの音だけが森から聞こえます。",
+          },
+          {
+            speaker: this.state.name,
+            portrait: "hero",
+            text: "潮紗理菜さん……？　あなたは、人の言葉を大切に受け取って、優しく返す人だった。",
+          },
+          {
+            speaker: "鈴を持つ巫女",
+            portrait: "sarina",
+            text: "紗理菜……不思議です。その名前を聞くと、遠い場所の鈴が『おかえり』と言った気がします。",
+          },
+          {
+            speaker: "紗理菜",
+            portrait: "sarina",
+            text: "三響の森には、水鏡・追風・陽虹の守り手がいます。どこから訪ねても構いません。戦う前に、小さな精霊たちの話も聞いてください。",
+          },
+          {
+            speaker: "SYSTEM",
+            portrait: "system",
+            text: "メインクエスト『水・風・光の三響』が始まった。三つの音は好きな順で集められる。",
+          },
+        ]);
+      } else if (!this.state.flags.sarinaJoined) {
+        const chimes = ["waterChime", "windChime", "lightChime"];
+        const found = chimes.filter((item) => (this.state.inventory[item] || 0) > 0);
+        if (found.length < chimes.length) {
+          simple(
+            "紗理菜",
+            "sarina",
+            `三つの音は${found.length}/3個。森の精霊は、攻略法だけでなく音を結ぶ順番も話してくれるはずです。`,
+          );
+        } else {
+          this.dialogue(
+            [
+              {
+                speaker: "紗理菜",
+                portrait: "sarina",
+                text: "水、風、光……聞こえます。別々の声なのに、誰も相手を押し消そうとしていない。",
+              },
+              {
+                speaker: "美玲",
+                portrait: "mirei",
+                text: "一緒に行こう。思い出せないことがあっても、聞こえた気持ちは本物だよ。",
+              },
+              {
+                speaker: "久美",
+                portrait: "kumi",
+                text: "森の南に無音の神域がある。紗理菜、精霊の言葉を私たちにつないで。",
+              },
+            ],
+            () => this.completeSarinaJoin(),
+          );
+        }
+      } else {
+        simple(
+          "紗理菜",
+          "sarina",
+          this.state.flags.chapter3BossWon
+            ? "世界中の声を、もう一度聞きに行きましょう。嬉しい声も、迷う声も、全部が大切な響きです。"
+            : "無響獣は弱点の響きを変えます。今の色を見て、炎・風・光を合わせてください。大きな波には精霊の守りを。",
+        );
+      }
+    } else if (id === "shrineElder") {
+      const fresh = discoverRumor(this.state, "silentSanctum");
+      simple("里の長老", "shrine", "三つの音が揃えば、森の南にある無音神域の文字が読める。だが扉は音の順を試す。" +
+        (fresh ? "——『森の底の無音神域』の噂を記録した。" : ""));
+    } else if (id === "sarinaMerchant") {
+      this.openShop("sarinaItem");
+    } else if (id === "sarinaSmith") {
+      this.openShop("sarinaArmory");
+    } else if (id === "sarinaInn") {
+      this.openInn();
+    } else if (id === "sarinaPriest") {
+      this.openChurch();
+    } else if (id === "sarinaChild") {
+      simple("里の子", "child", this.state.flags.chapter3BossWon
+        ? "精霊さんがまた歌ってる！　言葉が違っても、一緒に笑えるんだね。"
+        : "精霊さん、口は動いてるのに声がしないの。怒ってるのかな……。");
+    } else if (id === "ridgeRanger") {
+      const fresh = discoverRumor(this.state, "threeChimes");
+      simple("峠のレンジャー", "ranger", "東の森は三つに枝分かれする。どの守り手から挑んでも、残りの道は閉じない。" +
+        (fresh ? "——『森に散った三つの音』を記録した。" : ""));
+    } else if (id === "bellPilgrim") {
+      simple("鈴巡りの旅人", "pilgrim", "ヒソヒソタケは技を封じる胞子をまく。鈴や虹結びのお守りがあれば、沈黙に抗える。");
+    } else if (id === "lostWisp") {
+      this.state.flags.lostSpiritFound = true;
+      if (this.state.quests.lostSpirit === "locked") this.state.quests.lostSpirit = "active";
+      simple("迷子の精霊", "spirit", "みち、わからない。西の里の、きらきらの木……帰りたい。");
+    } else if (id === "spiritKeeper") {
+      if (
+        this.state.quests.lostSpirit === "active" &&
+        this.state.flags.lostSpiritFound
+      ) {
+        this.state.quests.lostSpirit = "complete";
+        this.state.stats.sidequests += 1;
+        addItem(this.state, "rainbowCharm", 1);
+        this.dialogue([
+          { speaker: "精霊守", portrait: "spirit", text: "峠の子、見つけてくれた。風に道を伝える。もう帰れる。" },
+          { speaker: "SYSTEM", portrait: "system", text: "虹結びのお守りを手に入れた！" },
+        ]);
+      } else {
+        simple("精霊守", "spirit", "小さな灯が一つ、峠から戻らない。見つけたら、ここへ風を届けて。");
+        if (this.state.quests.lostSpirit === "locked") this.state.quests.lostSpirit = "active";
+      }
+    } else if (id === "waterSpirit") {
+      discoverRumor(this.state, "spiritLanguage");
+      simple("水の精霊", "spirit", "水、いちばん。渇いた根を起こす。追風を呼ぶ。守り手は風の音に弱い。");
+    } else if (id === "windSpirit") {
+      discoverRumor(this.state, "spiritLanguage");
+      simple("風の精霊", "spirit", "風、つぎ。雲を運ぶ。火のぬくもりは、追風の守りをほどく。");
+    } else if (id === "lightSpirit") {
+      discoverRumor(this.state, "spiritLanguage");
+      simple("光の精霊", "spirit", "光、さいご。水と風を虹にする。暗い守り手には、同じ光を返して。");
+    } else if (id === "sanctumEcho") {
+      const fresh = discoverRumor(this.state, "resonanceCore");
+      simple("神域の木霊", "spirit", "奥の獣、響きを巡らす。炎、風、光。今の色と同じ音だけ、深く届く。" +
+        (fresh ? "——『属性を巡らせる無響獣』の噂を記録した。" : ""));
     } else if (id === "lostMiner") {
       if (!this.state.flags.minerFound) {
         this.state.flags.minerFound = true;
@@ -1240,6 +1381,37 @@ export class HinatiaGame {
             : this.state.flags.breadChoice === "hearty"
               ? "力強いパンで仲間全員の最大HPが5上がった。"
               : "ふんわりパンを多く焼き、ハッピーブレッドを4個受け取った。",
+        },
+      ],
+      () => {
+        this.setMode("map");
+        this.refreshHud();
+        this.refreshInteractPrompt();
+        this.autosave();
+      },
+    );
+  }
+
+  completeSarinaJoin() {
+    this.state.flags.sarinaJoined = true;
+    this.state.flags.spiritTongue = true;
+    this.state.quests.threeChimes = "complete";
+    if (!this.state.party.order.includes("sarina")) this.state.party.order.push("sarina");
+    addItem(this.state, "spiritNectar", 2);
+    fullHeal(this.state);
+    discoverRumor(this.state, "spiritLanguage");
+    discoverRumor(this.state, "silentSanctum");
+    this.dialogue(
+      [
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "潮紗理菜が仲間になった！　全体回復、状態異常治療、属性防御、弱点を選ぶ精霊魔法を使える。",
+        },
+        {
+          speaker: "紗理菜",
+          portrait: "sarina",
+          text: "精霊の言葉が聞こえます。水が最初、風が次、光が最後……この順番を忘れないでください。",
         },
       ],
       () => {
@@ -1439,19 +1611,111 @@ export class HinatiaGame {
         this.audio.sfx("save");
         this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "穀物用の昇降機を動かした。地下穀倉入口へ戻る近道が開いた！" });
       }
+    } else if (special.type === "spiritCamp") {
+      if (this.state.flags.spiritCampRested) {
+        this.dialogue({ speaker: "小さな精霊", portrait: "spirit", text: "蜜の火、今日はもう眠った。また里の宿で休んで。" });
+      } else {
+        this.state.flags.spiritCampRested = true;
+        for (const member of activeParty(this.state)) {
+          member.hp = Math.min(maxHp(member), member.hp + Math.ceil(maxHp(member) * 0.3));
+          member.mp = Math.min(member.maxMp, member.mp + 8);
+        }
+        this.audio.sfx("heal");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "精霊の焚き火で一度だけ休み、HPとMPが少し回復した。" });
+      }
+    } else if (["waterChime", "windChime", "lightChime"].includes(special.type)) {
+      const config = {
+        waterChime: ["waterGuardianWon", "水鏡の音", "水の精霊が、澄んだ音を鈴へ結んだ。"],
+        windChime: ["windGuardianWon", "追風の音", "風の精霊が、軽やかな音を鈴へ結んだ。"],
+        lightChime: ["lightGuardianWon", "陽虹の音", "光の精霊が、温かな音を鈴へ結んだ。"],
+      }[special.type];
+      const key = `${this.state.map}:${special.id}`;
+      if (this.state.gathered[key]) {
+        this.dialogue({ speaker: "小さな精霊", portrait: "spirit", text: "この場所の音は、もうあなたの鈴の中にいる。" });
+      } else if (!this.state.flags[config[0]]) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: `${config[1]}を守る強い精霊が、こちらの力を試している。` });
+      } else {
+        this.state.gathered[key] = true;
+        addItem(this.state, special.type, 1);
+        this.audio.sfx("save");
+        this.dialogue([
+          { speaker: "小さな精霊", portrait: "spirit", text: config[2] },
+          { speaker: "SYSTEM", portrait: "system", text: `${config[1]}を手に入れた！` },
+        ]);
+      }
+    } else if (special.type === "spiritAltar") {
+      this.talk({ id: "sarina" });
+    } else if (special.type === "spiritBoard") {
+      if (this.state.quests.lostSpirit === "locked") this.state.quests.lostSpirit = "active";
+      this.dialogue([
+        { speaker: "木札", portrait: "system", text: "『峠へ遊びに出た小さな灯が帰らない。見かけた旅人は精霊守へ風を届けてほしい』" },
+        { speaker: "SYSTEM", portrait: "system", text: "サブクエスト『帰れない小さな灯』を記録した。" },
+      ]);
+    } else if (special.type === "spiritGate") {
+      if (this.state.flags.spiritGateOpen) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "水、風、光の響石が虹色に共鳴し、奥への扉を開いている。" });
+      } else if (!this.state.flags.sarinaJoined) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "響石には精霊文字が刻まれている。今は音の意味を読み取れない。" });
+      } else {
+        const answer = (correct) => {
+          if (correct) {
+            this.state.flags.spiritGateOpen = true;
+            this.state.happy = Math.min(100, this.state.happy + 15);
+            this.audio.sfx("save");
+            this.dialogueQueue[this.dialogueIndex + 1] = {
+              speaker: "紗理菜",
+              portrait: "sarina",
+              text: "水が風を呼び、風が雲を払い、光が虹を結んだ……！　扉が開きます！",
+            };
+          } else {
+            this.state.flags.spiritPuzzleFailed = true;
+            this.state.happy = Math.max(0, this.state.happy - 12);
+            this.audio.sfx("no");
+            this.dialogueQueue[this.dialogueIndex + 1] = {
+              speaker: "紗理菜",
+              portrait: "sarina",
+              text: "音がぶつかって消えてしまいました。森の精霊たちの言葉を、もう一度つないでみましょう。",
+            };
+          }
+        };
+        this.dialogue([
+          {
+            speaker: "三つの響石",
+            portrait: "system",
+            text: "三つの音を、精霊が語った順に鳴らす。",
+            choices: [
+              { label: "水 → 風 → 光", action: () => answer(true) },
+              { label: "光 → 水 → 風", action: () => answer(false) },
+              { label: "風 → 光 → 水", action: () => answer(false) },
+            ],
+          },
+          { speaker: "SYSTEM", portrait: "system", text: "三つの響石は静かに待っている。" },
+        ]);
+      }
+    } else if (special.type === "sanctumLever") {
+      if (this.state.flags.sanctumShortcut) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "根の昇降路は入口まで通じている。" });
+      } else {
+        this.state.flags.sanctumShortcut = true;
+        this.audio.sfx("save");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "精霊樹の根を動かし、神域入口への近道を開いた！" });
+      }
     } else if (special.type === "boss") {
       this.startChapterBoss();
     } else if (special.type === "boss2") {
       this.startChapter2Boss();
+    } else if (special.type === "boss3") {
+      this.startChapter3Boss();
     }
   }
 
   openInn() {
     const cost = 24;
     const isMirelia = this.state.map === "mileria";
+    const isSarinaria = this.state.map === "sarinaria";
     this.panelContext = { type: "inn", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "INN";
-    this.ui.panelTitle.textContent = isMirelia ? "麦灯り亭" : "青鳥亭";
+    this.ui.panelTitle.textContent = isSarinaria ? "木漏れ日の宿" : isMirelia ? "麦灯り亭" : "青鳥亭";
     this.ui.panelGold.textContent = `${this.state.gold} G`;
     this.ui.panelBody.innerHTML = `
       <div class="info-card">
@@ -1469,9 +1733,10 @@ export class HinatiaGame {
     const fallen = activeParty(this.state).filter((member) => member.hp <= 0);
     const cost = fallen.length * 20;
     const isMirelia = this.state.map === "mileria";
+    const isSarinaria = this.state.map === "sarinaria";
     this.panelContext = { type: "church", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "SANCTUARY";
-    this.ui.panelTitle.textContent = isMirelia ? "麦穂の礼拝堂" : "風鐘の礼拝堂";
+    this.ui.panelTitle.textContent = isSarinaria ? "精霊樹の祈り場" : isMirelia ? "麦穂の礼拝堂" : "風鐘の礼拝堂";
     this.ui.panelGold.textContent = `${this.state.gold} G`;
     this.ui.panelBody.innerHTML = `
       <div class="info-card">
@@ -1635,6 +1900,11 @@ export class HinatiaGame {
         battleIndex: index,
       };
     });
+    if (group.includes("hushAvatar")) {
+      const totems = enemies.filter((enemy) => enemy.kind === "muteTotem");
+      if (totems[0]) totems[0].weakness = "wind";
+      if (totems[1]) totems[1].weakness = "light";
+    }
     for (const member of activeParty(this.state)) member.status = {};
     this.battle = {
       enemies,
@@ -1646,10 +1916,11 @@ export class HinatiaGame {
       submenu: null,
       pending: null,
       selectedButton: 0,
-      barrier: group.includes("smileEater") || group.includes("blightHeart"),
+      barrier: group.includes("smileEater") || group.includes("blightHeart") || group.includes("hushAvatar"),
       barrierBrokenRounds:
         group.includes("blightHeart") && this.state.flags.breadChoice === "crisp" ? 2 : 0,
       telegraph: null,
+      resonance: group.includes("hushAvatar") ? "fire" : null,
       enemyIntents: [],
       formation: false,
       log: options.preemptive
@@ -1661,7 +1932,7 @@ export class HinatiaGame {
     this.state.battles += 1;
     this.setMode("battle");
     this.audio.play(
-      group.some((id) => ["smileEater", "gloomMoth", "blightHeart", "blightScarecrow"].includes(id))
+      group.some((id) => ["smileEater", "gloomMoth", "blightHeart", "blightScarecrow", "hushAvatar", "rippleGuardian", "gustGuardian", "prismGuardian"].includes(id))
         ? "boss"
         : "battle",
     );
@@ -1713,9 +1984,11 @@ export class HinatiaGame {
         ? "笑顔喰らいは大きく息を吸い込んでいる……！"
         : this.battle.telegraph === "rotBurst"
           ? "飢渇核が地中の瘴気を集め、激しく脈打っている……！"
+        : this.battle.telegraph === "silenceNova"
+          ? "無響獣がすべての音を吸い込み、心室が無音に沈んでいく……！"
         : danger
-          ? `${danger}　— ${alive[0].name}の行動を選んでください。`
-          : `${alive[0].name}の行動を選んでください。`;
+          ? `${danger}${this.resonanceLabel()}　— ${alive[0].name}の行動を選んでください。`
+          : `${alive[0].name}の行動を選んでください。${this.resonanceLabel()}`;
     this.renderBattleUi();
     this.renderBattleCommands();
   }
@@ -1775,7 +2048,7 @@ export class HinatiaGame {
         );
       add("もどる", { battle: "back" });
     } else if (view === "items") {
-      const usable = ["herb", "happyBread", "moonwort", "auraDrop", "brightBell", "smokeBomb"];
+      const usable = ["herb", "happyBread", "spiritNectar", "moonwort", "auraDrop", "brightBell", "smokeBomb"];
       for (const id of usable) {
         const count = this.state.inventory[id] || 0;
         add(
@@ -1840,7 +2113,7 @@ export class HinatiaGame {
     }
     if (button.dataset.item) {
       const id = button.dataset.item;
-      const targetType = ["herb", "moonwort", "auraDrop"].includes(id)
+      const targetType = ["herb", "spiritNectar", "moonwort", "auraDrop"].includes(id)
         ? "ally"
         : id === "smokeBomb"
           ? "none"
@@ -1945,6 +2218,11 @@ export class HinatiaGame {
   executePartyAction(actor, action) {
     if (actor.status.fear && Math.random() < 0.2) {
       this.battle.log = `${actor.name}は恐怖で足がすくんだ！`;
+      this.audio.sfx("no");
+      return;
+    }
+    if (actor.status.silence && action.type === "skill") {
+      this.battle.log = `${actor.name}は沈黙していて技の声を出せない！`;
       this.audio.sfx("no");
       return;
     }
@@ -2074,6 +2352,56 @@ export class HinatiaGame {
       this.state.happy = clamp(this.state.happy + 10, 0, 100);
       this.battle.log = `${actor.name}の聖火のひと振り！　${target.name}に${damage}、攻撃力を下げた。`;
       this.audio.sfx("hit");
+    } else if (skill.effect === "sacredBell") {
+      let total = 0;
+      for (const member of activeParty(this.state).filter((entry) => entry.hp > 0)) {
+        const amount = Math.ceil(20 + this.effectiveStat(actor, "mag") * 0.55);
+        const healed = Math.min(amount, maxHp(member) - member.hp);
+        member.hp += healed;
+        member.status.silence = 0;
+        member.status.fear = 0;
+        member.status.rooted = 0;
+        total += healed;
+      }
+      this.state.happy = clamp(this.state.happy + 14, 0, 100);
+      this.state.stats.healingDone += total;
+      this.battle.log = `聖なる鈴！　味方全体が合計${total}回復し、沈黙・恐怖・鈍足が消えた。`;
+      this.audio.sfx("heal");
+    } else if (skill.effect === "spiritWard") {
+      for (const member of activeParty(this.state).filter((entry) => entry.hp > 0))
+        member.status.spiritWard = 3;
+      this.state.happy = clamp(this.state.happy + 12, 0, 100);
+      this.battle.log = "精霊の守り！　味方全体を属性の光膜が包んだ。";
+      this.audio.sfx("magic");
+    } else if (skill.effect === "rainbowPrayer") {
+      const target = this.findEnemyTarget(action.target);
+      if (!target) return;
+      const element = target.weakness || this.battle.resonance || "light";
+      const attack = this.effectiveStat(actor, "mag") + Math.floor(this.effectiveStat(actor, "atk") * 0.35);
+      const damage = this.calculateDamage(attack, this.enemyStat(target, "def"), skill.power * 1.3);
+      this.battle.barrierBrokenRounds = Math.max(1, this.battle.barrierBrokenRounds);
+      this.hitEnemy(target, damage, element);
+      this.state.happy = clamp(this.state.happy + 12, 0, 100);
+      this.battle.log = `虹色の祈り！　${this.elementName(element)}の響きが${target.name}の弱点を突き、${damage}のダメージ。`;
+      this.audio.sfx("magic");
+      this.flash();
+    } else if (skill.effect === "sarimakashi") {
+      let total = 0;
+      for (const member of activeParty(this.state).filter((entry) => entry.hp > 0)) {
+        const amount = Math.ceil(35 + this.effectiveStat(actor, "mag") * 0.8);
+        const healed = Math.min(amount, maxHp(member) - member.hp);
+        member.hp += healed;
+        member.status.silence = 0;
+        member.status.fear = 0;
+        member.status.auraDown = 0;
+        member.status.regen = 3;
+        member.status.spiritWard = 3;
+        total += healed;
+      }
+      this.state.happy = clamp(this.state.happy + 18, 0, 100);
+      this.state.stats.healingDone += total;
+      this.battle.log = `サリマカシー！　味方全体が合計${total}回復し、精霊の加護に包まれた。`;
+      this.audio.sfx("win");
     } else if (skill.effect === "haste") {
       for (const member of activeParty(this.state)) {
         member.status.haste = 3;
@@ -2126,6 +2454,17 @@ export class HinatiaGame {
       this.state.stats.healingDone += healed;
       this.state.happy = clamp(this.state.happy + 7, 0, 100);
       this.battle.log = `${target.name}のHPが${healed}回復した。`;
+      this.audio.sfx("heal");
+    } else if (action.id === "spiritNectar") {
+      const target = this.state.party[action.target];
+      const healed = Math.min(55, maxHp(target) - target.hp);
+      const restored = Math.min(8, target.maxMp - target.mp);
+      target.hp += healed;
+      target.mp += restored;
+      target.status.silence = 0;
+      this.state.stats.healingDone += healed;
+      this.state.happy = clamp(this.state.happy + 8, 0, 100);
+      this.battle.log = `${target.name}のHPが${healed}、MPが${restored}回復し、沈黙が消えた。`;
       this.audio.sfx("heal");
     } else if (action.id === "happyBread") {
       let total = 0;
@@ -2181,6 +2520,12 @@ export class HinatiaGame {
       if (this.state.happy >= 40 && this.battle.round % 3 === 1) return "devour";
       return this.battle.round % 2 ? "seedStorm" : "attack";
     }
+    if (enemy.kind === "hushAvatar") {
+      if (this.battle.telegraph === "silenceNova") return "silenceNova";
+      if (this.battle.round % 4 === 3) return "telegraphSilence";
+      if (this.state.happy >= 45 && this.battle.round % 4 === 1) return "spiritDevour";
+      return this.battle.round % 2 ? "muteSong" : "elementBurst";
+    }
     if (opening) return "attack";
     if (enemy.pattern?.length)
       return enemy.pattern[
@@ -2212,7 +2557,26 @@ export class HinatiaGame {
       devour: "力を吸収する",
       telegraphRot: "大技の準備",
       rotBurst: "腐蝕の大波",
+      sporeSilence: "沈黙の胞子",
+      spiritSplash: "水の全体攻撃",
+      galeFang: "素早い風牙",
+      prismGuard: "属性反射の構え",
+      spiritBolt: "精霊弾",
+      muteSong: "技封じの沈黙",
+      elementBurst: "共鳴属性の波",
+      spiritDevour: "精霊力を吸収する",
+      telegraphSilence: "大技の準備",
+      silenceNova: "無音の大波",
     }[action] || "こちらを狙う";
+  }
+
+  elementName(element) {
+    return { fire: "炎", wind: "風", light: "光", dark: "闇", water: "水", earth: "土" }[element] || "無";
+  }
+
+  resonanceLabel() {
+    if (!this.battle?.resonance) return "";
+    return `　【現在の共鳴：${this.elementName(this.battle.resonance)}】`;
   }
 
   executeEnemyAction(enemy, action) {
@@ -2230,6 +2594,12 @@ export class HinatiaGame {
     if (action === "telegraphRot") {
       this.battle.telegraph = "rotBurst";
       this.battle.log = "飢渇核は根を地中深く伸ばし、腐蝕の力を集め始めた……！";
+      this.audio.sfx("no");
+      return;
+    }
+    if (action === "telegraphSilence") {
+      this.battle.telegraph = "silenceNova";
+      this.battle.log = "無響獣が鈴も声も吸い込み、巨大な無音の波を溜め始めた……！";
       this.audio.sfx("no");
       return;
     }
@@ -2265,6 +2635,24 @@ export class HinatiaGame {
       }
       this.state.happy = Math.max(0, this.state.happy - 15);
       this.battle.log = `腐蝕の大波！　味方全体に合計${total}のダメージ。毒の胞子が舞う！`;
+      this.shake();
+      return;
+    }
+    if (action === "silenceNova") {
+      this.battle.telegraph = null;
+      let total = 0;
+      for (const member of living) {
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag, this.effectiveStat(member, "def"), 1.18),
+          "dark",
+        );
+        const silenceResist = ITEMS[member.equipment.accessory]?.resist === "silence";
+        if (!silenceResist && !member.status.spiritWard && !member.status.guard && Math.random() < 0.72)
+          member.status.silence = 2;
+      }
+      this.state.happy = Math.max(0, this.state.happy - 18);
+      this.battle.log = `無音の大波！　味方全体に合計${total}のダメージ。技の声が奪われる！`;
       this.shake();
       return;
     }
@@ -2387,6 +2775,75 @@ export class HinatiaGame {
       enemy.hp += heal;
       this.battle.log = `${enemy.name}はハッピーオーラを喰らい、${heal}回復した！`;
       this.audio.sfx("no");
+    } else if (action === "sporeSilence") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.mag, this.effectiveStat(target, "def"), 0.68),
+        "earth",
+      );
+      const resist = ITEMS[target.equipment.accessory]?.resist === "silence";
+      if (!resist) target.status.silence = 2;
+      this.battle.log = `${enemy.name}の沈黙胞子！　${target.name}に${damage}、技の声を封じた。`;
+    } else if (action === "spiritSplash") {
+      let total = 0;
+      for (const member of living)
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag, this.effectiveStat(member, "def"), 0.62),
+          "water",
+        );
+      this.battle.log = `${enemy.name}の精霊水流！　味方全体に合計${total}のダメージ。`;
+      this.shake();
+    } else if (action === "galeFang") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.atk, this.effectiveStat(target, "def"), 1.32),
+        "wind",
+      );
+      target.status.rooted = 2;
+      this.battle.log = `${enemy.name}の追風牙！　${target.name}に${damage}、体勢を崩した。`;
+    } else if (action === "prismGuard") {
+      enemy.guarding = true;
+      enemy.status.prism = 2;
+      this.battle.log = `${enemy.name}は虹色の甲殻を閉じた。弱点属性なら守りを割れる！`;
+    } else if (action === "spiritBolt") {
+      const element = this.battle.resonance || "light";
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.mag, this.effectiveStat(target, "def"), 1.02),
+        element,
+      );
+      this.battle.log = `${enemy.name}の${this.elementName(element)}の精霊弾！　${target.name}に${damage}のダメージ。`;
+    } else if (action === "muteSong") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.mag, this.effectiveStat(target, "def"), 0.72),
+        "dark",
+      );
+      const resist = ITEMS[target.equipment.accessory]?.resist === "silence";
+      if (!resist && !target.status.spiritWard) target.status.silence = 2;
+      this.battle.log = `${enemy.name}の無言歌！　${target.name}に${damage}、技の声を奪った。`;
+      this.audio.sfx("no");
+    } else if (action === "elementBurst") {
+      const element = this.battle.resonance || "fire";
+      let total = 0;
+      for (const member of living)
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag, this.effectiveStat(member, "def"), 0.78),
+          element,
+        );
+      this.battle.log = `${this.elementName(element)}の共鳴波！　味方全体に合計${total}のダメージ。`;
+      this.shake();
+    } else if (action === "spiritDevour") {
+      const amount = Math.min(26, this.state.happy);
+      this.state.happy -= amount;
+      const heal = Math.min(enemy.maxHp - enemy.hp, amount * 2);
+      enemy.hp += heal;
+      for (const member of living)
+        if (Math.random() < 0.4) member.status.auraDown = 2;
+      this.battle.log = `${enemy.name}が精霊とハッピーオーラを吸収し、${heal}回復した！`;
+      this.audio.sfx("no");
     }
   }
 
@@ -2420,6 +2877,12 @@ export class HinatiaGame {
       }
     }
     if (this.battle.barrierBrokenRounds > 0) this.battle.barrierBrokenRounds -= 1;
+    if (this.battle.resonance) {
+      const cycle = ["fire", "wind", "light"];
+      this.battle.resonance = cycle[(cycle.indexOf(this.battle.resonance) + 1) % cycle.length];
+      const boss = this.battle.enemies.find((enemy) => enemy.kind === "hushAvatar");
+      if (boss?.hp > 0) boss.weakness = this.battle.resonance;
+    }
     this.battle.round += 1;
     this.beginPlanning();
   }
@@ -2462,6 +2925,17 @@ export class HinatiaGame {
       if (this.battle.barrierBrokenRounds <= 0)
         damage = Math.max(1, Math.round(damage * (roots ? 0.38 : 0.72)));
     }
+    if (enemy.kind === "hushAvatar" && this.battle.barrier) {
+      const totems = this.battle.enemies.some(
+        (entry) => entry.kind === "muteTotem" && entry.hp > 0,
+      );
+      if (this.battle.barrierBrokenRounds <= 0) {
+        if (element !== enemy.weakness)
+          damage = Math.max(1, Math.round(damage * (totems ? 0.24 : 0.48)));
+        else if (totems)
+          damage = Math.max(1, Math.round(damage * 0.72));
+      }
+    }
     if (enemy.guarding && enemy.weakness !== element)
       damage = Math.max(1, Math.round(damage * 0.58));
     if (enemy.weakness === element) {
@@ -2495,6 +2969,16 @@ export class HinatiaGame {
       this.battle.barrier = false;
       this.battle.log += "　二本の根が枯れ、飢渇核の殻が崩れた！";
     }
+    if (
+      enemy.kind === "muteTotem" &&
+      enemy.hp <= 0 &&
+      !this.battle.enemies.some(
+        (entry) => entry !== enemy && entry.kind === "muteTotem" && entry.hp > 0,
+      )
+    ) {
+      this.battle.barrier = false;
+      this.battle.log += "　二つの依代が砕け、無響獣を守る沈黙が消えた！";
+    }
   }
 
   hurtParty(member, amount, _element = "physical") {
@@ -2502,6 +2986,7 @@ export class HinatiaGame {
     if (member.status.guard) damage *= 0.48;
     if (member.status.formation) damage *= 0.5;
     if (member.status.bright && _element === "dark") damage *= 0.58;
+    if (member.status.spiritWard && _element !== "physical") damage *= 0.58;
     const shield = ITEMS[member.equipment.shield];
     if (shield?.resist === "fear" && _element === "dark") damage *= 0.82;
     damage = Math.max(1, Math.round(damage));
@@ -2577,12 +3062,16 @@ export class HinatiaGame {
       this.finishScarecrow(levelLines);
     } else if (story === "chapter2Boss") {
       this.finishChapter2Boss(levelLines);
+    } else if (["waterTrial", "windTrial", "lightTrial"].includes(story)) {
+      this.finishSpiritTrial(story, levelLines);
+    } else if (story === "chapter3Boss") {
+      this.finishChapter3Boss(levelLines);
     } else {
       this.setMode("map");
       this.audio.play(
-        ["solaido", "mileria"].includes(this.state.map)
+        ["solaido", "mileria", "sarinaria"].includes(this.state.map)
           ? "town"
-          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2"].includes(this.state.map)
+          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart"].includes(this.state.map)
             ? "cave"
             : "field",
       );
@@ -2807,6 +3296,107 @@ export class HinatiaGame {
     );
   }
 
+  finishSpiritTrial(story, levelLines = []) {
+    const config = {
+      waterTrial: ["waterGuardianWon", "水鏡の守り手", "水面が静まり、泉の奥に澄んだ鈴の音が残った。"],
+      windTrial: ["windGuardianWon", "追風の守り手", "荒れていた風が道を譲り、高台に軽やかな鈴の音が残った。"],
+      lightTrial: ["lightGuardianWon", "陽虹の守り手", "散っていた光が一筋の虹となり、結晶に鈴の音を宿した。"],
+    }[story];
+    this.state.flags[config[0]] = true;
+    this.audio.play("cave");
+    this.dialogue(
+      [
+        ...levelLines,
+        { speaker: config[1], portrait: "spirit", text: "チカラダケデナク、声ヲ聞ク者。音ヲ、託ス。" },
+        { speaker: "SYSTEM", portrait: "system", text: config[2] },
+      ],
+      () => {
+        this.setMode("map");
+        this.refreshHud();
+        this.refreshInteractPrompt();
+        this.autosave();
+      },
+    );
+  }
+
+  startChapter3Boss() {
+    if (this.state.flags.chapter3BossWon) {
+      this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "虹泉には水音、風音、鈴の音が重なり、精霊たちの会話が戻っている。" });
+      return;
+    }
+    if (!this.state.flags.sarinaJoined || !this.state.flags.spiritGateOpen) {
+      this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "心室は完全な無音に閉ざされている。巫女と三つの響きを結ばなければ進めない。" });
+      return;
+    }
+    this.state.flags.chapter3BossSeen = true;
+    discoverRumor(this.state, "resonanceCore");
+    this.dialogue(
+      [
+        {
+          speaker: "無響獣サイレント",
+          portrait: "system",
+          text: "声ハ誤解ヲ生ム。言葉ハ傷ツケル。ナラバ全テノ音ヲ消セバ、誰モ傷ツカナイ。",
+        },
+        {
+          speaker: "紗理菜",
+          portrait: "sarina",
+          text: "言葉が届かないことはあります。それでも、聞こうとすることまで諦めたくありません。",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "依代は風と光、獣は炎から共鳴を始める。表示された響きに属性を合わせて！",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "無響獣の弱点は炎→風→光と毎ターン変化する。通常攻撃は沈黙障壁に阻まれる。依代、弱点属性、紗理菜の虹色の祈りを使い分けよう。",
+        },
+      ],
+      () =>
+        this.startBattle(["hushAvatar", "muteTotem", "muteTotem"], {
+          story: "chapter3Boss",
+          canEscape: false,
+        }),
+    );
+  }
+
+  finishChapter3Boss(levelLines = []) {
+    this.state.flags.chapter3BossWon = true;
+    this.state.flags.chapter3Clear = true;
+    this.state.flags.postClear = false;
+    this.state.quests.chapter3 = "complete";
+    this.state.happy = 100;
+    fullHeal(this.state);
+    this.audio.play("clear");
+    this.dialogue(
+      [
+        ...levelLines,
+        {
+          speaker: "紗理菜",
+          portrait: "sarina",
+          text: "思い出しました。遠い国の言葉も、小さな精霊の声も、分からないからこそ聞いてみたかった。",
+        },
+        {
+          speaker: "美玲",
+          portrait: "mirei",
+          text: "紗理菜の鈴、みんなの声をちゃんと一つずつ残してくれる音だね。",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "四人になった。できることも、守れる場所も増えたね。次の風がどこから来ても大丈夫。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "水、風、光が虹を結び、三つ目のハッピーオーラの欠片へ結晶した。",
+        },
+      ],
+      () => this.showChapterClear(3),
+    );
+  }
+
   finishDefeat() {
     if (!this.battle) return;
     this.battle.phase = "defeat";
@@ -2831,7 +3421,7 @@ export class HinatiaGame {
     this.state.happy = Math.min(35, this.state.happy);
     this.buildMapEnemies();
     this.setMode("map");
-    this.audio.play(safe.map === "solaido" ? "town" : "field");
+    this.audio.play(["solaido", "mileria", "sarinaria"].includes(safe.map) ? "town" : "field");
     this.refreshHud();
     this.showArea();
     this.dialogue({
@@ -3013,13 +3603,31 @@ export class HinatiaGame {
       return "街道北東の黒い蔓が消えた。美玲と地下穀倉を探索しよう。";
     if (!this.state.flags.chapter2BossWon)
       return "二本の根を炎で崩し、大技予告には防御とハッピーブレッドを合わせよう。";
-    return "第二章を達成した。残る依頼を探すか、次の地域へ備えよう。";
+    if (!this.state.flags.chapter3Started)
+      return "陽だまり街道を南へ。瘴気の消えた吊り橋から虹風の峠へ進める。";
+    if (!this.state.flags.metSarina)
+      return "虹風の峠を西へ進み、精霊樹の里で鈴を持つ巫女を探そう。";
+    if (!this.state.flags.sarinaJoined) {
+      const count = ["waterChime", "windChime", "lightChime"]
+        .filter((id) => (this.state.inventory[id] || 0) > 0).length;
+      return `三つの音は${count}/3個。三響の森で精霊の言葉を聞き、好きな守り手から挑もう。`;
+    }
+    if (!this.state.flags.spiritGateOpen)
+      return "森の南から無音神域へ。水→風→光の順に響石を鳴らす。";
+    if (!this.state.flags.chapter3BossSeen)
+      return "神域の奥、虹泉の心室へ。七色の精霊鈴と回復道具を確認しよう。";
+    if (!this.state.flags.chapter3BossWon)
+      return "無響獣の共鳴表示へ炎・風・光を合わせ、大技には精霊の守りを使おう。";
+    return "第三章を達成した。残る依頼や宝箱を探し、次の地域へ備えよう。";
   }
 
   renderRumorsMenu() {
     const questOrder = [
       "chapter1",
       "chapter2",
+      "chapter3",
+      "threeChimes",
+      "lostSpirit",
       "miracleBread",
       "hungryChildren",
       "dewMedicine",
@@ -3065,7 +3673,7 @@ export class HinatiaGame {
         .filter(([, quantity]) => quantity > 0)
         .map(([id, quantity]) => {
           const item = ITEMS[id];
-          const fieldUsable = ["herb", "happyBread", "moonwort", "auraDrop", "torch", "wing", "lifeSeed"].includes(id);
+          const fieldUsable = ["herb", "happyBread", "spiritNectar", "moonwort", "auraDrop", "torch", "wing", "lifeSeed"].includes(id);
           return `<div class="list-row">
             <div><h3>${item.name} ×${quantity} <span class="tag">${this.itemTypeName(item.type)}</span></h3><p>${item.description}</p></div>
             ${fieldUsable ? `<button data-use-item="${id}">使う</button>` : ""}
@@ -3114,6 +3722,19 @@ export class HinatiaGame {
         total += healed;
       }
       this.toast(`みんなで分け合い、合計${total}回復`);
+      this.audio.sfx("heal");
+    } else if (id === "spiritNectar") {
+      const target = activeParty(this.state)
+        .filter((member) => member.hp > 0 && (member.hp < maxHp(member) || member.mp < member.maxMp))
+        .sort((a, b) => (a.hp / maxHp(a) + a.mp / a.maxMp) - (b.hp / maxHp(b) + b.mp / b.maxMp))[0];
+      if (!target) return this.toast("HPとMPは満タンだ");
+      removeItem(this.state, id, 1);
+      const healed = Math.min(55, maxHp(target) - target.hp);
+      const restored = Math.min(8, target.maxMp - target.mp);
+      target.hp += healed;
+      target.mp += restored;
+      target.status.silence = 0;
+      this.toast(`${target.name}のHPが${healed}、MPが${restored}回復`);
       this.audio.sfx("heal");
     } else if (id === "moonwort") {
       const target = activeParty(this.state).find((member) =>
@@ -3209,6 +3830,10 @@ export class HinatiaGame {
       ["mileria", "ミレリア", 7, 46],
       ["sunmill", "風車の丘", 23, 17],
       ["granary1", "地下穀倉", 34, 62],
+      ["spiritPass", "虹風の峠", 46, 76],
+      ["sarinaria", "サリナリア", 38, 88],
+      ["whisperWood", "三響の森", 61, 84],
+      ["spiritSanctum", "無音神域", 73, 91],
     ];
     const currentKey =
       this.state.map === "highroad"
@@ -3223,6 +3848,10 @@ export class HinatiaGame {
                 ? this.state.map
                 : ["granary1", "granary2"].includes(this.state.map)
                   ? "granary1"
+                  : ["spiritPass", "sarinaria", "whisperWood"].includes(this.state.map)
+                    ? this.state.map
+                    : ["spiritSanctum", "spiritHeart"].includes(this.state.map)
+                      ? "spiritSanctum"
                   : "cave1";
     const markerHtml = markers
       .filter(([id]) => this.state.discoveries[id])
@@ -3257,6 +3886,10 @@ export class HinatiaGame {
       mileria: "パン工房と市場が並ぶ実りの国。今は作物が枯れている。",
       sunmill: "清水と陽だまり酵母が残る、風の強い丘。",
       granary1: "黒い蔓の根源が潜む二層の地下穀倉。",
+      spiritPass: "ミレリア南から精霊の里へ続く、虹の見える峠。",
+      sarinaria: "精霊樹と鈴の祈りに守られた里。今は精霊の声が途切れている。",
+      whisperWood: "水・風・光の守り手が別々の道で待つ、自由探索の森。",
+      spiritSanctum: "三つの音を正しい順に響かせて進む、古い精霊神域。",
     }[id];
   }
 
@@ -3272,7 +3905,7 @@ export class HinatiaGame {
       </div>
       <div class="info-card" style="margin-top:7px">
         <h3>現在の記録</h3>
-        <p>${MAPS[this.state.map].name} / ${this.formatTime(this.currentPlayTime())} / ${this.state.gold} G / ${this.state.flags.chapter2Clear ? "第二章クリア" : this.state.flags.chapter1Clear ? "第二章冒険中" : "第一章冒険中"}</p>
+        <p>${MAPS[this.state.map].name} / ${this.formatTime(this.currentPlayTime())} / ${this.state.gold} G / ${this.state.flags.chapter3Clear ? "第三章クリア" : this.state.flags.chapter2Clear ? "第三章冒険中" : this.state.flags.chapter1Clear ? "第二章冒険中" : "第一章冒険中"}</p>
       </div>`;
   }
 
@@ -3377,8 +4010,10 @@ export class HinatiaGame {
               ? ""
               : `<button data-save-slot="${id}">記録</button>`
             : `<button data-load-slot="${id}" ${!value ? "disabled" : ""}>再開</button>`;
-        const progress = value?.flags?.chapter2Clear
-          ? "第二章クリア"
+        const progress = value?.flags?.chapter3Clear
+          ? "第三章クリア"
+          : value?.flags?.chapter2Clear
+            ? "第三章進行中"
           : value?.flags?.chapter1Clear
             ? "第二章進行中"
             : value
@@ -3461,16 +4096,18 @@ export class HinatiaGame {
     this.state = normalizeState(value);
     this.buildMapEnemies();
     this.audio.sfx("save");
-    if (this.state.flags.chapter2Clear && !this.state.flags.postClear) {
+    if (this.state.flags.chapter3Clear && !this.state.flags.postClear) {
+      this.showChapterClear(3);
+    } else if (this.state.flags.chapter2Clear && !this.state.flags.postClear) {
       this.showChapterClear(2);
     } else if (this.state.flags.chapter1Clear && !this.state.flags.postClear) {
       this.showChapterClear(1);
     } else {
       this.setMode("map");
       this.audio.play(
-        ["solaido", "mileria"].includes(this.state.map)
+        ["solaido", "mileria", "sarinaria"].includes(this.state.map)
           ? "town"
-          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2"].includes(this.state.map)
+          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2", "whisperWood", "spiritSanctum", "spiritHeart"].includes(this.state.map)
             ? "cave"
             : "field",
       );
@@ -3520,12 +4157,16 @@ export class HinatiaGame {
 
   showChapterClear(chapter = 1) {
     if (chapter === 1) this.state.flags.chapter1Clear = true;
-    this.ui.clearKicker.textContent = `CHAPTER ${chapter === 1 ? "I" : "II"} COMPLETE`;
-    this.ui.clearHeading.textContent = chapter === 1 ? "空色の騎士団長" : "枯れた麦畑と奇跡のパン";
-    this.ui.clearReward.textContent =
-      chapter === 1
-        ? "ハッピーオーラの欠片を手に入れた！"
-        : "二つ目のハッピーオーラの欠片を手に入れた！";
+    const numerals = { 1: "I", 2: "II", 3: "III" };
+    const headings = { 1: "空色の騎士団長", 2: "枯れた麦畑と奇跡のパン", 3: "虹鈴の精霊巫女" };
+    const rewards = {
+      1: "ハッピーオーラの欠片を手に入れた！",
+      2: "二つ目のハッピーオーラの欠片を手に入れた！",
+      3: "三つ目のハッピーオーラの欠片を手に入れた！",
+    };
+    this.ui.clearKicker.textContent = `CHAPTER ${numerals[chapter]} COMPLETE`;
+    this.ui.clearHeading.textContent = headings[chapter];
+    this.ui.clearReward.textContent = rewards[chapter];
     this.ui.clearSummary.textContent = `${this.state.steps}歩・${this.state.victories}勝・宝箱${this.state.stats.chests}個・噂${this.state.stats.rumors}件・寄り道${this.state.stats.sidequests}件`;
     this.setMode("clear");
     this.audio.play("clear");
@@ -3533,10 +4174,11 @@ export class HinatiaGame {
   }
 
   continueAfterClear() {
+    const chapter3 = this.state.flags.chapter3Clear;
     const chapter2 = this.state.flags.chapter2Clear;
     this.state.flags.postClear = true;
-    this.state.map = chapter2 ? "mileria" : "solaido";
-    this.state.x = chapter2 ? 20 : 19;
+    this.state.map = chapter3 ? "sarinaria" : chapter2 ? "mileria" : "solaido";
+    this.state.x = chapter3 ? 20 : chapter2 ? 20 : 19;
     this.state.y = 27;
     this.state.dir = "up";
     this.state.lastSafe = {
@@ -3627,6 +4269,7 @@ export class HinatiaGame {
     for (const special of m.specials) {
       if (special.type === "boss" && this.state.flags.bossWon) continue;
       if (special.type === "boss2" && this.state.flags.chapter2BossWon) continue;
+      if (special.type === "boss3" && this.state.flags.chapter3BossWon) continue;
       if (["shop", "inn", "church", "hiddenWall", "bridgeGate", "shortcut"].includes(special.type))
         continue;
       const key = `${m.id}:${special.id}`;
@@ -3653,6 +4296,7 @@ export class HinatiaGame {
     for (const npc of m.npcs) {
       if (npc.id === "lostMiner" && this.state.flags.minerFound) continue;
       if (npc.id === "mirei" && this.state.flags.mireiJoined) continue;
+      if (npc.id === "sarina" && this.state.flags.sarinaJoined) continue;
       this.renderer.drawCharacter(
         npc.type,
         npc.x * T + 4 - this.camera.x,
@@ -3699,6 +4343,19 @@ export class HinatiaGame {
         1,
       );
     }
+    if (this.state.party.order.includes("sarina")) {
+      const [dx, dy] = DIRS[this.state.dir];
+      const fx = this.state.x - dx * 3;
+      const fy = this.state.y - dy * 3;
+      this.renderer.drawCharacter(
+        "sarina",
+        fx * T + 4 - this.camera.x,
+        fy * T + 1 - this.camera.y,
+        this.state.dir,
+        this.walkFrame,
+        1,
+      );
+    }
     this.renderer.drawCharacter(
       "hero",
       this.state.x * T + 4 - this.camera.x,
@@ -3712,17 +4369,20 @@ export class HinatiaGame {
   }
 
   drawLandmarks(now) {
-    if (!["highroad", "mireRoad"].includes(this.state.map)) return;
+    if (!["highroad", "mireRoad", "spiritPass"].includes(this.state.map)) return;
     const points = this.state.map === "highroad"
       ? [
           { x: 25, y: 2, type: "castle" },
           { x: 47, y: 7, type: "cave" },
           { x: 8, y: 9, type: "grove" },
         ]
-      : [
+      : this.state.map === "mireRoad" ? [
           { x: 3, y: 16, type: "town" },
           { x: 24, y: 3, type: "mill" },
           { x: 42, y: 5, type: "granary" },
+        ] : [
+          { x: 3, y: 17, type: "spiritTown" },
+          { x: 47, y: 17, type: "spiritGrove" },
         ];
     for (const point of points) {
       const x = point.x * T + 16 - this.camera.x;
@@ -3745,10 +4405,18 @@ export class HinatiaGame {
         this.renderer.rect(x - 7, y - 35, 14, 39, "#d1c19b");
         this.renderer.rect(x - 30, y - 25, 60, 5, "#795f42");
         this.renderer.rect(x - 3, y - 50, 6, 60, "#9b794e");
-      } else {
+      } else if (point.type === "granary") {
         this.renderer.rect(x - 22, y - 20, 44, 24, "#554530");
         this.renderer.rect(x - 15, y - 13, 30, 18, "#171411");
         this.renderer.rect(x - 5, y - 30 + Math.sin(now / 300) * 2, 10, 20, "#c6a33d");
+      } else if (point.type === "spiritTown") {
+        this.renderer.rect(x - 23, y - 24, 46, 27, "#456e64");
+        this.renderer.rect(x - 17, y - 35, 34, 14, "#73b89d");
+        this.renderer.rect(x - 4, y - 42 + Math.sin(now / 300), 8, 19, "#e6dd72");
+      } else {
+        this.renderer.rect(x - 22, y - 27, 44, 30, "#1c5948");
+        this.renderer.rect(x - 14, y - 39, 28, 34, "#3b8a68");
+        this.renderer.rect(x - 4, y - 46 + Math.sin(now / 280), 8, 18, "#9fe8c5");
       }
     }
   }
@@ -3786,6 +4454,16 @@ export class HinatiaGame {
                 ? { map: "mileria", x: 23, y: 10, label: "美玲" }
                 : !this.state.flags.chapter2BossWon
                   ? { map: "mireRoad", x: 42, y: 5, label: "地下穀倉" }
+                  : !this.state.flags.chapter3Started
+                    ? { map: "mireRoad", x: 24, y: 32, label: "南の峠" }
+                    : !this.state.flags.metSarina
+                      ? { map: "spiritPass", x: 3, y: 17, label: "精霊の里" }
+                      : !this.state.flags.sarinaJoined
+                        ? { map: "sarinaria", x: 23, y: 10, label: "紗理菜" }
+                        : !this.state.flags.spiritGateOpen
+                          ? { map: "spiritSanctum", x: 30, y: 8, label: "響石の扉" }
+                          : !this.state.flags.chapter3BossWon
+                            ? { map: "spiritHeart", x: 28, y: 7, label: "無響獣" }
                   : null;
     if (!target || target.map !== this.state.map) return;
     const dx = target.x - this.state.x;
@@ -3811,21 +4489,21 @@ export class HinatiaGame {
       if (enemy.hp <= 0) return;
       const [x, y] = positions[index] || [400 + index * 70, 145];
       if (
-        ["smileEater", "blightHeart"].includes(enemy.kind) &&
+        ["smileEater", "blightHeart", "hushAvatar"].includes(enemy.kind) &&
         this.battle.barrier &&
         this.battle.barrierBrokenRounds <= 0
       ) {
         const ctx = this.renderer.ctx;
         ctx.save();
         ctx.globalAlpha = 0.25 + Math.sin(now / 180) * 0.08;
-        ctx.strokeStyle = enemy.kind === "blightHeart" ? "#e0b84f" : "#b68fd2";
+        ctx.strokeStyle = enemy.kind === "blightHeart" ? "#e0b84f" : enemy.kind === "hushAvatar" ? "#71dfbd" : "#b68fd2";
         ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.ellipse(x, y - 10, 78, 80, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
-      const scale = ["smileEater", "blightHeart"].includes(enemy.kind) ? 1.08 : enemy.boss ? 1 : 0.82;
+      const scale = ["smileEater", "blightHeart", "hushAvatar"].includes(enemy.kind) ? 1.08 : enemy.boss ? 1 : 0.82;
       this.renderer.drawBattleEnemy(
         enemy.sprite,
         x,
