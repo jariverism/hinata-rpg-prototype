@@ -339,6 +339,56 @@ test("タイトルから第一章終了、加入、三層洞窟、セーブ・�
   assert.equal(game.state.flags.chapter1Clear, true);
 });
 
+test("シンボルは発見時に一手止まり、足踏みでき、正面接触は不意打ちにならない", async () => {
+  const { game } = await createGame();
+  game.state.flags.prologueSeen = true;
+  game.state.map = "highroad";
+  game.state.x = 28;
+  game.state.y = 30;
+  game.state.dir = "up";
+  game.buildMapEnemies();
+  game.setMode("map");
+  const symbol = game.mapEnemies.find((enemy) => enemy.id === "plain-01");
+  assert.ok(symbol);
+  const start = [symbol.x, symbol.y];
+
+  game.waitTurn();
+  assert.deepEqual([symbol.x, symbol.y], start, "初回発見は警戒表示だけで移動しない");
+  assert.equal(symbol.alert, 2);
+  game.waitTurn();
+  assert.equal(symbol.y, start[1] + 1, "次の手番から追跡する");
+  game.waitTurn();
+  game.waitTurn();
+  assert.equal(game.mode, "battle");
+  assert.equal(game.battle.options.ambush, false, "正面からの接触は通常戦闘");
+});
+
+test("成長曲線、消耗品、ゲージ持越しを第一章向けに抑えている", async () => {
+  const { expNext } = await import(
+    `${pathToFileURL(path.join(root, "src/state.js")).href}?balance=1`
+  );
+  assert.equal(expNext(1), 45, "レベル2までに複数戦必要");
+  assert.equal(expNext(3), 297, "レベル4は任意探索なしでは届きにくい");
+
+  const { game } = await createGame();
+  game.state.flags.prologueSeen = true;
+  game.state.happy = 95;
+  game.setMode("map");
+  game.startBattle(["softSlime"], { canEscape: true });
+  game.battle.enemies[0].hp = 0;
+  game.finishVictory();
+  assert.equal(game.state.happy, 50, "通常戦闘後のゲージ持越しには上限がある");
+
+  game.state.inventory.brightBell = 1;
+  game.startBattle(["anxietyShade"], { canEscape: true });
+  game.executeBattleItem(game.state.party.hero, {
+    type: "item",
+    id: "brightBell",
+    targetType: "allAllies",
+  });
+  assert.equal(game.state.inventory.brightBell, 0, "光鳴りの鈴は一度使うとなくなる");
+});
+
 test("旧版セーブを消さず、名前・進行実績・記念装備へ移行する", async () => {
   const { game, window } = await createGame();
   window.localStorage.setItem(
