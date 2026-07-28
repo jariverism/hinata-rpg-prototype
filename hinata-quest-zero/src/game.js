@@ -58,6 +58,8 @@ const STATUS_NAMES = {
   guard: "防御",
   formation: "陣形",
   bright: "光護",
+  regen: "再生",
+  rooted: "鈍足",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -113,6 +115,9 @@ export class HinatiaGame {
       load: $("load-screen"),
       loadSlots: $("load-slots"),
       clear: $("chapter-clear"),
+      clearKicker: $("clear-kicker"),
+      clearHeading: $("clear-heading"),
+      clearReward: $("clear-reward"),
       clearSummary: $("clear-summary"),
       gameOver: $("game-over"),
       toast: $("toast"),
@@ -525,6 +530,13 @@ export class HinatiaGame {
           "lever",
           "rope",
           "boss",
+          "boss2",
+          "oven",
+          "goldenWheat",
+          "springWater",
+          "sunYeast",
+          "mireBoard",
+          "granaryLever",
         ].includes(special.type),
     );
     if (blockingSpecial) return false;
@@ -610,12 +622,18 @@ export class HinatiaGame {
       this.state.dir = dir;
       this.state.visited[id] = (this.state.visited[id] || 0) + 1;
       this.state.discoveries[id] = true;
-      if (id === "solaido") {
+      if (id === "mireRoad" && !this.state.flags.chapter2Started) {
+        this.state.flags.chapter2Started = true;
+        this.state.quests.chapter1 = "complete";
+        this.state.quests.chapter2 = "active";
+        discoverRumor(this.state, "westRoad");
+      }
+      if (["solaido", "mileria"].includes(id)) {
         this.state.lastSafe = { map: id, x, y, dir };
         this.audio.play("town");
-      } else if (["cave1", "cave2", "cave3", "oldWell"].includes(id)) {
+      } else if (["cave1", "cave2", "cave3", "oldWell", "granary1", "granary2"].includes(id)) {
         this.audio.play("cave");
-        const floor = { oldWell: 1, cave1: 1, cave2: 2, cave3: 3 }[id] || 0;
+        const floor = { oldWell: 1, cave1: 1, cave2: 2, cave3: 3, granary1: 1, granary2: 2 }[id] || 0;
         this.state.stats.deepestFloor = Math.max(this.state.stats.deepestFloor, floor);
       } else {
         this.audio.play(id === "echoGrove" ? "cave" : "field");
@@ -1036,6 +1054,138 @@ export class HinatiaGame {
         "spirit",
         "きらきらの草、三つ集める？　町のおばあちゃん、笑う。森も、うれしい。",
       );
+    } else if (id === "mirei") {
+      if (!this.state.flags.metMirei) {
+        this.state.flags.metMirei = true;
+        this.state.quests.miracleBread = "active";
+        discoverRumor(this.state, "mirelia");
+        discoverRumor(this.state, "windmill");
+        this.dialogue([
+          {
+            speaker: "パン職人の少女",
+            portrait: "mirei",
+            text: "いらっしゃい……と言いたいけど、今日は焼けるパンがないの。畑も酵母も、急に元気をなくしちゃって。",
+          },
+          {
+            speaker: this.state.name,
+            portrait: "hero",
+            text: "佐々木美玲さん……？　あなたを知っている。人を笑顔にする人だった。",
+          },
+          {
+            speaker: "パン職人の少女",
+            portrait: "mirei",
+            text: "美玲……その名前、パンがふくらむ時みたいに胸があったかくなる。でも、まだ全部は思い出せない。",
+          },
+          {
+            speaker: "美玲",
+            portrait: "mirei",
+            text: "黄金麦、風車丘の清水、陽だまり酵母。三つがあれば、みんなが笑えるパンを焼ける。どの順で探しても大丈夫だよ。",
+          },
+          {
+            speaker: "SYSTEM",
+            portrait: "system",
+            text: "メインクエスト『三つの恵み』が始まった。街道の畑と風車の丘を自由に探索しよう。",
+          },
+        ]);
+      } else if (!this.state.flags.mireiJoined) {
+        const ingredients = ["goldenWheat", "springWater", "sunYeast"];
+        const found = ingredients.filter((item) => (this.state.inventory[item] || 0) > 0);
+        if (found.length < ingredients.length) {
+          simple(
+            "美玲",
+            "mirei",
+            `材料は${found.length}/3個。畑の黄金麦、丘の低地の清水、高台の酵母。好きな場所から探してきて。`,
+          );
+        } else {
+          this.dialogue(
+            [
+              {
+                speaker: "美玲",
+                portrait: "mirei",
+                text: "三つとも揃った！　最後に、どんなパンにする？　焼き方で地下穀倉への備えが変わるよ。",
+                choices: [
+                  {
+                    label: "香ばしく焼く：ボスの守りを崩す",
+                    action: () => { this.state.flags.breadChoice = "crisp"; },
+                  },
+                  {
+                    label: "ふんわり焼く：パンを多く作る",
+                    action: () => { this.state.flags.breadChoice = "soft"; },
+                  },
+                  {
+                    label: "力強く焼く：全員のHPを強化",
+                    action: () => { this.state.flags.breadChoice = "hearty"; },
+                  },
+                ],
+              },
+              {
+                speaker: "美玲",
+                portrait: "mirei",
+                text: "焼きたての香り……！　黒い蔓が逃げていく。これなら地下穀倉へ入れるよ。",
+              },
+              {
+                speaker: "久美",
+                portrait: "kumi",
+                text: "一人で行かせない。美玲、私たちと一緒に、この国の食卓を取り戻そう。",
+              },
+            ],
+            () => this.completeMireiJoin(),
+          );
+        }
+      } else {
+        simple(
+          "美玲",
+          "mirei",
+          this.state.flags.chapter2BossWon
+            ? "パンの香りで、思い出した笑顔がまた増えたよ。次の旅にも、たくさん持っていこうね。"
+            : "地下穀倉の核は根に守られているはず。私の聖火なら、植物の守りを崩せるよ。",
+        );
+      }
+    } else if (id === "mireBaker" || id === "mireShop") {
+      this.openShop(id === "mireBaker" ? "mireArmory" : "mireItem");
+    } else if (id === "mireInn") {
+      this.openInn();
+    } else if (id === "mirePriest") {
+      this.openChurch();
+    } else if (id === "mireChild") {
+      simple("ミレリアの子", "child", this.state.flags.chapter2BossWon
+        ? "パンが焼けたよ！　半分こすると、もっとおいしいね！"
+        : "おなかが鳴ると、みんな少しだけ怒りっぽくなるの。前はパンの匂いで笑えたのに。");
+    } else if (id === "mireFarmerA" || id === "fieldWatcher") {
+      const fresh = discoverRumor(this.state, "granary");
+      simple("麦農家", "farmer", "黄金麦の畑を枯れ穂の番人が占領した。炎に弱いが、倒しても黒い蔓の根は地下穀倉に残る。" +
+        (fresh ? "——『黒い蔓の地下穀倉』の噂を記録した。" : ""));
+    } else if (id === "mireFarmerB" || id === "westFarmer") {
+      simple("麦農家", "farmer", "敵の大技が見えたら防御するんだ。美玲のパンで立て直せば、力押しよりずっと長く戦える。");
+    } else if (id === "windScholar" || id === "millKeeper") {
+      const fresh = discoverRumor(this.state, "windmill");
+      simple("風車守", "miller", "丘の低地には清水、高台には陽だまり酵母。片方を取っても、もう片方は消えない。" +
+        (fresh ? "——『風車丘の二つの恵み』を記録した。" : ""));
+    } else if (id === "springSpirit") {
+      simple("泉の精霊", "spirit", "きれいな水、分けても減らない。笑顔を焼く人へ、持っていって。");
+    } else if (id === "hungryTraveler") {
+      if (this.state.quests.hungryChildren === "locked") {
+        this.state.quests.hungryChildren = "active";
+        simple("空腹の旅人", "pilgrim", "町まであと少しなのに、子どもが空腹で歩けない。パンが一つあれば……。");
+      } else if (
+        this.state.quests.hungryChildren === "active" &&
+        (this.state.inventory.happyBread || 0) > 0
+      ) {
+        removeItem(this.state, "happyBread", 1);
+        addItem(this.state, "wheatCharm", 1);
+        this.state.quests.hungryChildren = "complete";
+        this.state.stats.sidequests += 1;
+        this.dialogue([
+          { speaker: "空腹の旅人", portrait: "pilgrim", text: "ありがとう。半分に分けたら、不思議と全員のおなかが落ち着いたよ。" },
+          { speaker: "SYSTEM", portrait: "system", text: "麦穂のお守りを手に入れた！" },
+        ]);
+      } else {
+        simple("空腹の旅人", "pilgrim", "焼きたてでなくてもいい。分けられるパンが一つあれば助かる。");
+      }
+    } else if (id === "granaryKeeper") {
+      const fresh = discoverRumor(this.state, "blightCore");
+      simple("穀倉番", "farmer", "奥の核は二本の根から力を吸う。先に根を焼けば核の殻が薄くなる。" +
+        (fresh ? "——『二本の根に守られた核』の噂を記録した。" : ""));
     } else if (id === "lostMiner") {
       if (!this.state.flags.minerFound) {
         this.state.flags.minerFound = true;
@@ -1058,6 +1208,47 @@ export class HinatiaGame {
         simple("坑夫", "miner", "私はもう戻る。君も灯りと体力を忘れるなよ。");
       }
     }
+  }
+
+  completeMireiJoin() {
+    for (const id of ["goldenWheat", "springWater", "sunYeast"])
+      removeItem(this.state, id, 1);
+    this.state.flags.breadQuestReady = true;
+    this.state.flags.mireiJoined = true;
+    this.state.flags.granaryOpen = true;
+    this.state.quests.miracleBread = "complete";
+    if (!this.state.party.order.includes("mirei")) this.state.party.order.push("mirei");
+    if (this.state.flags.breadChoice === "soft") addItem(this.state, "happyBread", 4);
+    else addItem(this.state, "happyBread", 2);
+    if (this.state.flags.breadChoice === "hearty") {
+      for (const member of activeParty(this.state)) member.maxHp += 5;
+    }
+    fullHeal(this.state);
+    discoverRumor(this.state, "granary");
+    this.dialogue(
+      [
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "佐々木美玲が仲間になった！　回復と状態異常対策、炎による植物の守り崩しを得意とする。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: this.state.flags.breadChoice === "crisp"
+            ? "香ばしいパンの煙が核の殻へ染み込んだ。章ボスの障壁が最初から弱まる。"
+            : this.state.flags.breadChoice === "hearty"
+              ? "力強いパンで仲間全員の最大HPが5上がった。"
+              : "ふんわりパンを多く焼き、ハッピーブレッドを4個受け取った。",
+        },
+      ],
+      () => {
+        this.setMode("map");
+        this.refreshHud();
+        this.refreshInteractPrompt();
+        this.autosave();
+      },
+    );
   }
 
   useSpecial(special) {
@@ -1208,16 +1399,59 @@ export class HinatiaGame {
           ? "水位が下がり、橋を渡れる。"
           : "激しい水流で橋に近づけない。どこかに水門があるはずだ。",
       });
+    } else if (special.type === "goldenWheat") {
+      const key = "mireRoad:golden-wheat";
+      if (this.state.gathered[key]) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "残った麦は、畑の人々が育て直している。" });
+      } else if (!this.state.flags.scarecrowWon) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "黄金麦へ近づくと、枯れ穂の番人がこちらを見た。先に退けなければ採れない。" });
+      } else {
+        this.state.gathered[key] = true;
+        addItem(this.state, "goldenWheat", 1);
+        this.audio.sfx("ok");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "黄金麦を手に入れた！　穂の内側に温かな光が残っている。" });
+      }
+    } else if (special.type === "springWater" || special.type === "sunYeast") {
+      const itemId = special.type;
+      const key = `${this.state.map}:${special.id}`;
+      if (this.state.gathered[key]) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "必要な分はすでに受け取った。" });
+      } else {
+        this.state.gathered[key] = true;
+        addItem(this.state, itemId, 1);
+        this.audio.sfx("ok");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: `${ITEMS[itemId].name}を手に入れた！` });
+      }
+    } else if (special.type === "oven") {
+      this.talk({ id: "mirei" });
+    } else if (special.type === "mireBoard") {
+      if (this.state.quests.hungryChildren === "locked")
+        this.state.quests.hungryChildren = "active";
+      this.dialogue([
+        { speaker: "掲示板", portrait: "system", text: "『街道で立ち往生する親子あり。食べ物を分けられる旅人を求む』" },
+        { speaker: "SYSTEM", portrait: "system", text: "サブクエスト『おなかの鳴る帰り道』を記録した。" },
+      ]);
+    } else if (special.type === "granaryLever") {
+      if (this.state.flags.granaryShortcut) {
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "昇降機は入口階まで通じている。" });
+      } else {
+        this.state.flags.granaryShortcut = true;
+        this.audio.sfx("save");
+        this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "穀物用の昇降機を動かした。地下穀倉入口へ戻る近道が開いた！" });
+      }
     } else if (special.type === "boss") {
       this.startChapterBoss();
+    } else if (special.type === "boss2") {
+      this.startChapter2Boss();
     }
   }
 
   openInn() {
     const cost = 24;
+    const isMirelia = this.state.map === "mileria";
     this.panelContext = { type: "inn", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "INN";
-    this.ui.panelTitle.textContent = "青鳥亭";
+    this.ui.panelTitle.textContent = isMirelia ? "麦灯り亭" : "青鳥亭";
     this.ui.panelGold.textContent = `${this.state.gold} G`;
     this.ui.panelBody.innerHTML = `
       <div class="info-card">
@@ -1234,9 +1468,10 @@ export class HinatiaGame {
   openChurch() {
     const fallen = activeParty(this.state).filter((member) => member.hp <= 0);
     const cost = fallen.length * 20;
+    const isMirelia = this.state.map === "mileria";
     this.panelContext = { type: "church", returnMode: "map" };
     this.ui.panelEyebrow.textContent = "SANCTUARY";
-    this.ui.panelTitle.textContent = "風鐘の礼拝堂";
+    this.ui.panelTitle.textContent = isMirelia ? "麦穂の礼拝堂" : "風鐘の礼拝堂";
     this.ui.panelGold.textContent = `${this.state.gold} G`;
     this.ui.panelBody.innerHTML = `
       <div class="info-card">
@@ -1322,15 +1557,21 @@ export class HinatiaGame {
       this.renderShop();
       this.refreshHud();
     } else if (target.dataset.panel === "inn-stay") {
-      if (this.state.gold < 12) return;
-      this.state.gold -= 12;
+      const cost = 24;
+      if (this.state.gold < cost) return;
+      this.state.gold -= cost;
       fullHeal(this.state);
-      this.state.lastSafe = { map: "solaido", x: 19, y: 27, dir: "up" };
+      this.state.lastSafe = {
+        map: this.state.map,
+        x: this.state.x,
+        y: this.state.y,
+        dir: this.state.dir,
+      };
       this.buildMapEnemies();
       this.audio.sfx("heal");
       this.closePanel();
       this.dialogue(
-        { speaker: "宿屋の主人", portrait: "inn", text: "よく休めましたか？　空が明るいうちにお気をつけて。" },
+        { speaker: "宿屋の主人", portrait: "inn", text: "よく休めましたか？　旅の続きもお気をつけて。" },
         () => {
           this.setMode("map");
           this.autosave();
@@ -1405,8 +1646,9 @@ export class HinatiaGame {
       submenu: null,
       pending: null,
       selectedButton: 0,
-      barrier: group.includes("smileEater"),
-      barrierBrokenRounds: 0,
+      barrier: group.includes("smileEater") || group.includes("blightHeart"),
+      barrierBrokenRounds:
+        group.includes("blightHeart") && this.state.flags.breadChoice === "crisp" ? 2 : 0,
       telegraph: null,
       enemyIntents: [],
       formation: false,
@@ -1418,7 +1660,11 @@ export class HinatiaGame {
     };
     this.state.battles += 1;
     this.setMode("battle");
-    this.audio.play(group.includes("smileEater") || group.includes("gloomMoth") ? "boss" : "battle");
+    this.audio.play(
+      group.some((id) => ["smileEater", "gloomMoth", "blightHeart", "blightScarecrow"].includes(id))
+        ? "boss"
+        : "battle",
+    );
     this.renderBattleUi();
     if (options.ambush) {
       this.battle.phase = "resolve";
@@ -1465,6 +1711,8 @@ export class HinatiaGame {
     this.battle.log =
       this.battle.telegraph === "sigh"
         ? "笑顔喰らいは大きく息を吸い込んでいる……！"
+        : this.battle.telegraph === "rotBurst"
+          ? "飢渇核が地中の瘴気を集め、激しく脈打っている……！"
         : danger
           ? `${danger}　— ${alive[0].name}の行動を選んでください。`
           : `${alive[0].name}の行動を選んでください。`;
@@ -1527,7 +1775,7 @@ export class HinatiaGame {
         );
       add("もどる", { battle: "back" });
     } else if (view === "items") {
-      const usable = ["herb", "moonwort", "auraDrop", "brightBell", "smokeBomb"];
+      const usable = ["herb", "happyBread", "moonwort", "auraDrop", "brightBell", "smokeBomb"];
       for (const id of usable) {
         const count = this.state.inventory[id] || 0;
         add(
@@ -1786,6 +2034,46 @@ export class HinatiaGame {
       this.state.stats.healingDone += healed;
       this.battle.log = `${actor.name}のヒールコール！　${target.name}のHPが${healed}回復。`;
       this.audio.sfx("heal");
+    } else if (skill.effect === "mireiHeal") {
+      const target = this.state.party[action.target];
+      if (!target || target.hp <= 0) return;
+      const amount = Math.ceil(skill.power + this.effectiveStat(actor, "mag"));
+      const healed = Math.min(amount, maxHp(target) - target.hp);
+      target.hp += healed;
+      target.status.poison = 0;
+      this.state.happy = clamp(this.state.happy + 12, 0, 100);
+      this.state.stats.healingDone += healed;
+      this.battle.log = `${actor.name}の焼きたてヒール！　${target.name}のHPが${healed}回復し、毒が消えた。`;
+      this.audio.sfx("heal");
+    } else if (skill.effect === "breadWard") {
+      let total = 0;
+      for (const member of activeParty(this.state).filter((entry) => entry.hp > 0)) {
+        const amount = Math.ceil(18 + this.effectiveStat(actor, "mag") * 0.45);
+        const healed = Math.min(amount, maxHp(member) - member.hp);
+        member.hp += healed;
+        member.status.poison = 0;
+        member.status.fear = 0;
+        member.status.regen = 3;
+        total += healed;
+      }
+      this.state.happy = clamp(this.state.happy + 15, 0, 100);
+      this.state.stats.healingDone += total;
+      this.battle.log = `ハッピーブレッド！　味方全体が${total}回復し、再生の香りに包まれた。`;
+      this.audio.sfx("heal");
+    } else if (skill.effect === "panBreak") {
+      const target = this.findEnemyTarget(action.target);
+      if (!target) return;
+      const attack =
+        this.effectiveStat(actor, "atk") + Math.floor(this.effectiveStat(actor, "mag") * 0.55);
+      let multiplier = skill.power;
+      if (target.weakness === skill.element) multiplier *= 1.38;
+      const damage = this.calculateDamage(attack, this.enemyStat(target, "def"), multiplier);
+      target.status.atkDown = 3;
+      target.guarding = false;
+      this.hitEnemy(target, damage, skill.element);
+      this.state.happy = clamp(this.state.happy + 10, 0, 100);
+      this.battle.log = `${actor.name}の聖火のひと振り！　${target.name}に${damage}、攻撃力を下げた。`;
+      this.audio.sfx("hit");
     } else if (skill.effect === "haste") {
       for (const member of activeParty(this.state)) {
         member.status.haste = 3;
@@ -1839,6 +2127,17 @@ export class HinatiaGame {
       this.state.happy = clamp(this.state.happy + 7, 0, 100);
       this.battle.log = `${target.name}のHPが${healed}回復した。`;
       this.audio.sfx("heal");
+    } else if (action.id === "happyBread") {
+      let total = 0;
+      for (const member of activeParty(this.state).filter((entry) => entry.hp > 0)) {
+        const healed = Math.min(25, maxHp(member) - member.hp);
+        member.hp += healed;
+        total += healed;
+      }
+      this.state.stats.healingDone += total;
+      this.state.happy = clamp(this.state.happy + 10, 0, 100);
+      this.battle.log = `ハッピーブレッドを分け合い、味方全体が合計${total}回復した。`;
+      this.audio.sfx("heal");
     } else if (action.id === "moonwort") {
       const target = this.state.party[action.target];
       target.status.poison = 0;
@@ -1876,6 +2175,12 @@ export class HinatiaGame {
       if (this.state.happy >= 35 && this.battle.round % 3 === 1) return "smileDrain";
       return this.battle.round % 2 ? "darkWhisper" : "attack";
     }
+    if (enemy.kind === "blightHeart") {
+      if (this.battle.telegraph === "rotBurst") return "rotBurst";
+      if (this.battle.round % 3 === 2) return "telegraphRot";
+      if (this.state.happy >= 40 && this.battle.round % 3 === 1) return "devour";
+      return this.battle.round % 2 ? "seedStorm" : "attack";
+    }
     if (opening) return "attack";
     if (enemy.pattern?.length)
       return enemy.pattern[
@@ -1899,6 +2204,14 @@ export class HinatiaGame {
       smileDrain: "ゲージを狙う",
       telegraph: "大技の準備",
       sigh: "ため息を放つ",
+      seedShot: "毒の種を狙う",
+      rootBind: "足止めの根を伸ばす",
+      stealBread: "オーラをついばむ",
+      seedStorm: "全体へ種の嵐",
+      flourCloud: "沈黙の粉をまく",
+      devour: "力を吸収する",
+      telegraphRot: "大技の準備",
+      rotBurst: "腐蝕の大波",
     }[action] || "こちらを狙う";
   }
 
@@ -1911,6 +2224,12 @@ export class HinatiaGame {
     if (action === "telegraph") {
       this.battle.telegraph = "sigh";
       this.battle.log = "笑顔喰らいは辺りの明るさを吸い込み、大きく息を吸った……！";
+      this.audio.sfx("no");
+      return;
+    }
+    if (action === "telegraphRot") {
+      this.battle.telegraph = "rotBurst";
+      this.battle.log = "飢渇核は根を地中深く伸ばし、腐蝕の力を集め始めた……！";
       this.audio.sfx("no");
       return;
     }
@@ -1929,6 +2248,23 @@ export class HinatiaGame {
       }
       this.state.happy = Math.max(0, this.state.happy - 18);
       this.battle.log = `ため息！　味方全体に合計${total}のダメージ。恐怖が広がる！`;
+      this.shake();
+      return;
+    }
+    if (action === "rotBurst") {
+      this.battle.telegraph = null;
+      let total = 0;
+      for (const member of living) {
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag, this.effectiveStat(member, "def"), 1.12),
+          "dark",
+        );
+        if (!member.status.guard && !member.status.formation && Math.random() < 0.65)
+          member.status.poison = 3;
+      }
+      this.state.happy = Math.max(0, this.state.happy - 15);
+      this.battle.log = `腐蝕の大波！　味方全体に合計${total}のダメージ。毒の胞子が舞う！`;
       this.shake();
       return;
     }
@@ -2006,6 +2342,51 @@ export class HinatiaGame {
       target.status.auraDown = 2;
       this.battle.log = `暗黒のつぶやき！　${target.name}に${damage}のダメージ、オーラが低下。`;
       this.shake();
+    } else if (action === "seedShot") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.mag, this.effectiveStat(target, "def"), 0.82),
+        "earth",
+      );
+      target.status.poison = 3;
+      this.battle.log = `${enemy.name}の毒種弾！　${target.name}に${damage}、毒に侵された。`;
+    } else if (action === "rootBind") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.atk, this.effectiveStat(target, "def"), 0.72),
+      );
+      target.status.rooted = 3;
+      this.battle.log = `${enemy.name}の根縛り！　${target.name}に${damage}、動きが鈍った。`;
+    } else if (action === "stealBread") {
+      const damage = this.hurtParty(
+        target,
+        this.calculateDamage(enemy.atk, this.effectiveStat(target, "def"), 0.78),
+      );
+      this.state.happy = Math.max(0, this.state.happy - 8);
+      this.battle.log = `${enemy.name}が明るい気配をついばんだ！　${damage}ダメージ、ゲージが8減った。`;
+    } else if (action === "seedStorm") {
+      let total = 0;
+      for (const member of living)
+        total += this.hurtParty(
+          member,
+          this.calculateDamage(enemy.mag || enemy.atk, this.effectiveStat(member, "def"), 0.66),
+          "earth",
+        );
+      this.battle.log = `${enemy.name}の種の嵐！　味方全体に合計${total}のダメージ。`;
+      this.shake();
+    } else if (action === "flourCloud") {
+      for (const member of living) {
+        if (Math.random() < 0.55) member.status.auraDown = 2;
+      }
+      this.battle.log = `${enemy.name}の小麦粉雲！　味方の魔力と攻撃が曇った。`;
+      this.audio.sfx("no");
+    } else if (action === "devour") {
+      const amount = Math.min(28, this.state.happy);
+      this.state.happy -= amount;
+      const heal = Math.min(enemy.maxHp - enemy.hp, amount * 2);
+      enemy.hp += heal;
+      this.battle.log = `${enemy.name}はハッピーオーラを喰らい、${heal}回復した！`;
+      this.audio.sfx("no");
     }
   }
 
@@ -2019,6 +2400,12 @@ export class HinatiaGame {
         const damage = Math.max(2, Math.ceil(maxHp(member) * 0.06));
         member.hp = Math.max(0, member.hp - damage);
         this.battle.log = `${member.name}は毒で${damage}のダメージ。`;
+      }
+      if (member.status.regen) {
+        const healed = Math.min(Math.ceil(maxHp(member) * 0.08), maxHp(member) - member.hp);
+        member.hp += healed;
+        this.state.stats.healingDone += healed;
+        if (healed > 0) this.battle.log = `${member.name}はパンの香りで${healed}回復。`;
       }
       for (const key of Object.keys(member.status)) {
         if (typeof member.status[key] === "number" && member.status[key] > 0)
@@ -2048,6 +2435,7 @@ export class HinatiaGame {
     if (key === "mag" && character.status.magUp) value *= 1.3;
     if (key === "def" && character.status.defUp) value *= 1.32;
     if (key === "spd" && character.status.haste) value *= 1.45;
+    if (key === "spd" && character.status.rooted) value *= 0.58;
     if (["atk", "mag"].includes(key) && character.status.auraDown) value *= 0.76;
     return Math.round(value);
   }
@@ -2055,6 +2443,7 @@ export class HinatiaGame {
   enemyStat(enemy, key) {
     let value = enemy[key] || 0;
     if (key === "def" && enemy.guarding) value *= 1.8;
+    if (["atk", "mag"].includes(key) && enemy.status?.atkDown) value *= 0.72;
     return Math.round(value);
   }
 
@@ -2065,6 +2454,13 @@ export class HinatiaGame {
         (entry) => entry.kind === "anxietyShade" && entry.hp > 0,
       );
       if (this.battle.barrierBrokenRounds <= 0) damage = Math.max(1, Math.round(damage * (adds ? 0.42 : 0.68)));
+    }
+    if (enemy.kind === "blightHeart" && this.battle.barrier) {
+      const roots = this.battle.enemies.some(
+        (entry) => entry.kind === "dryRoot" && entry.hp > 0,
+      );
+      if (this.battle.barrierBrokenRounds <= 0)
+        damage = Math.max(1, Math.round(damage * (roots ? 0.38 : 0.72)));
     }
     if (enemy.guarding && enemy.weakness !== element)
       damage = Math.max(1, Math.round(damage * 0.58));
@@ -2088,6 +2484,16 @@ export class HinatiaGame {
     ) {
       this.battle.barrier = false;
       this.battle.log += "　孤立を守る影が消え、障壁が砕けた！";
+    }
+    if (
+      enemy.kind === "dryRoot" &&
+      enemy.hp <= 0 &&
+      !this.battle.enemies.some(
+        (entry) => entry !== enemy && entry.kind === "dryRoot" && entry.hp > 0,
+      )
+    ) {
+      this.battle.barrier = false;
+      this.battle.log += "　二本の根が枯れ、飢渇核の殻が崩れた！";
     }
   }
 
@@ -2167,12 +2573,16 @@ export class HinatiaGame {
       this.finishRaid(levelLines);
     } else if (story === "chapterBoss") {
       this.finishChapterBoss(levelLines);
+    } else if (story === "scarecrow") {
+      this.finishScarecrow(levelLines);
+    } else if (story === "chapter2Boss") {
+      this.finishChapter2Boss(levelLines);
     } else {
       this.setMode("map");
       this.audio.play(
-        this.state.map === "solaido"
+        ["solaido", "mileria"].includes(this.state.map)
           ? "town"
-          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove"].includes(this.state.map)
+          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2"].includes(this.state.map)
             ? "cave"
             : "field",
       );
@@ -2266,6 +2676,7 @@ export class HinatiaGame {
   finishChapterBoss(levelLines = []) {
     this.state.flags.bossWon = true;
     this.state.flags.chapter1Clear = true;
+    this.state.quests.chapter1 = "complete";
     this.state.happy = 100;
     fullHeal(this.state);
     this.audio.play("clear");
@@ -2294,6 +2705,105 @@ export class HinatiaGame {
         },
       ],
       () => this.showChapterClear(),
+    );
+  }
+
+  finishScarecrow(levelLines = []) {
+    this.state.flags.scarecrowWon = true;
+    this.audio.play("field");
+    this.dialogue(
+      [
+        ...levelLines,
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "枯れ穂の番人が崩れ、黄金麦を覆っていた黒い糸が消えた。畑の奥を調べられる。",
+        },
+      ],
+      () => {
+        this.setMode("map");
+        this.refreshHud();
+        this.refreshInteractPrompt();
+        this.autosave();
+      },
+    );
+  }
+
+  startChapter2Boss() {
+    if (this.state.flags.chapter2BossWon) {
+      this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "枯れた根の間から、新しい麦の芽が顔を出している。" });
+      return;
+    }
+    if (!this.state.flags.mireiJoined) {
+      this.dialogue({ speaker: "SYSTEM", portrait: "system", text: "腐蝕の瘴気が濃すぎる。パンの香りで守りを得なければ近づけない。" });
+      return;
+    }
+    this.state.flags.chapter2BossSeen = true;
+    discoverRumor(this.state, "blightCore");
+    this.dialogue(
+      [
+        {
+          speaker: "飢渇核グラノア",
+          portrait: "system",
+          text: "ワケアエバ、足リナクナル。求メナケレバ、飢エルコトモナイ。",
+        },
+        {
+          speaker: "美玲",
+          portrait: "mirei",
+          text: "一つのパンでも、分けたら笑顔は増えるよ。足りないなら、また一緒に作ればいい！",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "二本の根が核を守っている。大技の予告を見逃さず、炎と防御を使い分けよう！",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "渇きの根を先に倒すと障壁が消える。美玲の聖火は植物の弱点を突き、攻撃力も下げられる。",
+        },
+      ],
+      () =>
+        this.startBattle(["blightHeart", "dryRoot", "dryRoot"], {
+          story: "chapter2Boss",
+          canEscape: false,
+        }),
+    );
+  }
+
+  finishChapter2Boss(levelLines = []) {
+    this.state.flags.chapter2BossWon = true;
+    this.state.flags.chapter2Clear = true;
+    this.state.flags.postClear = false;
+    this.state.quests.chapter2 = "complete";
+    this.state.happy = 100;
+    fullHeal(this.state);
+    this.audio.play("clear");
+    this.dialogue(
+      [
+        ...levelLines,
+        {
+          speaker: "美玲",
+          portrait: "mirei",
+          text: "思い出した。誰かがおいしいって笑ってくれると、私も元気になれた。だから、何度でも作りたかったんだ。",
+        },
+        {
+          speaker: "久美",
+          portrait: "kumi",
+          text: "美玲、その笑顔も、みんなにパンを配って回るところも変わってない。",
+        },
+        {
+          speaker: "SYSTEM",
+          portrait: "system",
+          text: "金色の光が実った麦畑を走り、二つ目のハッピーオーラの欠片へ結晶した。",
+        },
+        {
+          speaker: "美玲",
+          portrait: "mirei",
+          text: "風の向こうから、鈴の音がする。次の人も、きっと私たちを待ってるよ。",
+        },
+      ],
+      () => this.showChapterClear(2),
     );
   }
 
@@ -2490,11 +3000,32 @@ export class HinatiaGame {
       return "騎士団の蒼天章で空泣き洞の封印を開ける。B2では水門と近道を探そう。";
     if (!this.state.flags.bossWon)
       return "不安の影、キャプテンコール、光鳴りの鈴。障壁への対処を選ぼう。";
-    return "第一章の地域に残る宝や依頼を探すか、西の国へ向かう準備をしよう。";
+    if (!this.state.flags.chapter2Started)
+      return "ソラシド近郊の西端から、地続きの陽だまり街道へ進める。";
+    if (!this.state.flags.metMirei)
+      return "陽だまり街道を西へ進み、パンの国ミレリアで話を聞こう。";
+    if (!this.state.flags.mireiJoined) {
+      const count = ["goldenWheat", "springWater", "sunYeast"]
+        .filter((id) => (this.state.inventory[id] || 0) > 0).length;
+      return `パンの材料は${count}/3個。黄金麦は街道の畑、清水と酵母は風車の丘にある。`;
+    }
+    if (!this.state.flags.chapter2BossSeen)
+      return "街道北東の黒い蔓が消えた。美玲と地下穀倉を探索しよう。";
+    if (!this.state.flags.chapter2BossWon)
+      return "二本の根を炎で崩し、大技予告には防御とハッピーブレッドを合わせよう。";
+    return "第二章を達成した。残る依頼を探すか、次の地域へ備えよう。";
   }
 
   renderRumorsMenu() {
-    const questOrder = ["chapter1", "dewMedicine", "lostRibbon", "lostMiner"];
+    const questOrder = [
+      "chapter1",
+      "chapter2",
+      "miracleBread",
+      "hungryChildren",
+      "dewMedicine",
+      "lostRibbon",
+      "lostMiner",
+    ];
     const questRows = questOrder
       .filter((id) => this.state.quests[id] !== "locked")
       .map((id) => {
@@ -2534,7 +3065,7 @@ export class HinatiaGame {
         .filter(([, quantity]) => quantity > 0)
         .map(([id, quantity]) => {
           const item = ITEMS[id];
-          const fieldUsable = ["herb", "moonwort", "auraDrop", "torch", "wing", "lifeSeed"].includes(id);
+          const fieldUsable = ["herb", "happyBread", "moonwort", "auraDrop", "torch", "wing", "lifeSeed"].includes(id);
           return `<div class="list-row">
             <div><h3>${item.name} ×${quantity} <span class="tag">${this.itemTypeName(item.type)}</span></h3><p>${item.description}</p></div>
             ${fieldUsable ? `<button data-use-item="${id}">使う</button>` : ""}
@@ -2569,6 +3100,20 @@ export class HinatiaGame {
       const healed = Math.min(35, maxHp(target) - target.hp);
       target.hp += healed;
       this.toast(`${target.name}のHPが${healed}回復`);
+      this.audio.sfx("heal");
+    } else if (id === "happyBread") {
+      const wounded = activeParty(this.state).filter(
+        (member) => member.hp > 0 && member.hp < maxHp(member),
+      );
+      if (!wounded.length) return this.toast("HPは満タンだ");
+      removeItem(this.state, id, 1);
+      let total = 0;
+      for (const member of wounded) {
+        const healed = Math.min(25, maxHp(member) - member.hp);
+        member.hp += healed;
+        total += healed;
+      }
+      this.toast(`みんなで分け合い、合計${total}回復`);
       this.audio.sfx("heal");
     } else if (id === "moonwort") {
       const target = activeParty(this.state).find((member) =>
@@ -2655,11 +3200,15 @@ export class HinatiaGame {
 
   renderMapMenu() {
     const markers = [
-      ["camp", "野営地", 49, 79],
-      ["solaido", "王都", 47, 14],
-      ["echoGrove", "こだまの森", 16, 31],
-      ["oldWell", "忘れ井戸", 27, 75],
-      ["cave1", "空泣き洞", 86, 26],
+      ["camp", "野営地", 58, 79],
+      ["solaido", "王都", 57, 14],
+      ["echoGrove", "こだまの森", 36, 31],
+      ["oldWell", "忘れ井戸", 42, 75],
+      ["cave1", "空泣き洞", 88, 26],
+      ["mireRoad", "陽だまり街道", 24, 54],
+      ["mileria", "ミレリア", 7, 46],
+      ["sunmill", "風車の丘", 23, 17],
+      ["granary1", "地下穀倉", 34, 62],
     ];
     const currentKey =
       this.state.map === "highroad"
@@ -2670,7 +3219,11 @@ export class HinatiaGame {
             ? "echoGrove"
             : this.state.map === "oldWell"
               ? "oldWell"
-              : "cave1";
+              : ["mireRoad", "mileria", "sunmill"].includes(this.state.map)
+                ? this.state.map
+                : ["granary1", "granary2"].includes(this.state.map)
+                  ? "granary1"
+                  : "cave1";
     const markerHtml = markers
       .filter(([id]) => this.state.discoveries[id])
       .map(
@@ -2700,6 +3253,10 @@ export class HinatiaGame {
       echoGrove: "朝露草が育ち、古い祠が眠る西の森。",
       oldWell: "水路の流れ着く古井戸。小さな宝が眠る。",
       cave1: "魔物の気配が集まる青岩の洞窟。奥は三層に続く。",
+      mireRoad: "ソラシドとミレリアを地続きで結ぶ、麦畑の街道。",
+      mileria: "パン工房と市場が並ぶ実りの国。今は作物が枯れている。",
+      sunmill: "清水と陽だまり酵母が残る、風の強い丘。",
+      granary1: "黒い蔓の根源が潜む二層の地下穀倉。",
     }[id];
   }
 
@@ -2715,7 +3272,7 @@ export class HinatiaGame {
       </div>
       <div class="info-card" style="margin-top:7px">
         <h3>現在の記録</h3>
-        <p>${MAPS[this.state.map].name} / ${this.formatTime(this.currentPlayTime())} / ${this.state.gold} G / ${this.state.flags.chapter1Clear ? "第一章クリア" : "第一章冒険中"}</p>
+        <p>${MAPS[this.state.map].name} / ${this.formatTime(this.currentPlayTime())} / ${this.state.gold} G / ${this.state.flags.chapter2Clear ? "第二章クリア" : this.state.flags.chapter1Clear ? "第二章冒険中" : "第一章冒険中"}</p>
       </div>`;
   }
 
@@ -2820,7 +3377,14 @@ export class HinatiaGame {
               ? ""
               : `<button data-save-slot="${id}">記録</button>`
             : `<button data-load-slot="${id}" ${!value ? "disabled" : ""}>再開</button>`;
-        return `<article class="save-card"><b>${label}</b><div><strong>${value?.flags?.chapter1Clear ? "第一章クリア" : value ? "冒険中" : "—"}</strong><small>${details}</small></div>${action}</article>`;
+        const progress = value?.flags?.chapter2Clear
+          ? "第二章クリア"
+          : value?.flags?.chapter1Clear
+            ? "第二章進行中"
+            : value
+              ? "第一章進行中"
+              : "—";
+        return `<article class="save-card"><b>${label}</b><div><strong>${progress}</strong><small>${details}</small></div>${action}</article>`;
       })
       .join("");
     const legacy = this.findLegacySave();
@@ -2897,14 +3461,16 @@ export class HinatiaGame {
     this.state = normalizeState(value);
     this.buildMapEnemies();
     this.audio.sfx("save");
-    if (this.state.flags.chapter1Clear && !this.state.flags.postClear) {
-      this.showChapterClear();
+    if (this.state.flags.chapter2Clear && !this.state.flags.postClear) {
+      this.showChapterClear(2);
+    } else if (this.state.flags.chapter1Clear && !this.state.flags.postClear) {
+      this.showChapterClear(1);
     } else {
       this.setMode("map");
       this.audio.play(
-        this.state.map === "solaido"
+        ["solaido", "mileria"].includes(this.state.map)
           ? "town"
-          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove"].includes(this.state.map)
+          : ["cave1", "cave2", "cave3", "oldWell", "echoGrove", "granary1", "granary2"].includes(this.state.map)
             ? "cave"
             : "field",
       );
@@ -2952,8 +3518,14 @@ export class HinatiaGame {
     }
   }
 
-  showChapterClear() {
-    this.state.flags.chapter1Clear = true;
+  showChapterClear(chapter = 1) {
+    if (chapter === 1) this.state.flags.chapter1Clear = true;
+    this.ui.clearKicker.textContent = `CHAPTER ${chapter === 1 ? "I" : "II"} COMPLETE`;
+    this.ui.clearHeading.textContent = chapter === 1 ? "空色の騎士団長" : "枯れた麦畑と奇跡のパン";
+    this.ui.clearReward.textContent =
+      chapter === 1
+        ? "ハッピーオーラの欠片を手に入れた！"
+        : "二つ目のハッピーオーラの欠片を手に入れた！";
     this.ui.clearSummary.textContent = `${this.state.steps}歩・${this.state.victories}勝・宝箱${this.state.stats.chests}個・噂${this.state.stats.rumors}件・寄り道${this.state.stats.sidequests}件`;
     this.setMode("clear");
     this.audio.play("clear");
@@ -2961,12 +3533,18 @@ export class HinatiaGame {
   }
 
   continueAfterClear() {
+    const chapter2 = this.state.flags.chapter2Clear;
     this.state.flags.postClear = true;
-    this.state.map = "solaido";
-    this.state.x = 19;
+    this.state.map = chapter2 ? "mileria" : "solaido";
+    this.state.x = chapter2 ? 20 : 19;
     this.state.y = 27;
     this.state.dir = "up";
-    this.state.lastSafe = { map: "solaido", x: 19, y: 27, dir: "up" };
+    this.state.lastSafe = {
+      map: this.state.map,
+      x: this.state.x,
+      y: this.state.y,
+      dir: "up",
+    };
     this.buildMapEnemies();
     this.setMode("map");
     this.audio.play("town");
@@ -3048,6 +3626,7 @@ export class HinatiaGame {
     this.drawLandmarks(now);
     for (const special of m.specials) {
       if (special.type === "boss" && this.state.flags.bossWon) continue;
+      if (special.type === "boss2" && this.state.flags.chapter2BossWon) continue;
       if (["shop", "inn", "church", "hiddenWall", "bridgeGate", "shortcut"].includes(special.type))
         continue;
       const key = `${m.id}:${special.id}`;
@@ -3073,6 +3652,7 @@ export class HinatiaGame {
 
     for (const npc of m.npcs) {
       if (npc.id === "lostMiner" && this.state.flags.minerFound) continue;
+      if (npc.id === "mirei" && this.state.flags.mireiJoined) continue;
       this.renderer.drawCharacter(
         npc.type,
         npc.x * T + 4 - this.camera.x,
@@ -3106,6 +3686,19 @@ export class HinatiaGame {
         !this.state.flags.kumiJoined,
       );
     }
+    if (this.state.party.order.includes("mirei")) {
+      const [dx, dy] = DIRS[this.state.dir];
+      const fx = this.state.x - dx * 2;
+      const fy = this.state.y - dy * 2;
+      this.renderer.drawCharacter(
+        "mirei",
+        fx * T + 4 - this.camera.x,
+        fy * T + 1 - this.camera.y,
+        this.state.dir,
+        this.walkFrame,
+        1,
+      );
+    }
     this.renderer.drawCharacter(
       "hero",
       this.state.x * T + 4 - this.camera.x,
@@ -3119,12 +3712,18 @@ export class HinatiaGame {
   }
 
   drawLandmarks(now) {
-    if (this.state.map !== "highroad") return;
-    const points = [
-      { x: 25, y: 2, type: "castle" },
-      { x: 47, y: 7, type: "cave" },
-      { x: 8, y: 9, type: "grove" },
-    ];
+    if (!["highroad", "mireRoad"].includes(this.state.map)) return;
+    const points = this.state.map === "highroad"
+      ? [
+          { x: 25, y: 2, type: "castle" },
+          { x: 47, y: 7, type: "cave" },
+          { x: 8, y: 9, type: "grove" },
+        ]
+      : [
+          { x: 3, y: 16, type: "town" },
+          { x: 24, y: 3, type: "mill" },
+          { x: 42, y: 5, type: "granary" },
+        ];
     for (const point of points) {
       const x = point.x * T + 16 - this.camera.x;
       const y = point.y * T + 16 - this.camera.y;
@@ -3134,10 +3733,22 @@ export class HinatiaGame {
         this.renderer.rect(x - 20, y - 24, 40, 28, "#566675");
         this.renderer.rect(x - 13, y - 16, 26, 21, "#0a1220");
         this.renderer.rect(x - 5, y - 28 + Math.sin(now / 300) * 2, 10, 20, "#67d5e9");
-      } else {
+      } else if (point.type === "grove") {
         this.renderer.rect(x - 18, y - 28, 36, 30, "#1d573f");
         this.renderer.rect(x - 12, y - 38, 24, 33, "#438668");
         this.renderer.rect(x - 5, y - 44, 10, 18, "#8bd2a1");
+      } else if (point.type === "town") {
+        this.renderer.rect(x - 24, y - 24, 48, 27, "#8c6848");
+        this.renderer.rect(x - 19, y - 35, 38, 14, "#d7af59");
+        this.renderer.rect(x - 6, y - 13, 12, 16, "#352c2c");
+      } else if (point.type === "mill") {
+        this.renderer.rect(x - 7, y - 35, 14, 39, "#d1c19b");
+        this.renderer.rect(x - 30, y - 25, 60, 5, "#795f42");
+        this.renderer.rect(x - 3, y - 50, 6, 60, "#9b794e");
+      } else {
+        this.renderer.rect(x - 22, y - 20, 44, 24, "#554530");
+        this.renderer.rect(x - 15, y - 13, 30, 18, "#171411");
+        this.renderer.rect(x - 5, y - 30 + Math.sin(now / 300) * 2, 10, 20, "#c6a33d");
       }
     }
   }
@@ -3167,7 +3778,15 @@ export class HinatiaGame {
         ? { map: "solaido", x: 20, y: 6, label: "聞き込み" }
         : !this.state.flags.bossWon
           ? { map: "highroad", x: 47, y: 7, label: "空泣き洞" }
-          : null;
+          : !this.state.flags.chapter2Started
+            ? { map: "highroad", x: 1, y: 18, label: "西の国" }
+            : !this.state.flags.metMirei
+              ? { map: "mireRoad", x: 2, y: 16, label: "ミレリア" }
+              : !this.state.flags.mireiJoined
+                ? { map: "mileria", x: 23, y: 10, label: "美玲" }
+                : !this.state.flags.chapter2BossWon
+                  ? { map: "mireRoad", x: 42, y: 5, label: "地下穀倉" }
+                  : null;
     if (!target || target.map !== this.state.map) return;
     const dx = target.x - this.state.x;
     const dy = target.y - this.state.y;
@@ -3192,21 +3811,21 @@ export class HinatiaGame {
       if (enemy.hp <= 0) return;
       const [x, y] = positions[index] || [400 + index * 70, 145];
       if (
-        enemy.kind === "smileEater" &&
+        ["smileEater", "blightHeart"].includes(enemy.kind) &&
         this.battle.barrier &&
         this.battle.barrierBrokenRounds <= 0
       ) {
         const ctx = this.renderer.ctx;
         ctx.save();
         ctx.globalAlpha = 0.25 + Math.sin(now / 180) * 0.08;
-        ctx.strokeStyle = "#b68fd2";
+        ctx.strokeStyle = enemy.kind === "blightHeart" ? "#e0b84f" : "#b68fd2";
         ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.ellipse(x, y - 10, 78, 80, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
-      const scale = enemy.kind === "smileEater" ? 1.08 : enemy.boss ? 1 : 0.82;
+      const scale = ["smileEater", "blightHeart"].includes(enemy.kind) ? 1.08 : enemy.boss ? 1 : 0.82;
       this.renderer.drawBattleEnemy(
         enemy.sprite,
         x,
