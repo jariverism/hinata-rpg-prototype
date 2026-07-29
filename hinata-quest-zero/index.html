@@ -17,7 +17,14 @@
   <body>
     <main id="app">
       <section id="stage" aria-label="日向坂クエスト0 ゲーム画面">
-        <canvas id="game" width="640" height="360"></canvas>
+        <canvas
+          id="game"
+          width="1280"
+          height="720"
+          data-logical-width="640"
+          data-logical-height="360"
+          aria-label="1280×720 高精細ゲーム描画"
+        ></canvas>
 
         <header id="field-hud" class="field-hud hidden" aria-live="polite">
           <div class="location-block">
@@ -48,7 +55,7 @@
               <em>0</em>
               <small>ハッピーオーラを求めて</small>
             </h1>
-            <p class="rebuild">STARCODE UPDATE — CHAPTER I–V</p>
+            <p class="rebuild">HIGH-DENSITY UPDATE — CHAPTER I–V</p>
           </div>
           <nav class="title-menu" aria-label="タイトルメニュー">
             <button data-title="new" class="selected">
@@ -100,7 +107,7 @@
         </section>
 
         <section id="dialogue" class="dialogue hidden" aria-live="polite">
-          <canvas id="portrait" width="84" height="84"></canvas>
+          <canvas id="portrait" width="168" height="168"></canvas>
           <div class="dialogue-copy">
             <strong id="speaker">？？？</strong>
             <p id="dialogue-text"></p>

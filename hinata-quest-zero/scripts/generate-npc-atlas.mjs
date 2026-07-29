@@ -7,6 +7,7 @@ import { NPC_SPRITE_IDS } from "../src/art-manifest.js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "assets", "art", "npc-sprites.png");
 const frameSize = 32;
+const pixelDensity = 2;
 const directions = ["down", "left", "right", "up"];
 const frames = 4;
 
@@ -42,13 +43,23 @@ const designs = {
 if (Object.keys(designs).length !== NPC_SPRITE_IDS.length)
   throw new Error("NPC design manifest is out of sync.");
 
-const canvas = createCanvas(frameSize * directions.length * frames, frameSize * NPC_SPRITE_IDS.length);
+const canvas = createCanvas(
+  frameSize * directions.length * frames * pixelDensity,
+  frameSize * NPC_SPRITE_IDS.length * pixelDensity,
+);
 const ctx = canvas.getContext("2d");
+ctx.scale(pixelDensity, pixelDensity);
 ctx.imageSmoothingEnabled = false;
 
 function rect(x, y, width, height, color) {
+  const snap = (value) => Math.round(value * pixelDensity) / pixelDensity;
   ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+  ctx.fillRect(
+    snap(x),
+    snap(y),
+    Math.max(0.5, snap(width)),
+    Math.max(0.5, snap(height)),
+  );
 }
 
 function drawSprite(id, originX, originY, direction, frame) {
@@ -179,6 +190,31 @@ function drawSprite(id, originX, originY, direction, frame) {
     p(21, 17 + arm, 10, 7, "#c99d4e");
     p(20, 15 + arm, 4, 5, "#f1d17a");
     p(28, 18 + arm, 3, 3, "#704738");
+  }
+
+  // One-physical-pixel facial, cloth and equipment accents for the 2× atlas.
+  p(11.5, direction === "up" ? 7.5 : 5.5, 6, 0.5, trim);
+  p(10, 17.5, 12, 0.5, "rgba(255,255,255,.42)");
+  p(11.5, 20.5, 0.5, 3.5, trim);
+  p(20, 20.5, 0.5, 3.5, dark);
+  p(9.5, 28.5, 4, 0.5, "#68717b");
+  p(19, 28.5, 4, 0.5, "#68717b");
+  if (direction !== "up") {
+    if (side) {
+      p(17, 10.5, 0.5, 0.5, "#f4fbff");
+    } else {
+      p(12.5, 11.5, 0.5, 0.5, "#f4fbff");
+      p(19.5, 11.5, 0.5, 0.5, "#f4fbff");
+      p(15.5, 15, 2.5, 0.5, "#f09aa3");
+    }
+  }
+  if (["staff", "cane", "crozier", "bow", "rod", "fork"].includes(feature))
+    p(26.5, 5, 0.5, 21, "#e4d4a0");
+  if (["book", "pack", "satchel", "basket", "flowers", "sack"].includes(feature))
+    p(23, 18 + arm, 4.5, 0.5, "#f1d48a");
+  if (feature === "aura") {
+    p(7.5, 8.5, 0.5, 0.5, "#ffffff");
+    p(27, 13.5, 0.5, 0.5, "#f5ffcd");
   }
 }
 

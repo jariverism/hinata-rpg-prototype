@@ -135,7 +135,10 @@ export class HinatiaGame {
       toast: $("toast"),
       touch: $("touch-controls"),
     };
-    this.renderer = new PixelRenderer(this.ui.canvas);
+    this.renderer = new PixelRenderer(this.ui.canvas, {
+      logicalWidth: W,
+      logicalHeight: H,
+    });
     this.state = createState();
     this.mode = "title";
     this.previousMode = "map";

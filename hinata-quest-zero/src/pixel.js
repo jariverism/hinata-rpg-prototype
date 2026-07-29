@@ -7,6 +7,7 @@ import {
 } from "./art-manifest.js";
 
 const TWO_PI = Math.PI * 2;
+const FIELD_SPRITE_SOURCE = 64;
 const PARTY_ROWS = rowMap(PARTY_SPRITE_IDS);
 const NPC_ROWS = rowMap(NPC_SPRITE_IDS);
 const ENEMY_CELLS = rowMap(ENEMY_SPRITE_IDS);
@@ -36,12 +37,24 @@ const ART_URLS = Object.freeze({
 });
 
 export class PixelRenderer {
-  constructor(canvas, { alpha = false } = {}) {
+  constructor(
+    canvas,
+    {
+      alpha = false,
+      logicalWidth = canvas.width,
+      logicalHeight = canvas.height,
+    } = {},
+  ) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d", { alpha });
+    this.width = logicalWidth;
+    this.height = logicalHeight;
+    this.pixelDensity = Math.max(
+      1,
+      Math.min(canvas.width / logicalWidth, canvas.height / logicalHeight),
+    );
+    this.ctx.setTransform?.(this.pixelDensity, 0, 0, this.pixelDensity, 0, 0);
     this.ctx.imageSmoothingEnabled = false;
-    this.width = canvas.width;
-    this.height = canvas.height;
     this.assets = {};
     const ImageClass = globalThis.Image;
     if (ImageClass) {
@@ -62,6 +75,18 @@ export class PixelRenderer {
   rect(x, y, w, h, color) {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  }
+
+  microRect(x, y, w, h, color) {
+    const unit = 1 / this.pixelDensity;
+    const snap = (value) => Math.round(value / unit) * unit;
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(
+      snap(x),
+      snap(y),
+      Math.max(unit, snap(w)),
+      Math.max(unit, snap(h)),
+    );
   }
 
   outline(x, y, w, h, fill, stroke = "#071426", size = 2) {
@@ -505,8 +530,68 @@ export class PixelRenderer {
         this.rect(x, y, 32, 32, "#080c14");
         break;
     }
+    this.drawTileHighDensity(type, x, y, wx, wy, now, palette, family);
     if (neighbors)
       this.drawTileEdges(type, x, y, wx, wy, neighbors, palette, family);
+  }
+
+  drawTileHighDensity(type, x, y, wx, wy, now, palette, family) {
+    if (this.pixelDensity < 2) return;
+    const dot = (xx, yy, width, height, color) =>
+      this.microRect(x + xx, y + yy, width, height, color);
+    const seed = Math.abs(wx * 41 + wy * 67);
+    const sx = (seed % 23) + 3.5;
+    const sy = ((seed * 7) % 21) + 4.5;
+
+    if ([TILE.GRASS, TILE.MOSS, TILE.FLOWER].includes(type)) {
+      dot(sx, sy, 0.5, 2.5, palette.grassDark);
+      dot(sx + 0.5, sy - 1, 0.5, 1.5, palette.grassLight);
+      dot((sx + 11) % 27 + 2, (sy + 13) % 25 + 3, 2.5, 0.5, palette.grassLight);
+      dot((sx + 17) % 28 + 1, (sy + 6) % 25 + 3, 0.5, 0.5, family === "arcane" ? "#c9b9f2" : "#d7f3bd");
+    } else if ([TILE.PATH, TILE.SAND, TILE.MUD].includes(type)) {
+      dot(sx, sy, 2, 0.5, palette.pathLight);
+      dot((sx + 12) % 26 + 2, (sy + 9) % 25 + 3, 0.5, 1.5, palette.pathDark);
+      dot((sx + 19) % 27 + 2, (sy + 16) % 26 + 2, 1, 0.5, palette.pathDark);
+      if (seed % 3 === 0) dot(13.5, 8.5, 4, 0.5, "rgba(237,230,211,.28)");
+    } else if ([TILE.STONE, TILE.FLOOR, TILE.WALL, TILE.CLIFF, TILE.PILLAR].includes(type)) {
+      dot(sx, sy, 3.5, 0.5, palette.stoneLight);
+      dot(sx + 3, sy + 0.5, 0.5, 2, palette.stoneDark);
+      dot((sx + 14) % 26 + 2, (sy + 12) % 25 + 3, 1.5, 0.5, palette.stoneDark);
+      dot((sx + 4) % 27 + 2, (sy + 19) % 26 + 2, 0.5, 0.5, family === "arcane" ? "#aaa6cc" : palette.stoneLight);
+    } else if ([TILE.WATER, TILE.REEDS].includes(type)) {
+      const drift = Math.floor(now / 180 + wx + wy) % 4;
+      dot(3.5 + drift, 5.5 + (seed % 7), 7.5, 0.5, palette.waterLight);
+      dot(18.5 - drift, 16.5 + (seed % 5), 5, 0.5, "rgba(215,250,255,.65)");
+      dot(10.5 + drift, 28.5, 3.5, 0.5, palette.waterDark);
+    } else if ([TILE.TREE, TILE.ROOT].includes(type)) {
+      dot(sx, sy, 1.5, 0.5, palette.treeLight);
+      dot((sx + 9) % 24 + 4, (sy + 8) % 18 + 3, 0.5, 2, palette.treeDark);
+      dot(14.5, 23.5, 0.5, 6, "#9a6b42");
+      dot(18.5, 25.5, 0.5, 3, "#4d3729");
+    } else if ([TILE.ROOF, TILE.WOOD, TILE.BRIDGE, TILE.DOOR].includes(type)) {
+      dot(sx, sy, 5, 0.5, family === "arcane" ? "#aaa0cd" : "#d39b63");
+      dot(sx + 5, sy, 0.5, 1, "#49362e");
+      dot((sx + 15) % 26 + 2, (sy + 14) % 25 + 3, 0.5, 0.5, "#f0c77d");
+    } else if (type === TILE.BOOKSHELF) {
+      for (let shelf = 0; shelf < 2; shelf += 1) {
+        const yy = 7.5 + shelf * 13;
+        dot(6.5 + (seed % 4) * 5, yy, 0.5, 5.5, "#f2dd93");
+        dot(8, yy + 1, 0.5, 0.5, "#fff4c4");
+        dot(21.5, yy + 5, 4, 0.5, "#b58ec2");
+      }
+    } else if ([TILE.GLASS, TILE.CRYSTAL, TILE.RUNE, TILE.LANTERN].includes(type)) {
+      const pulse = 0.55 + Math.sin(now / 260 + seed) * 0.25;
+      this.ctx.save();
+      this.ctx.globalAlpha = pulse;
+      dot(9.5, 7.5, 0.5, 9, "#f4ffff");
+      dot(10, 7.5, 3.5, 0.5, "#f4ffff");
+      dot(22.5, 20.5, 1, 0.5, family === "arcane" ? "#d6c4ff" : "#a9efff");
+      this.ctx.restore();
+    } else if ([TILE.CAVE, TILE.ROCK, TILE.RUIN, TILE.STAIRS].includes(type)) {
+      dot(sx, sy, 3, 0.5, palette.stoneLight);
+      dot(sx + 2.5, sy + 0.5, 0.5, 2.5, palette.stoneDark);
+      dot((sx + 13) % 26 + 2, (sy + 17) % 25 + 3, 0.5, 0.5, "#c1c5bb");
+    }
   }
 
   drawTileEdges(type, x, y, wx, wy, neighbors, palette, family) {
@@ -687,10 +772,10 @@ export class PixelRenderer {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
         this.assets[atlasId],
-        (direction * 4 + animationFrame) * 32,
-        atlasRow * 32,
-        32,
-        32,
+        (direction * 4 + animationFrame) * FIELD_SPRITE_SOURCE,
+        atlasRow * FIELD_SPRITE_SOURCE,
+        FIELD_SPRITE_SOURCE,
+        FIELD_SPRITE_SOURCE,
         Math.round(x - 4),
         Math.round(y),
         Math.round(32 * s),
@@ -2299,10 +2384,10 @@ export class PixelRenderer {
       ctx.translate(0, Math.sin(frame / 350 + x) * 1.5);
       ctx.drawImage(
         this.assets.party,
-        (DIRECTION_COLUMNS.up * 4 + animationFrame) * 32,
-        PARTY_ROWS[type] * 32,
-        32,
-        32,
+        (DIRECTION_COLUMNS.up * 4 + animationFrame) * FIELD_SPRITE_SOURCE,
+        PARTY_ROWS[type] * FIELD_SPRITE_SOURCE,
+        FIELD_SPRITE_SOURCE,
+        FIELD_SPRITE_SOURCE,
         Math.round(x - 20),
         Math.round(y - 28),
         40,

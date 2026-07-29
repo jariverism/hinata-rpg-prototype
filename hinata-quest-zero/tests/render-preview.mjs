@@ -38,8 +38,11 @@ function tileNeighbors(map, x, y) {
 }
 
 function save(name, draw) {
-  const canvas = createCanvas(640, 360);
-  const renderer = new PixelRenderer(canvas);
+  const canvas = createCanvas(1280, 720);
+  const renderer = new PixelRenderer(canvas, {
+    logicalWidth: 640,
+    logicalHeight: 360,
+  });
   Object.assign(renderer.assets, loadedAssets);
   draw(renderer);
   fs.writeFileSync(path.join(output, `${name}.png`), canvas.toBuffer("image/png"));
@@ -234,7 +237,7 @@ save("katoshia-boss", (renderer) => {
 save("portraits", (renderer) => {
   renderer.clear("#08182b");
   ["hero", "kumi", "mirei", "sarina", "katoshi", "manaka"].forEach((type, index) => {
-    const portrait = createCanvas(84, 84);
+    const portrait = createCanvas(168, 168);
     renderer.drawPortrait(portrait, type);
     renderer.ctx.drawImage(portrait, 14 + index * 104, 116, 84, 84);
     renderer.text(type.toUpperCase(), 56 + index * 104, 208, "#e7f8ff", 8, "center");

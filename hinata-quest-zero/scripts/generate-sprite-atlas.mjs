@@ -6,6 +6,7 @@ import { createCanvas } from "@napi-rs/canvas";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "assets", "art", "party-sprites.png");
 const frameSize = 32;
+const pixelDensity = 2;
 const directions = ["down", "left", "right", "up"];
 const frames = 4;
 
@@ -78,13 +79,23 @@ const characters = [
   },
 ];
 
-const canvas = createCanvas(frameSize * directions.length * frames, frameSize * characters.length);
+const canvas = createCanvas(
+  frameSize * directions.length * frames * pixelDensity,
+  frameSize * characters.length * pixelDensity,
+);
 const ctx = canvas.getContext("2d");
+ctx.scale(pixelDensity, pixelDensity);
 ctx.imageSmoothingEnabled = false;
 
 function rect(x, y, width, height, color) {
+  const snap = (value) => Math.round(value * pixelDensity) / pixelDensity;
   ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
+  ctx.fillRect(
+    snap(x),
+    snap(y),
+    Math.max(0.5, snap(width)),
+    Math.max(0.5, snap(height)),
+  );
 }
 
 function drawSprite(character, originX, originY, direction, frame) {
@@ -188,6 +199,39 @@ function drawSprite(character, originX, originY, direction, frame) {
     p(7, 15, 18, 2, character.trim);
     p(10, 2, 13, 4, character.hairLight);
     p(20, 4, 6, 10, character.hair);
+  }
+
+  // Half-dot detail pass: each 0.5 logical unit is one physical pixel in the HD atlas.
+  p(11.5, direction === "up" ? 7.5 : 5.5, 6, 0.5, character.hairLight);
+  p(9.5, 17.5, 11.5, 0.5, "rgba(255,255,255,.48)");
+  p(11.5, 20.5, 0.5, 3.5, character.light);
+  p(20, 20.5, 0.5, 3.5, character.dark);
+  p(14.5, 20, 3, 0.5, character.trim);
+  p(10, 28.5, 3.5, 0.5, "#647081");
+  p(19, 28.5, 3.5, 0.5, "#647081");
+  if (direction !== "up") {
+    if (side) {
+      p(17, 10.5, 0.5, 0.5, "#edf7ff");
+      p(18, 15.5, 1.5, 0.5, "#a95665");
+    } else {
+      p(12.5, 11.5, 0.5, 0.5, "#edf7ff");
+      p(19.5, 11.5, 0.5, 0.5, "#edf7ff");
+      p(15.5, 15, 2.5, 0.5, "#f39aa3");
+    }
+  }
+  if (character.feature === "shield") {
+    p(5.5, 19.5 + arm, 0.5, 5, "#d8eff4");
+    p(7, 20.5 + arm, 1, 0.5, "#f7d96f");
+  } else if (character.feature === "spear" || character.feature === "rapier") {
+    p(25.5, 4, 0.5, 21.5, "#ffffff");
+  } else if (character.feature === "pan") {
+    p(24.5, 18.5 + arm, 2.5, 0.5, "#f4f7f5");
+  } else if (character.feature === "bell") {
+    p(24.5, 16.5 + arm, 1, 4, "#fff3a4");
+  } else if (character.feature === "codex") {
+    p(22.5, 18 + arm, 0.5, 5, "#ffffff");
+    p(27, 18 + arm, 0.5, 5, "#b797d1");
+    p(24.5, 20.5 + arm, 2, 0.5, "#f5dc72");
   }
 }
 

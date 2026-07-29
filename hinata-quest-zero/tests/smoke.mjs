@@ -98,11 +98,11 @@ function clickCommand(document, label) {
   button.click();
 }
 
-test("刷新した専用画像アセットとタッチUIがリリース構成に揃っている", () => {
+test("4倍画素の描画基盤、HD歩行アトラスとタッチUIがリリース構成に揃っている", () => {
   const expectedImages = [
     ["assets/art/title-hinatia.png", 640, 360],
-    ["assets/art/party-sprites.png", 512, 192],
-    ["assets/art/npc-sprites.png", 512, 832],
+    ["assets/art/party-sprites.png", 1024, 384],
+    ["assets/art/npc-sprites.png", 1024, 1664],
     ["assets/art/enemy-atlas.png", 1536, 960],
     ["assets/art/portraits/hero.png", 192, 192],
     ["assets/art/portraits/kumi.png", 192, 192],
@@ -125,10 +125,21 @@ test("刷新した専用画像アセットとタッチUIがリリース構成に
   }
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
+  const renderer = fs.readFileSync(path.join(root, "src", "pixel.js"), "utf8");
+  const partyGenerator = fs.readFileSync(
+    path.join(root, "scripts", "generate-sprite-atlas.mjs"),
+    "utf8",
+  );
+  assert.match(html, /id="game"[\s\S]*width="1280"[\s\S]*height="720"/);
+  assert.match(html, /id="portrait" width="168" height="168"/);
   assert.match(html, /id="touch-controls"/);
-  assert.match(html, /STARCODE UPDATE/);
+  assert.match(html, /CHAPTER I–V/);
   assert.match(css, /@media \(pointer: coarse\)/);
   assert.match(css, /\.title-menu\s*\{[\s\S]*position: absolute/);
+  assert.match(renderer, /drawTileHighDensity/);
+  assert.match(renderer, /FIELD_SPRITE_SOURCE = 64/);
+  assert.match(partyGenerator, /pixelDensity = 2/);
+  assert.match(partyGenerator, /0\.5 logical unit is one physical pixel/);
 });
 
 test("奥義は専用カットインを起動し、戦闘描画へ重ねられる", async () => {
