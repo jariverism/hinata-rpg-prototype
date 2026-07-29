@@ -132,12 +132,14 @@ test("4倍画素の描画基盤、HD歩行アトラスとタッチUIがリリー
   );
   assert.match(html, /id="game"[\s\S]*width="1280"[\s\S]*height="720"/);
   assert.match(html, /id="portrait" width="168" height="168"/);
+  assert.match(html, /src="\.\/src\/main\.js\?v=12"/);
   assert.match(html, /id="touch-controls"/);
   assert.match(html, /CHAPTER I–V/);
   assert.match(css, /@media \(pointer: coarse\)/);
   assert.match(css, /\.title-menu\s*\{[\s\S]*position: absolute/);
   assert.match(renderer, /drawTileHighDensity/);
   assert.match(renderer, /FIELD_SPRITE_SOURCE = 64/);
+  assert.match(renderer, /party-sprites\.png"[\s\S]*\?v=12/);
   assert.match(partyGenerator, /pixelDensity = 2/);
   assert.match(partyGenerator, /0\.5 logical unit is one physical pixel/);
 });

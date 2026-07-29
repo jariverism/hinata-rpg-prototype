@@ -19,8 +19,8 @@ const DIRECTION_COLUMNS = Object.freeze({
 });
 const ART_URLS = Object.freeze({
   title: new URL("../assets/art/title-hinatia.png", import.meta.url).href,
-  party: new URL("../assets/art/party-sprites.png", import.meta.url).href,
-  npc: new URL("../assets/art/npc-sprites.png", import.meta.url).href,
+  party: `${new URL("../assets/art/party-sprites.png", import.meta.url).href}?v=12`,
+  npc: `${new URL("../assets/art/npc-sprites.png", import.meta.url).href}?v=12`,
   enemies: new URL("../assets/art/enemy-atlas.png", import.meta.url).href,
   "portrait-hero": new URL("../assets/art/portraits/hero.png", import.meta.url).href,
   "portrait-kumi": new URL("../assets/art/portraits/kumi.png", import.meta.url).href,
