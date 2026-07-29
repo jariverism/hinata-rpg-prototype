@@ -1,6 +1,7 @@
 import { TILE } from "./data.js";
 import {
   ENEMY_SPRITE_IDS,
+  LANDMARK_MAP_IDS,
   NPC_SPRITE_IDS,
   PARTY_SPRITE_IDS,
   rowMap,
@@ -11,6 +12,11 @@ const FIELD_SPRITE_SOURCE = 64;
 const PARTY_ROWS = rowMap(PARTY_SPRITE_IDS);
 const NPC_ROWS = rowMap(NPC_SPRITE_IDS);
 const ENEMY_CELLS = rowMap(ENEMY_SPRITE_IDS);
+const LANDMARK_CELLS = rowMap(LANDMARK_MAP_IDS);
+const ENEMY_SOURCE_WIDTH = 384;
+const ENEMY_SOURCE_HEIGHT = 320;
+const LANDMARK_SOURCE_WIDTH = 448;
+const LANDMARK_SOURCE_HEIGHT = 384;
 const DIRECTION_COLUMNS = Object.freeze({
   down: 0,
   left: 1,
@@ -18,22 +24,23 @@ const DIRECTION_COLUMNS = Object.freeze({
   up: 3,
 });
 const ART_URLS = Object.freeze({
-  title: new URL("../assets/art/title-hinatia.png", import.meta.url).href,
-  party: `${new URL("../assets/art/party-sprites.png", import.meta.url).href}?v=12`,
-  npc: `${new URL("../assets/art/npc-sprites.png", import.meta.url).href}?v=12`,
-  enemies: new URL("../assets/art/enemy-atlas.png", import.meta.url).href,
-  "portrait-hero": new URL("../assets/art/portraits/hero.png", import.meta.url).href,
-  "portrait-kumi": new URL("../assets/art/portraits/kumi.png", import.meta.url).href,
-  "portrait-mirei": new URL("../assets/art/portraits/mirei.png", import.meta.url).href,
-  "portrait-sarina": new URL("../assets/art/portraits/sarina.png", import.meta.url).href,
-  "portrait-katoshi": new URL("../assets/art/portraits/katoshi.png", import.meta.url).href,
-  "portrait-manaka": new URL("../assets/art/portraits/manaka.png", import.meta.url).href,
-  "cutin-hero": new URL("../assets/art/cutins/hero.png", import.meta.url).href,
-  "cutin-kumi": new URL("../assets/art/cutins/kumi.png", import.meta.url).href,
-  "cutin-mirei": new URL("../assets/art/cutins/mirei.png", import.meta.url).href,
-  "cutin-sarina": new URL("../assets/art/cutins/sarina.png", import.meta.url).href,
-  "cutin-katoshi": new URL("../assets/art/cutins/katoshi.png", import.meta.url).href,
-  "cutin-manaka": new URL("../assets/art/cutins/manaka.png", import.meta.url).href,
+  title: `${new URL("../assets/art/title-hinatia.png", import.meta.url).href}?v=13`,
+  party: `${new URL("../assets/art/party-sprites.png", import.meta.url).href}?v=13`,
+  npc: `${new URL("../assets/art/npc-sprites.png", import.meta.url).href}?v=13`,
+  enemies: `${new URL("../assets/art/enemy-atlas.png", import.meta.url).href}?v=13`,
+  landmarks: `${new URL("../assets/art/landmark-atlas.png", import.meta.url).href}?v=13`,
+  "portrait-hero": `${new URL("../assets/art/portraits/hero.png", import.meta.url).href}?v=13`,
+  "portrait-kumi": `${new URL("../assets/art/portraits/kumi.png", import.meta.url).href}?v=13`,
+  "portrait-mirei": `${new URL("../assets/art/portraits/mirei.png", import.meta.url).href}?v=13`,
+  "portrait-sarina": `${new URL("../assets/art/portraits/sarina.png", import.meta.url).href}?v=13`,
+  "portrait-katoshi": `${new URL("../assets/art/portraits/katoshi.png", import.meta.url).href}?v=13`,
+  "portrait-manaka": `${new URL("../assets/art/portraits/manaka.png", import.meta.url).href}?v=13`,
+  "cutin-hero": `${new URL("../assets/art/cutins/hero.png", import.meta.url).href}?v=13`,
+  "cutin-kumi": `${new URL("../assets/art/cutins/kumi.png", import.meta.url).href}?v=13`,
+  "cutin-mirei": `${new URL("../assets/art/cutins/mirei.png", import.meta.url).href}?v=13`,
+  "cutin-sarina": `${new URL("../assets/art/cutins/sarina.png", import.meta.url).href}?v=13`,
+  "cutin-katoshi": `${new URL("../assets/art/cutins/katoshi.png", import.meta.url).href}?v=13`,
+  "cutin-manaka": `${new URL("../assets/art/cutins/manaka.png", import.meta.url).href}?v=13`,
 });
 
 export class PixelRenderer {
@@ -915,6 +922,25 @@ export class PixelRenderer {
     const x = landmark.x * 32 - cameraX;
     const y = landmark.y * 32 - cameraY;
     if (x < -150 || x > this.width + 150 || y < -170 || y > this.height + 80) return;
+    if (LANDMARK_CELLS[mapId] !== undefined && this.assetReady("landmarks")) {
+      const index = LANDMARK_CELLS[mapId];
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        this.assets.landmarks,
+        (index % 4) * LANDMARK_SOURCE_WIDTH,
+        Math.floor(index / 4) * LANDMARK_SOURCE_HEIGHT,
+        LANDMARK_SOURCE_WIDTH,
+        LANDMARK_SOURCE_HEIGHT,
+        Math.round(x - 112),
+        Math.round(y - 187),
+        224,
+        192,
+      );
+      ctx.restore();
+      this.drawLandmarkAtmospherics(landmark.kind, x, y, now);
+      return;
+    }
     const shadow = (width, height = 8) => {
       ctx.save();
       ctx.globalAlpha = 0.32;
@@ -1097,6 +1123,118 @@ export class PixelRenderer {
         this.rect(mx, my, mote % 3 === 0 ? 3 : 2, mote % 3 === 0 ? 3 : 2, mote % 2 ? "#a9edf0" : "#efd87a");
       }
     }
+    this.drawLandmarkHighDensityDetail(landmark.kind, x, y);
+  }
+
+  drawLandmarkHighDensityDetail(kind, x, y) {
+    if (this.pixelDensity < 2) return;
+    const d = (xx, yy, w, h, color) => this.microRect(x + xx, y + yy, w, h, color);
+    if (kind === "castle") {
+      for (const yy of [-101, -91, -81, -52, -27])
+        for (let xx = -61 + ((yy / 10) & 1) * 7; xx < 61; xx += 16)
+          d(xx, yy, 9, 0.5, "#7e9fa9");
+      for (const xx of [-58, 58]) {
+        d(xx - 11, -109, 22, 1, "#eff7f1");
+        d(xx - 8, -88, 2, 11, "#b9f2f2");
+        d(xx + 6, -88, 1, 11, "#4b8396");
+      }
+      d(-35, -111, 70, 1, "#b8edf0");
+      d(-26, -70, 5, 10, "#fff2b0");
+      d(21, -70, 5, 10, "#fff2b0");
+      d(-7, -126, 14, 1, "#fff6c4");
+    } else if (kind === "bakery") {
+      for (let yy = -98; yy <= -83; yy += 4)
+        for (let xx = -68 + ((yy / 4) & 1) * 5; xx < 68; xx += 12)
+          d(xx, yy, 8, 1, yy % 8 ? "#f0c278" : "#9f5b48");
+      for (let xx = -70; xx <= 70; xx += 15) d(xx, -65, 1, 54, "#b69266");
+      d(-48, -55, 20, 1, "#fff0b5");
+      d(28, -55, 20, 1, "#fff0b5");
+      for (let yy = -38; yy < -8; yy += 6) d(-9, yy, 18, 1, "#6f4d40");
+      d(-18, -78, 36, 1, "#fff4c7");
+      d(56, -120, 15, 1, "#efb883");
+    } else if (kind === "worldTree") {
+      for (let yy = -98; yy < -9; yy += 8) {
+        d(-12 + (yy % 3), yy, 3, 6, "#c09a5c");
+        d(5 - (yy % 4), yy + 2, 2, 5, "#503b31");
+      }
+      const leafDetails = [
+        [-63, -127], [-49, -98], [-31, -145], [-13, -121], [8, -151],
+        [25, -119], [44, -143], [60, -106], [-68, -91], [69, -88],
+      ];
+      leafDetails.forEach(([xx, yy], index) => {
+        d(xx, yy, 3, 2, index % 2 ? "#a6e3b7" : "#d4ef9c");
+        d(xx + 3, yy + 2, 1, 3, "#2e6b50");
+      });
+      d(-27, -23, 54, 1, "#f3e58d");
+    } else if (kind === "windHall") {
+      for (let xx = -63; xx <= 63; xx += 14) d(xx, -85, 9, 1, "#eff8ef");
+      for (const xx of [-46, -16, 16, 46]) {
+        d(xx - 1, -54, 1, 43, "#ffffff");
+        d(xx + 3, -54, 1, 43, "#547884");
+      }
+      for (let yy = -56; yy < -8; yy += 8) d(-67, yy, 134, 0.5, "#86aab0");
+      d(-54, -90, 108, 1, "#dffaff");
+      d(-4, -138, 2, 46, "#ffffff");
+    } else if (kind === "windmill") {
+      for (let yy = -68; yy < -8; yy += 7)
+        for (let xx = -28 + ((yy / 7) & 1) * 6; xx < 29; xx += 13)
+          d(xx, yy, 8, 0.5, "#a79572");
+      for (let xx = -29; xx < 30; xx += 9) d(xx, -92, 6, 1, "#efb47c");
+      d(-22, -58, 9, 1, "#b8e2df");
+      d(14, -58, 9, 1, "#b8e2df");
+      d(-2, -115, 1, 78, "#fff8dc");
+    } else if (kind === "arena") {
+      for (let yy = -51; yy < -8; yy += 9)
+        for (let xx = -78 + ((yy / 9) & 1) * 8; xx < 79; xx += 18)
+          d(xx, yy, 11, 1, "#8e816e");
+      for (const xx of [-68, -43, 43, 68]) d(xx - 1, -49, 1, 38, "#fff1bd");
+      d(-79, -79, 158, 1, "#f6dc8c");
+      d(-17, -37, 34, 1, "#615267");
+      d(-5, -74, 10, 1, "#fff0a0");
+    } else if (kind === "grandLibrary") {
+      for (let yy = -56; yy < -8; yy += 8)
+        for (let xx = -78 + ((yy / 8) & 1) * 7; xx < 79; xx += 16)
+          d(xx, yy, 10, 0.5, "#7c7997");
+      for (const xx of [-62, -31, 31, 62]) {
+        d(xx - 1, -53, 1, 42, "#f2ebff");
+        d(xx + 3, -53, 1, 42, "#514e70");
+      }
+      for (let xx = -66; xx <= 66; xx += 12) d(xx, -94, 7, 1, "#ded4f0");
+      d(-8, -46, 16, 1, "#7681b0");
+      d(-2, -135, 1, 27, "#fff8bf");
+      d(-7, -130, 14, 1, "#fff8bf");
+    }
+  }
+
+  drawLandmarkAtmospherics(kind, x, y, now) {
+    const ctx = this.ctx;
+    ctx.save();
+    if (kind === "bakery") {
+      for (let puff = 0; puff < 4; puff += 1) {
+        const drift = Math.sin(now / 700 + puff) * 7;
+        ctx.globalAlpha = 0.18 - puff * 0.025;
+        ctx.fillStyle = "#fff1d1";
+        ctx.beginPath();
+        ctx.arc(x + 64 + drift, y - 136 - puff * 13, 7 + puff * 2, 0, TWO_PI);
+        ctx.fill();
+      }
+    } else if (kind === "worldTree" || kind === "grandLibrary") {
+      ctx.globalAlpha = 0.82;
+      const spirit = kind === "worldTree";
+      for (let mote = 0; mote < 10; mote += 1) {
+        const mx = x + Math.sin(now / 510 + mote * 1.8) * (28 + (mote % 4) * 13);
+        const my = y - 68 - ((now / 31 + mote * 17) % (spirit ? 94 : 62));
+        this.microRect(mx, my, mote % 3 === 0 ? 1.5 : 1, mote % 3 === 0 ? 1.5 : 1, mote % 2 ? (spirit ? "#b8ffe0" : "#a9edf0") : "#efd87a");
+      }
+    } else if (["windHall", "windmill", "arena"].includes(kind)) {
+      ctx.globalAlpha = 0.45;
+      for (let streak = 0; streak < 5; streak += 1) {
+        const sx = x - 110 + ((now / 7 + streak * 53) % 220);
+        const sy = y - 152 + streak * 29;
+        this.microRect(sx, sy, 11, 0.5, streak % 2 ? "#e7fbff" : "#9ed8e2");
+      }
+    }
+    ctx.restore();
   }
 
   drawWeather(mapId, tone, now = 0) {
@@ -1959,8 +2097,8 @@ export class PixelRenderer {
     const bob = Math.sin(now / 280 + x) * 2;
     if (ENEMY_CELLS[sprite] !== undefined && this.assetReady("enemies")) {
       const index = ENEMY_CELLS[sprite];
-      const sourceX = (index % 8) * 192;
-      const sourceY = Math.floor(index / 8) * 160;
+      const sourceX = (index % 8) * ENEMY_SOURCE_WIDTH;
+      const sourceY = Math.floor(index / 8) * ENEMY_SOURCE_HEIGHT;
       ctx.save();
       ctx.globalAlpha = hurt && Math.floor(now / 45) % 2 ? 0.35 : 1;
       ctx.imageSmoothingEnabled = false;
@@ -1968,8 +2106,8 @@ export class PixelRenderer {
         this.assets.enemies,
         sourceX,
         sourceY,
-        192,
-        160,
+        ENEMY_SOURCE_WIDTH,
+        ENEMY_SOURCE_HEIGHT,
         Math.round(x - 96 * scale),
         Math.round(y + bob - 86 * scale),
         Math.round(192 * scale),
@@ -2371,7 +2509,88 @@ export class PixelRenderer {
       p(-55, 6, 12, 35, "#1c1528");
       p(43, 6, 12, 35, "#1c1528");
     }
+    this.drawEnemyHighDensityDetail(sprite, scale);
     ctx.restore();
+  }
+
+  drawEnemyHighDensityDetail(sprite, scale = 1) {
+    if (this.pixelDensity < 2) return;
+    const d = (x, y, w, h, color) =>
+      this.microRect(x * scale, y * scale, w * scale, h * scale, color);
+    const seed = [...sprite].reduce((total, char) => total + char.charCodeAt(0), 0);
+    const boss = ["smileEater", "blightHeart", "hushAvatar", "tempestMirror", "amnesiaLibrarian"];
+    const armor = ["echoArmor", "windArmor", "arenaBulwark", "logicGolem", "hushAvatar"];
+    const books = ["bookMimic", "falseIndex", "amnesiaLibrarian"];
+    const birds = ["crow", "runeOwl", "bladeHawk", "arenaRaptor"];
+    const soft = ["slime", "inkSlime", "wisp", "mud", "flour", "stream", "root"];
+
+    for (let detail = 0; detail < 9; detail += 1) {
+      const xx = -22 + ((seed * (detail + 3) + detail * 17) % 45);
+      const yy = -28 + ((seed * (detail + 5) + detail * 11) % 50);
+      d(xx, yy, detail % 4 === 0 ? 1.5 : 0.5, 0.5, detail % 3 ? "#ffffff55" : "#09132166");
+    }
+
+    if (soft.includes(sprite)) {
+      d(-11, -12, 7, 1, "#e7ffffaa");
+      d(-13, -10, 2, 4, "#b9ffff77");
+      d(10, 9, 4, 1, "#17304466");
+      d(-17, 15, 6, 0.5, "#07142188");
+    }
+    if (birds.includes(sprite)) {
+      for (const side of [-1, 1])
+        for (let feather = 0; feather < 4; feather += 1)
+          d(side * (19 + feather * 5) - (side < 0 ? 5 : 0), -10 + feather * 7, 5, 0.5, feather % 2 ? "#d7edf099" : "#15223488");
+      d(-5, -19, 2, 1, "#fff4a8");
+      d(4, -19, 2, 1, "#fff4a8");
+    }
+    if (armor.includes(sprite)) {
+      for (const side of [-1, 1]) {
+        d(side * 20 - (side < 0 ? 6 : 0), -16, 6, 1, "#d5edf099");
+        d(side * 24 - (side < 0 ? 1 : 0), 7, 1, 10, "#18273888");
+      }
+      d(-12, -30, 24, 1, "#d8eef099");
+      d(-7, 17, 14, 0.5, "#fff0a0bb");
+      d(-19, 26, 7, 1, "#263541aa");
+      d(12, 26, 7, 1, "#263541aa");
+    }
+    if (books.includes(sprite)) {
+      for (let line = 0; line < 6; line += 1) {
+        d(-27, -27 + line * 8, 19, 0.5, line % 2 ? "#846e57" : "#fff1c0");
+        d(8, -27 + line * 8, 19, 0.5, line % 2 ? "#846e57" : "#fff1c0");
+      }
+      d(-2, -31, 0.5, 56, "#fff0a2");
+      d(2, -31, 0.5, 56, "#6b4d42");
+    }
+    if (sprite === "tempestMirror") {
+      for (let facet = 0; facet < 6; facet += 1) {
+        d(-31 + facet * 11, -35 + (facet % 2) * 20, 8, 1, facet % 2 ? "#efffff" : "#548fa6");
+        d(-29 + facet * 11, -32 + (facet % 2) * 20, 1, 11, "#e9ffffaa");
+      }
+      d(-5, -12, 10, 1, "#fff7b7");
+      d(-1, -16, 1, 9, "#ffffff");
+    } else if (sprite === "blightHeart") {
+      for (let vein = 0; vein < 5; vein += 1) {
+        d(-28 + vein * 13, -27 + (vein % 2) * 12, 9, 1, "#e7c06c99");
+        d(-23 + vein * 13, -25 + (vein % 2) * 12, 1, 7, "#342333aa");
+      }
+    } else if (sprite === "smileEater") {
+      d(-23, -16, 46, 1, "#fff8dc");
+      for (let tooth = 0; tooth < 7; tooth += 1) d(-20 + tooth * 7, -15, 1, 11, "#8c6c79");
+      d(-23, -40, 11, 1, "#ffc1d6");
+      d(12, -40, 11, 1, "#ffc1d6");
+    } else if (sprite === "amnesiaLibrarian") {
+      d(-26, -38, 14, 1, "#fff4a8");
+      d(12, -38, 14, 1, "#fff4a8");
+      for (let rune = 0; rune < 6; rune += 1) {
+        d(-70 + (rune % 2) * 132, -42 + rune * 13, 5, 0.5, rune % 2 ? "#f7e8b1" : "#a28ed1");
+        d(-68 + (rune % 2) * 132, -44 + rune * 13, 0.5, 5, "#f7e8b1");
+      }
+    }
+    if (boss.includes(sprite)) {
+      d(-38, 39, 76, 1, "#ffffff22");
+      d(-2, -55, 4, 0.5, "#fff3a0aa");
+      d(-1, -57, 2, 4, "#ffffff99");
+    }
   }
 
   drawPartyBack(type, x, y, frame = 0, hurt = false) {

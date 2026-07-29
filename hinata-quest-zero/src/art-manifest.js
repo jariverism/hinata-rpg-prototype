@@ -82,6 +82,16 @@ export const ENEMY_SPRITE_IDS = Object.freeze([
   "amnesiaLibrarian",
 ]);
 
+export const LANDMARK_MAP_IDS = Object.freeze([
+  "solaido",
+  "mileria",
+  "sarinaria",
+  "katoshia",
+  "sunmill",
+  "skyArena",
+  "manafia",
+]);
+
 export const CUTIN_IDS = PARTY_SPRITE_IDS;
 
 export function rowMap(ids) {

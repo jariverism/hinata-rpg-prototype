@@ -14,6 +14,7 @@ const loadedAssets = {
   party: await loadImage(path.join(art, "party-sprites.png")),
   npc: await loadImage(path.join(art, "npc-sprites.png")),
   enemies: await loadImage(path.join(art, "enemy-atlas.png")),
+  landmarks: await loadImage(path.join(art, "landmark-atlas.png")),
   "portrait-hero": await loadImage(path.join(art, "portraits", "hero.png")),
   "portrait-kumi": await loadImage(path.join(art, "portraits", "kumi.png")),
   "portrait-mirei": await loadImage(path.join(art, "portraits", "mirei.png")),

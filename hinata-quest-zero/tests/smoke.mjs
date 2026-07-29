@@ -100,16 +100,17 @@ function clickCommand(document, label) {
 
 test("4倍画素の描画基盤、HD歩行アトラスとタッチUIがリリース構成に揃っている", () => {
   const expectedImages = [
-    ["assets/art/title-hinatia.png", 640, 360],
+    ["assets/art/title-hinatia.png", 1280, 720],
     ["assets/art/party-sprites.png", 1024, 384],
     ["assets/art/npc-sprites.png", 1024, 1664],
-    ["assets/art/enemy-atlas.png", 1536, 960],
-    ["assets/art/portraits/hero.png", 192, 192],
-    ["assets/art/portraits/kumi.png", 192, 192],
-    ["assets/art/portraits/mirei.png", 192, 192],
-    ["assets/art/portraits/sarina.png", 192, 192],
-    ["assets/art/portraits/katoshi.png", 192, 192],
-    ["assets/art/portraits/manaka.png", 192, 192],
+    ["assets/art/enemy-atlas.png", 3072, 1920],
+    ["assets/art/landmark-atlas.png", 1792, 768],
+    ["assets/art/portraits/hero.png", 384, 384],
+    ["assets/art/portraits/kumi.png", 384, 384],
+    ["assets/art/portraits/mirei.png", 384, 384],
+    ["assets/art/portraits/sarina.png", 384, 384],
+    ["assets/art/portraits/katoshi.png", 384, 384],
+    ["assets/art/portraits/manaka.png", 384, 384],
     ["assets/art/cutins/hero.png", 1280, 144],
     ["assets/art/cutins/kumi.png", 1280, 144],
     ["assets/art/cutins/mirei.png", 1280, 144],
@@ -132,14 +133,17 @@ test("4倍画素の描画基盤、HD歩行アトラスとタッチUIがリリー
   );
   assert.match(html, /id="game"[\s\S]*width="1280"[\s\S]*height="720"/);
   assert.match(html, /id="portrait" width="168" height="168"/);
-  assert.match(html, /src="\.\/src\/main\.js\?v=12"/);
+  assert.match(html, /src="\.\/src\/main\.js\?v=13"/);
   assert.match(html, /id="touch-controls"/);
   assert.match(html, /CHAPTER I–V/);
   assert.match(css, /@media \(pointer: coarse\)/);
   assert.match(css, /\.title-menu\s*\{[\s\S]*position: absolute/);
   assert.match(renderer, /drawTileHighDensity/);
   assert.match(renderer, /FIELD_SPRITE_SOURCE = 64/);
-  assert.match(renderer, /party-sprites\.png"[\s\S]*\?v=12/);
+  assert.match(renderer, /party-sprites\.png"[\s\S]*\?v=13/);
+  assert.match(renderer, /landmark-atlas\.png"[\s\S]*\?v=13/);
+  assert.match(renderer, /ENEMY_SOURCE_WIDTH = 384/);
+  assert.match(renderer, /LANDMARK_SOURCE_WIDTH = 448/);
   assert.match(partyGenerator, /pixelDensity = 2/);
   assert.match(partyGenerator, /0\.5 logical unit is one physical pixel/);
 });
