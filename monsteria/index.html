@@ -2,63 +2,107 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>モンステリア</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>モンステリア Safari版</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;background:#101728;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:#fff}button{font:inherit;touch-action:manipulation}#app{position:relative;width:min(100vw,520px);height:100dvh;min-height:620px;margin:auto;background:#183153;overflow:hidden}canvas{display:block;width:100%;height:100%;image-rendering:pixelated;background:#7fcf70}.top{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;display:flex;justify-content:space-between;pointer-events:none}.tag{background:#0d1730dd;border:2px solid #ffffff55;border-radius:11px;padding:7px 10px;font-weight:800;font-size:13px}.controls{position:absolute;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:flex-end}.dpad{width:150px;height:150px;position:relative}.dpad button{position:absolute;width:52px;height:52px;border:2px solid #ffffff77;border-radius:13px;background:#101b35dd;color:#fff;font-size:24px;font-weight:900}.up{left:49px;top:0}.down{left:49px;bottom:0}.left{left:0;top:49px}.right{right:0;top:49px}.center{left:49px;top:49px;opacity:.3}.actions{display:flex;gap:11px}.actions button{width:70px;height:70px;border-radius:50%;border:3px solid #fff8;color:white;font-weight:900;box-shadow:0 5px 0 #0005}.party{background:#4361ee}.a{background:#e63946}.screen{position:absolute;inset:0;display:none}.screen.on{display:block}.title{z-index:10;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:30px;background:radial-gradient(circle at 50% 28%,#457bff,#111b3e 70%)}.logo{font-size:clamp(42px,12vw,72px);font-weight:1000;letter-spacing:3px;text-shadow:0 7px #07102a}.subtitle{margin-top:8px;color:#ffe66d;font-weight:800}.start{margin-top:48px;padding:15px 34px;border:4px solid white;border-radius:18px;background:#ffd23f;color:#1b2741;font-size:20px;font-weight:1000;box-shadow:0 7px 0 #9d6800}.start:active{transform:translateY(4px);box-shadow:0 3px 0 #9d6800}.help{margin-top:20px;max-width:360px;line-height:1.6;font-size:13px;color:#e4edff}.toast{position:absolute;left:50%;top:18%;transform:translate(-50%,-15px);opacity:0;transition:.2s;background:#101728e8;border:2px solid white;border-radius:12px;padding:10px 14px;font-weight:800;text-align:center;max-width:88%;pointer-events:none}.toast.on{opacity:1;transform:translate(-50%,0)}.battle{z-index:5;background:linear-gradient(#87d8ff 0 50%,#74c964 50%)}.ground{position:absolute;bottom:0;width:100%;height:45%;background:repeating-linear-gradient(0deg,#67b85d 0 10px,#74c966 10px 20px)}.mon{position:absolute;font-size:92px;filter:drop-shadow(0 9px 4px #0005)}#enemyMon{right:35px;top:140px}#myMon{left:25px;bottom:220px;transform:scaleX(-1)}.card{position:absolute;width:205px;background:#fff;color:#15213a;border:4px solid #15213a;border-radius:13px;padding:10px;font-weight:900}.enemyCard{left:14px;top:70px}.myCard{right:14px;bottom:167px}.hp{height:14px;margin-top:6px;background:#ccd6e5;border:2px solid #15213a;border-radius:99px;overflow:hidden}.hp>i{display:block;height:100%;width:100%;background:#43c66b;transition:.25s}.battleBox{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:142px;background:#fff;color:#15213a;border:4px solid #15213a;border-radius:15px;display:grid;grid-template-columns:1.15fr 1fr;gap:8px;padding:9px}.battleText{padding:8px;font-weight:800;line-height:1.45}.battleBtns{display:grid;grid-template-columns:1fr 1fr;gap:7px}.battleBtns button{border:3px solid #15213a;border-radius:10px;font-weight:900}.atk{background:#ffd166}.cap{background:#8be0ef}.swap{background:#b7efb1}.run{background:#ffb3b3}.panel{z-index:8;background:#eaf4ff;color:#15213a;padding:calc(22px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));overflow:auto}.panel h2{margin:0 0 10px}.member{background:#fff;border:3px solid #15213a;border-radius:13px;padding:10px;margin:9px 0;display:flex;align-items:center;gap:10px}.member .emo{font-size:45px}.member .info{flex:1}.member button,.close{border:2px solid #15213a;border-radius:9px;background:#fff;padding:8px;font-weight:900}
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;color:#fff;background:#0f172a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0f172a}
+button{font:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#app{position:relative;width:100%;max-width:520px;height:100vh;height:100svh;margin:0 auto;overflow:hidden;background:#7bc96f}
+#map{display:block;width:100%;height:100%;background:#7bc96f;image-rendering:pixelated}
+#hud{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;display:flex;justify-content:space-between;pointer-events:none;z-index:2}
+.pill{background:rgba(15,23,42,.88);border:2px solid rgba(255,255,255,.45);border-radius:12px;padding:7px 10px;font-weight:800;font-size:13px}
+#controls{position:absolute;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:flex-end;z-index:3}
+#dpad{position:relative;width:156px;height:156px;touch-action:none}
+#dpad button{position:absolute;width:54px;height:54px;border:2px solid rgba(255,255,255,.65);border-radius:14px;background:rgba(15,23,42,.9);color:#fff;font-size:24px;font-weight:900}
+#up{left:51px;top:0}#down{left:51px;bottom:0}#left{left:0;top:51px}#right{right:0;top:51px}
+#actions{display:flex;gap:10px;align-items:flex-end}
+.round{width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,.75);color:white;font-weight:900;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+#partyBtn{background:#4f46e5}#aBtn{background:#dc2626}
+#title{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;background:radial-gradient(circle at 50% 28%,#3b82f6,#111827 72%)}
+#title h1{margin:0;font-size:clamp(44px,13vw,74px);letter-spacing:3px;text-shadow:0 7px #07102a}
+#title p{margin:10px 0 0;color:#fde68a;font-weight:800}
+#startBtn{margin-top:42px;padding:16px 34px;border:4px solid #fff;border-radius:18px;background:#facc15;color:#172033;font-size:20px;font-weight:1000;box-shadow:0 7px 0 #9a6700}
+#startBtn:active{transform:translateY(4px);box-shadow:0 3px 0 #9a6700}
+.note{margin-top:20px;max-width:360px;font-size:13px;line-height:1.6;color:#dbeafe}
+#toast{position:absolute;z-index:15;top:18%;left:50%;transform:translateX(-50%);display:none;max-width:88%;padding:10px 14px;border:2px solid #fff;border-radius:12px;background:rgba(15,23,42,.94);font-weight:800;text-align:center}
+#battle,#party{position:absolute;inset:0;display:none;z-index:10}
+#battle{background:linear-gradient(#8edcff 0 51%,#75c96b 51%)}
+.mon{position:absolute;font-size:92px;filter:drop-shadow(0 8px 4px rgba(0,0,0,.3))}
+#enemyMon{right:32px;top:145px}#myMon{left:24px;bottom:225px;transform:scaleX(-1)}
+.card{position:absolute;width:205px;background:#fff;color:#15213a;border:4px solid #15213a;border-radius:14px;padding:10px;font-weight:900}
+#enemyCard{left:14px;top:74px}#myCard{right:14px;bottom:168px}
+.hp{height:14px;margin-top:6px;border:2px solid #15213a;border-radius:99px;background:#cbd5e1;overflow:hidden}.hp i{display:block;width:100%;height:100%;background:#22c55e}
+#battleBox{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:145px;background:#fff;color:#15213a;border:4px solid #15213a;border-radius:15px;display:grid;grid-template-columns:1.05fr 1fr;gap:8px;padding:9px}
+#battleText{padding:8px;font-weight:800;line-height:1.45}.battleBtns{display:grid;grid-template-columns:1fr 1fr;gap:7px}.battleBtns button{border:3px solid #15213a;border-radius:10px;font-weight:900}.atk{background:#facc15}.cap{background:#67e8f9}.run{background:#fca5a5}.swap{background:#bbf7d0}
+#party{background:#eaf4ff;color:#15213a;padding:calc(22px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));overflow:auto}
+#party h2{margin:0 0 10px}.member{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid #15213a;border-radius:13px;padding:10px;margin:9px 0}.member .emo{font-size:44px}.member .info{flex:1}.member button,#closeParty{border:2px solid #15213a;border-radius:9px;background:#fff;padding:8px;font-weight:900}
+#debug{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:1;font-size:10px;color:rgba(255,255,255,.55);pointer-events:none}
 </style>
 </head>
 <body>
 <div id="app">
-<canvas id="map" width="520" height="900"></canvas>
-<div class="top"><div class="tag" id="area">はじまりの草原</div><div class="tag">カプセル <span id="balls">5</span></div></div>
-<div class="toast" id="toast"></div>
-<div class="controls" id="controls">
-  <div class="dpad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="center" disabled>●</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div>
-  <div class="actions"><button class="party" id="partyBtn">仲間</button><button class="a" id="aBtn">A</button></div>
-</div>
-<div class="screen title on" id="title"><div class="logo">モンステリア</div><div class="subtitle">はじまりの草原</div><button class="start" id="start">ゲームスタート</button><div class="help">十字キーで移動。草むらでモンスターと出会い、攻撃で弱らせてカプセルで捕まえよう。</div></div>
-<div class="screen battle" id="battle"><div class="ground"></div><div class="card enemyCard"><div id="enemyName">---</div><div id="enemyLv">Lv.1</div><div class="hp"><i id="enemyHp"></i></div></div><div class="mon" id="enemyMon">🌱</div><div class="mon" id="myMon">🔥</div><div class="card myCard"><div id="myName">---</div><div id="myLv">Lv.1</div><div class="hp"><i id="myHp"></i></div><div id="myHpText"></div></div><div class="battleBox"><div class="battleText" id="battleText">どうする？</div><div class="battleBtns"><button class="atk" id="attack">たたかう</button><button class="cap" id="capture">つかまえる</button><button class="swap" id="swap">いれかえ</button><button class="run" id="run">にげる</button></div></div></div>
-<div class="screen panel" id="partyPanel"><h2>仲間モンスター</h2><div id="partyList"></div><button class="close" id="closeParty">とじる</button></div>
+  <canvas id="map" width="520" height="900"></canvas>
+  <div id="hud"><div class="pill" id="area">はじまりの草原</div><div class="pill">カプセル <span id="balls">5</span></div></div>
+  <div id="toast"></div>
+  <div id="controls">
+    <div id="dpad">
+      <button id="up" type="button" onclick="step('up')">▲</button>
+      <button id="left" type="button" onclick="step('left')">◀</button>
+      <button id="right" type="button" onclick="step('right')">▶</button>
+      <button id="down" type="button" onclick="step('down')">▼</button>
+    </div>
+    <div id="actions"><button class="round" id="partyBtn" type="button" onclick="openParty(false)">仲間</button><button class="round" id="aBtn" type="button" onclick="interact()">A</button></div>
+  </div>
+  <div id="title">
+    <h1>モンステリア</h1>
+    <p>はじまりの草原</p>
+    <button id="startBtn" type="button" onclick="startGame()">ゲームスタート</button>
+    <div class="note">十字キーで移動。草むらでモンスターに出会い、弱らせてカプセルで捕まえよう。</div>
+  </div>
+  <section id="battle">
+    <div class="card" id="enemyCard"><div id="enemyName">---</div><div id="enemyLv">Lv.1</div><div class="hp"><i id="enemyHp"></i></div></div>
+    <div class="mon" id="enemyMon">🌱</div>
+    <div class="mon" id="myMon">🔥</div>
+    <div class="card" id="myCard"><div id="myName">---</div><div id="myLv">Lv.1</div><div class="hp"><i id="myHp"></i></div><div id="myHpText"></div></div>
+    <div id="battleBox"><div id="battleText">どうする？</div><div class="battleBtns"><button class="atk" onclick="attack()">たたかう</button><button class="cap" onclick="capture()">つかまえる</button><button class="swap" onclick="openParty(true)">いれかえ</button><button class="run" onclick="runAway()">にげる</button></div></div>
+  </section>
+  <section id="party"><h2>仲間モンスター</h2><div id="partyList"></div><button id="closeParty" type="button" onclick="closeParty()">とじる</button></section>
+  <div id="debug">Safari対応版 3.0</div>
 </div>
 <script>
-(function(){
 'use strict';
-var $=function(id){return document.getElementById(id)};
-var canvas=$('map'),ctx=canvas.getContext('2d');
-var W=520,H=900,T=40,C=13,R=22;
-var rows=['#############','#...gggg....#','#...gggg....#','#...........#','#..#####....#','#..#L..#....#','#..#####.gg.#','#........gg.#','#...~~~..gg.#','#...~~~.....#','#...~~~.###.#','#.......#C#.#','#..gg...###.#','#..gg.......#','#..gg..hhh..#','#......hhh..#','#...........#','#...gggg....#','#...gggg....#','#...........#','#...........#','#############'];
-var dex={leaf:{name:'スプリグ',emo:'🌱',hp:30,atk:8,catchRate:.62},fire:{name:'ヒノコグマ',emo:'🔥',hp:32,atk:9,catchRate:.52},water:{name:'アクアフィン',emo:'💧',hp:28,atk:10,catchRate:.55},bolt:{name:'ボルトン',emo:'⚡',hp:27,atk:11,catchRate:.45},boar:{name:'コケブー',emo:'🐗',hp:38,atk:7,catchRate:.4}};
-function mon(key,lv){var d=dex[key],m=d.hp+lv*4;return{key:key,name:d.name,emo:d.emo,lv:lv,hp:m,maxHp:m,atk:d.atk+lv*2,xp:0}}
-var s={started:false,mode:'map',x:6,y:20,dir:'up',balls:5,party:[mon('leaf',5)],active:0,enemy:null,lock:false,steps:0};
-function save(){try{localStorage.setItem('monsteria_v2',JSON.stringify(s))}catch(e){}}
-function load(){try{var v=JSON.parse(localStorage.getItem('monsteria_v2'));if(v&&v.party&&v.party.length){s=v;s.started=false;s.mode='map';s.enemy=null;s.lock=false}}catch(e){}}
+const $=id=>document.getElementById(id);
+const canvas=$('map'),ctx=canvas.getContext('2d');
+const W=520,H=900,T=40,C=13,R=22;
+const rows=['#############','#...gggg....#','#...gggg....#','#...........#','#..#####....#','#..#L..#....#','#..#####.gg.#','#........gg.#','#...~~~..gg.#','#...~~~.....#','#...~~~.###.#','#.......#C#.#','#..gg...###.#','#..gg.......#','#..gg..hhh..#','#......hhh..#','#...........#','#...gggg....#','#...gggg....#','#...........#','#...........#','#############'];
+const dex={leaf:{name:'スプリグ',emo:'🌱',hp:30,atk:8,catchRate:.62},fire:{name:'ヒノコグマ',emo:'🔥',hp:32,atk:9,catchRate:.52},water:{name:'アクアフィン',emo:'💧',hp:28,atk:10,catchRate:.55},bolt:{name:'ボルトン',emo:'⚡',hp:27,atk:11,catchRate:.45},boar:{name:'コケブー',emo:'🐗',hp:38,atk:7,catchRate:.4}};
+const makeMon=(key,lv)=>{const d=dex[key],maxHp=d.hp+lv*4;return{key,name:d.name,emo:d.emo,lv,hp:maxHp,maxHp,atk:d.atk+lv*2,xp:0}};
+let state={started:false,mode:'map',x:6,y:20,dir:'up',balls:5,party:[makeMon('leaf',5)],active:0,enemy:null,lock:false,steps:0};
+function save(){try{localStorage.setItem('monsteria_v3',JSON.stringify(state))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem('monsteria_v3'));if(v&&Array.isArray(v.party)&&v.party.length){state=v;state.started=false;state.mode='map';state.enemy=null;state.lock=false}}catch(e){}}
 function tile(x,y){return rows[y]&&rows[y][x]||'#'}
 function pass(ch){return ch!=='#'&&ch!=='~'}
-function show(id,on){$(id).classList[on?'add':'remove']('on')}
-function toast(t){var e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove('on')},1500)}
-function draw(){ctx.clearRect(0,0,W,H);for(var y=0;y<R;y++){for(var x=0;x<C;x++){drawTile(x,y,tile(x,y))}}drawPlayer()}
-function drawTile(x,y,ch){var px=x*T,py=y*T,c='#8bd16b';if(ch==='#')c='#315b31';else if(ch==='~')c='#53a8dc';else if(ch==='g')c='#79c95c';else if(ch==='h')c='#bf8a55';ctx.fillStyle=c;ctx.fillRect(px,py,T,T);if(ch==='g'){ctx.fillStyle='#3c8e3d';for(var i=0;i<4;i++)ctx.fillRect(px+6+i*9,py+20+(i%2)*5,3,14)}if(ch==='#'){ctx.fillStyle='#254b27';ctx.fillRect(px+4,py+4,32,32);ctx.fillStyle='#4b7844';ctx.fillRect(px+7,py+7,26,14)}if(ch==='~'){ctx.strokeStyle='#d1f1ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px+4,py+15);ctx.quadraticCurveTo(px+12,py+8,px+20,py+15);ctx.quadraticCurveTo(px+28,py+22,px+36,py+15);ctx.stroke()}if(ch==='h'){ctx.fillStyle='#8d603e';ctx.fillRect(px+18,py+4,4,32);ctx.fillRect(px+4,py+18,32,4)}if(ch==='L'){ctx.fillStyle='#fff';ctx.fillRect(px-20,py-36,80,76);ctx.fillStyle='#e63946';ctx.beginPath();ctx.moveTo(px-24,py-36);ctx.lineTo(px+20,py-68);ctx.lineTo(px+64,py-36);ctx.fill();ctx.fillStyle='#315acb';ctx.fillRect(px+2,py+12,18,28)}if(ch==='C'){ctx.fillStyle='#ffe7bd';ctx.fillRect(px-20,py-36,80,76);ctx.fillStyle='#7b5137';ctx.beginPath();ctx.moveTo(px-24,py-36);ctx.lineTo(px+20,py-68);ctx.lineTo(px+64,py-36);ctx.fill();ctx.fillStyle='#7b5137';ctx.fillRect(px+2,py+12,18,28)}ctx.strokeStyle='#00000010';ctx.strokeRect(px,py,T,T)}
-function drawPlayer(){var px=s.x*T+T/2,py=s.y*T+T/2;ctx.save();ctx.translate(px,py);ctx.fillStyle='#29477f';ctx.fillRect(-11,-10,22,21);ctx.fillStyle='#f1ba83';ctx.fillRect(-8,-22,16,13);ctx.fillStyle='#ef3d52';ctx.fillRect(-12,-27,24,7);ctx.fillStyle='#182748';ctx.fillRect(-10,11,8,13);ctx.fillRect(2,11,8,13);ctx.restore()}
-function move(dir){if(!s.started||s.mode!=='map'||s.lock||$('partyPanel').classList.contains('on'))return;s.dir=dir;var dx=0,dy=0;if(dir==='up')dy=-1;if(dir==='down')dy=1;if(dir==='left')dx=-1;if(dir==='right')dx=1;var nx=s.x+dx,ny=s.y+dy;if(pass(tile(nx,ny))){s.x=nx;s.y=ny;s.steps++;if(tile(nx,ny)==='g'&&Math.random()<.18){startBattle()}if(s.steps%6===0)save()}draw()}
-function interact(){if(s.mode!=='map')return;var dx=0,dy=0;if(s.dir==='up')dy=-1;if(s.dir==='down')dy=1;if(s.dir==='left')dx=-1;if(s.dir==='right')dx=1;var ch=tile(s.x+dx,s.y+dy);if(ch==='L'){for(var i=0;i<s.party.length;i++)s.party[i].hp=s.party[i].maxHp;save();toast('研究所で全員回復した！')}else if(ch==='C')toast('村人「草むらを探してみよう」');else toast('何もない')}
-function active(){return s.party[s.active]}
-function startBattle(){var keys=['fire','water','bolt','boar','leaf'],key=keys[Math.floor(Math.random()*keys.length)],lv=2+Math.floor(Math.random()*5);s.enemy=mon(key,lv);s.mode='battle';updateBattle();show('battle',true);$('battleText').textContent='野生の '+s.enemy.name+' が現れた！'}
-function updateBattle(){var p=active(),e=s.enemy;if(!p||!e)return;$('enemyName').textContent=e.name;$('enemyLv').textContent='Lv.'+e.lv;$('enemyMon').textContent=e.emo;$('enemyHp').style.width=Math.max(0,e.hp/e.maxHp*100)+'%';$('myName').textContent=p.name;$('myLv').textContent='Lv.'+p.lv;$('myMon').textContent=p.emo;$('myHp').style.width=Math.max(0,p.hp/p.maxHp*100)+'%';$('myHpText').textContent='HP '+p.hp+'/'+p.maxHp;$('balls').textContent=s.balls}
-function disable(v){$('attack').disabled=v;$('capture').disabled=v;$('swap').disabled=v;$('run').disabled=v}
-function dmg(a,b){return Math.max(2,Math.floor(a.atk*(.72+Math.random()*.45)-b.lv*.4))}
-function endBattle(){s.mode='map';s.enemy=null;s.lock=false;disable(false);show('battle',false);draw();save()}
-function attack(){if(s.lock)return;s.lock=true;disable(true);var p=active(),e=s.enemy,d=dmg(p,e);e.hp=Math.max(0,e.hp-d);$('battleText').textContent=p.name+'の攻撃！ '+d+'ダメージ';updateBattle();setTimeout(function(){if(e.hp<=0){var gain=e.lv*8;$('battleText').textContent=e.name+'を倒した！ '+gain+'EXP';p.xp+=gain;if(p.xp>=p.lv*18){p.xp-=p.lv*18;p.lv++;p.maxHp+=5;p.hp=p.maxHp;p.atk+=2;$('battleText').textContent=p.name+'はLv.'+p.lv+'になった！';updateBattle()}setTimeout(endBattle,850);return}var ed=dmg(e,p);p.hp=Math.max(0,p.hp-ed);$('battleText').textContent=e.name+'の反撃！ '+ed+'ダメージ';updateBattle();setTimeout(function(){if(p.hp<=0){var n=-1;for(var i=0;i<s.party.length;i++)if(s.party[i].hp>0){n=i;break}if(n>=0){s.active=n;$('battleText').textContent=active().name+'に交代した！';updateBattle()}else{for(var j=0;j<s.party.length;j++)s.party[j].hp=s.party[j].maxHp;s.x=6;s.y=6;toast('全員倒れたので研究所へ戻った');endBattle();return}}s.lock=false;disable(false);save()},650)},650)}
-function capture(){if(s.lock)return;if(s.balls<1){$('battleText').textContent='カプセルがない！';return}s.lock=true;disable(true);s.balls--;$('balls').textContent=s.balls;$('battleText').textContent='カプセルを投げた！';setTimeout(function(){var e=s.enemy,rate=dex[e.key].catchRate*(1-e.hp/e.maxHp*.65);if(Math.random()<rate){s.party.push(mon(e.key,e.lv));$('battleText').textContent=e.name+'を仲間にした！';setTimeout(endBattle,900)}else{$('battleText').textContent='飛び出した！';setTimeout(function(){var p=active(),d=dmg(e,p);p.hp=Math.max(0,p.hp-d);$('battleText').textContent=e.name+'の反撃！ '+d+'ダメージ';updateBattle();s.lock=false;disable(false);save()},550)}},750)}
-function run(){if(s.lock)return;s.lock=true;disable(true);$('battleText').textContent='逃げ出した！';setTimeout(endBattle,500)}
-function renderParty(inBattle){var box=$('partyList');box.innerHTML='';for(var i=0;i<s.party.length;i++){(function(idx){var m=s.party[idx],d=document.createElement('div');d.className='member';d.innerHTML='<div class="emo">'+m.emo+'</div><div class="info"><b>'+(idx===s.active?'★ ':'')+m.name+' Lv.'+m.lv+'</b><div>HP '+m.hp+'/'+m.maxHp+'　ATK '+m.atk+'</div></div><button>先頭</button>';d.querySelector('button').onclick=function(){if(m.hp<=0){toast('戦える元気がない');return}s.active=idx;renderParty(inBattle);save();if(inBattle){show('partyPanel',false);updateBattle();$('battleText').textContent=m.name+'に交代した！'}};box.appendChild(d)})(i)}show('partyPanel',true)}
-function bindTap(el,fn){var last=0;el.addEventListener('touchstart',function(e){e.preventDefault();last=Date.now();fn()},{passive:false});el.addEventListener('click',function(e){e.preventDefault();if(Date.now()-last>450)fn()})}
-var dirs=document.querySelectorAll('[data-dir]');for(var i=0;i<dirs.length;i++){(function(b){var timer=null,dir=b.getAttribute('data-dir');function go(){move(dir);clearInterval(timer);timer=setInterval(function(){move(dir)},170)}function stop(){clearInterval(timer);timer=null}b.addEventListener('touchstart',function(e){e.preventDefault();go()},{passive:false});b.addEventListener('touchend',function(e){e.preventDefault();stop()},{passive:false});b.addEventListener('touchcancel',stop);b.addEventListener('mousedown',go);b.addEventListener('mouseup',stop);b.addEventListener('mouseleave',stop);b.addEventListener('click',function(e){e.preventDefault()})})(dirs[i])}
-bindTap($('start'),function(){load();s.started=true;s.lock=false;show('title',false);$('balls').textContent=s.balls;draw();toast('十字キーで移動しよう！')});
-bindTap($('aBtn'),interact);bindTap($('partyBtn'),function(){renderParty(false)});bindTap($('closeParty'),function(){show('partyPanel',false)});bindTap($('attack'),attack);bindTap($('capture'),capture);bindTap($('swap'),function(){renderParty(true)});bindTap($('run'),run);
-window.addEventListener('keydown',function(e){if(e.key==='ArrowUp')move('up');if(e.key==='ArrowDown')move('down');if(e.key==='ArrowLeft')move('left');if(e.key==='ArrowRight')move('right');if(e.key===' '||e.key==='Enter')interact()});
+function startGame(){load();state.started=true;state.mode='map';state.lock=false;$('title').style.display='none';$('battle').style.display='none';$('party').style.display='none';$('balls').textContent=state.balls;draw();showToast('開始できました。十字キーを押してください');}
+function showToast(text){const el=$('toast');el.textContent=text;el.style.display='block';clearTimeout(showToast.t);showToast.t=setTimeout(()=>{el.style.display='none'},1500)}
+function draw(){ctx.clearRect(0,0,W,H);for(let y=0;y<R;y++)for(let x=0;x<C;x++)drawTile(x,y,tile(x,y));drawPlayer()}
+function drawTile(x,y,ch){const px=x*T,py=y*T;let c='#8bd16b';if(ch==='#')c='#315b31';else if(ch==='~')c='#53a8dc';else if(ch==='g')c='#79c95c';else if(ch==='h')c='#bf8a55';ctx.fillStyle=c;ctx.fillRect(px,py,T,T);if(ch==='g'){ctx.fillStyle='#3c8e3d';for(let i=0;i<4;i++)ctx.fillRect(px+6+i*9,py+20+(i%2)*5,3,14)}if(ch==='#'){ctx.fillStyle='#254b27';ctx.fillRect(px+4,py+4,32,32);ctx.fillStyle='#4b7844';ctx.fillRect(px+7,py+7,26,14)}if(ch==='~'){ctx.strokeStyle='#d1f1ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px+4,py+15);ctx.quadraticCurveTo(px+12,py+8,px+20,py+15);ctx.quadraticCurveTo(px+28,py+22,px+36,py+15);ctx.stroke()}if(ch==='h'){ctx.fillStyle='#8d603e';ctx.fillRect(px+18,py+4,4,32);ctx.fillRect(px+4,py+18,32,4)}if(ch==='L'){ctx.fillStyle='#fff';ctx.fillRect(px-20,py-36,80,76);ctx.fillStyle='#e63946';ctx.beginPath();ctx.moveTo(px-24,py-36);ctx.lineTo(px+20,py-68);ctx.lineTo(px+64,py-36);ctx.fill();ctx.fillStyle='#315acb';ctx.fillRect(px+2,py+12,18,28)}if(ch==='C'){ctx.fillStyle='#ffe7bd';ctx.fillRect(px-20,py-36,80,76);ctx.fillStyle='#7b5137';ctx.beginPath();ctx.moveTo(px-24,py-36);ctx.lineTo(px+20,py-68);ctx.lineTo(px+64,py-36);ctx.fill();ctx.fillStyle='#7b5137';ctx.fillRect(px+2,py+12,18,28)}ctx.strokeStyle='rgba(0,0,0,.06)';ctx.strokeRect(px,py,T,T)}
+function drawPlayer(){const px=state.x*T+T/2,py=state.y*T+T/2;ctx.save();ctx.translate(px,py);ctx.fillStyle='#29477f';ctx.fillRect(-11,-10,22,21);ctx.fillStyle='#f1ba83';ctx.fillRect(-8,-22,16,13);ctx.fillStyle='#ef3d52';ctx.fillRect(-12,-27,24,7);ctx.fillStyle='#182748';ctx.fillRect(-10,11,8,13);ctx.fillRect(2,11,8,13);ctx.restore()}
+function step(dir){if(!state.started||state.mode!=='map'||state.lock||$('party').style.display==='block')return;state.dir=dir;let dx=0,dy=0;if(dir==='up')dy=-1;if(dir==='down')dy=1;if(dir==='left')dx=-1;if(dir==='right')dx=1;const nx=state.x+dx,ny=state.y+dy;if(pass(tile(nx,ny))){state.x=nx;state.y=ny;state.steps++;if(tile(nx,ny)==='g'&&Math.random()<.18){startBattle()}if(state.steps%6===0)save()}draw()}
+function interact(){if(!state.started||state.mode!=='map')return;let dx=0,dy=0;if(state.dir==='up')dy=-1;if(state.dir==='down')dy=1;if(state.dir==='left')dx=-1;if(state.dir==='right')dx=1;const ch=tile(state.x+dx,state.y+dy);if(ch==='L'){state.party.forEach(m=>m.hp=m.maxHp);save();showToast('研究所で全員回復した！')}else if(ch==='C')showToast('村人「草むらを探してみよう」');else showToast('何もない')}
+const active=()=>state.party[state.active];
+function startBattle(){const keys=Object.keys(dex),key=keys[Math.floor(Math.random()*keys.length)],lv=2+Math.floor(Math.random()*5);state.enemy=makeMon(key,lv);state.mode='battle';$('battle').style.display='block';updateBattle();$('battleText').textContent='野生の '+state.enemy.name+' が現れた！'}
+function updateBattle(){const p=active(),e=state.enemy;if(!p||!e)return;$('enemyName').textContent=e.name;$('enemyLv').textContent='Lv.'+e.lv;$('enemyMon').textContent=e.emo;$('enemyHp').style.width=Math.max(0,e.hp/e.maxHp*100)+'%';$('myName').textContent=p.name;$('myLv').textContent='Lv.'+p.lv;$('myMon').textContent=p.emo;$('myHp').style.width=Math.max(0,p.hp/p.maxHp*100)+'%';$('myHpText').textContent='HP '+p.hp+'/'+p.maxHp}
+function damage(a,b){return Math.max(2,Math.floor(a.atk*(.72+Math.random()*.45)-b.lv*.4))}
+function endBattle(){state.mode='map';state.enemy=null;state.lock=false;$('battle').style.display='none';draw();save()}
+function attack(){if(state.lock||state.mode!=='battle')return;state.lock=true;const p=active(),e=state.enemy,d=damage(p,e);e.hp=Math.max(0,e.hp-d);$('battleText').textContent=p.name+'の攻撃！ '+d+'ダメージ';updateBattle();setTimeout(()=>{if(e.hp<=0){const gain=e.lv*8;$('battleText').textContent=e.name+'を倒した！ '+gain+'EXP';p.xp+=gain;if(p.xp>=p.lv*18){p.xp-=p.lv*18;p.lv++;p.maxHp+=5;p.hp=p.maxHp;p.atk+=2;$('battleText').textContent=p.name+'はLv.'+p.lv+'になった！';updateBattle()}setTimeout(endBattle,850);return}const ed=damage(e,p);p.hp=Math.max(0,p.hp-ed);$('battleText').textContent=e.name+'の反撃！ '+ed+'ダメージ';updateBattle();setTimeout(()=>{if(p.hp<=0){const n=state.party.findIndex(m=>m.hp>0);if(n>=0){state.active=n;$('battleText').textContent=active().name+'に交代した！';updateBattle()}else{state.party.forEach(m=>m.hp=m.maxHp);state.x=6;state.y=6;endBattle();showToast('全員倒れたので研究所へ戻った');return}}state.lock=false;save()},600)},650)}
+function capture(){if(state.lock||state.mode!=='battle')return;if(state.balls<1){$('battleText').textContent='カプセルがない！';return}state.lock=true;state.balls--;$('balls').textContent=state.balls;$('battleText').textContent='カプセルを投げた！';setTimeout(()=>{const e=state.enemy,rate=dex[e.key].catchRate*(1-e.hp/e.maxHp*.65);if(Math.random()<rate){state.party.push(makeMon(e.key,e.lv));$('battleText').textContent=e.name+'を仲間にした！';setTimeout(endBattle,900)}else{$('battleText').textContent='飛び出した！';state.lock=false;save()}},700)}
+function runAway(){if(state.lock||state.mode!=='battle')return;$('battleText').textContent='逃げ出した！';state.lock=true;setTimeout(endBattle,500)}
+function openParty(inBattle){if(!state.started)return;const box=$('partyList');box.innerHTML='';state.party.forEach((m,idx)=>{const d=document.createElement('div');d.className='member';d.innerHTML='<div class="emo">'+m.emo+'</div><div class="info"><b>'+(idx===state.active?'★ ':'')+m.name+' Lv.'+m.lv+'</b><div>HP '+m.hp+'/'+m.maxHp+'　ATK '+m.atk+'</div></div><button type="button">先頭</button>';d.querySelector('button').onclick=()=>{if(m.hp<=0){showToast('戦える元気がない');return}state.active=idx;save();if(inBattle){$('party').style.display='none';updateBattle();$('battleText').textContent=m.name+'に交代した！'}else openParty(false)};box.appendChild(d)});$('party').dataset.inBattle=inBattle?'1':'0';$('party').style.display='block'}
+function closeParty(){$('party').style.display='none'}
+window.addEventListener('keydown',e=>{if(e.key==='ArrowUp')step('up');if(e.key==='ArrowDown')step('down');if(e.key==='ArrowLeft')step('left');if(e.key==='ArrowRight')step('right');if(e.key==='Enter'||e.key===' ')interact()});
 draw();
-})();
 </script>
 </body>
 </html>
