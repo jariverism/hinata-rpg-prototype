@@ -1,91 +1,45 @@
 let V20_SELECTED_OFFICER='';
 
-function v20Portrait(name,large=false){
-  return `<img class="v20-face ${large?'large':''}" src="${portraitData(name)}" alt="${name}の肖像">`;
-}
-
-function v20AddTopNavigation(){
-  if(state?.battle||document.querySelector('.v20-nav'))return;
-  const header=document.querySelector('header');
-  if(!header)return;
-  const nav=document.createElement('nav');
-  nav.className='v20-nav';
-  nav.innerHTML=`<button class="active">城内</button><button>人事</button><button>軍事</button><button>計略</button><button>外交</button><button>情報</button>`;
-  header.insertAdjacentElement('afterend',nav);
-}
-
-function v20OfficerCard(o){
-  const active=o.name===V20_SELECTED_OFFICER?'selected':'';
-  const role=o.status==='君主'?'君主':o.status==='軍師'?'軍師':o.status==='太守'?'太守':o.war>=90?'猛将':o.int>=90?'才女':'武将';
-  return `<button class="v20-officer-card ${active}" data-v20-officer="${o.name}">
-    <span class="v20-role">${role}</span>${v20Portrait(o.name)}
-    <strong>${o.name}</strong><small>統${o.lead}　武${o.war}　知${o.int}<br>政${o.pol}　魅${o.cha}　忠${o.loy}</small>
-  </button>`;
-}
-
-function v20DetailPanel(o){
-  if(!o)return '';
-  const special=(typeof V17_SPECIALS!=='undefined'&&V17_SPECIALS[o.name])||(typeof V18_MARTIAL!=='undefined'&&V18_MARTIAL[o.name]);
-  return `<aside class="v20-detail">
-    <div class="v20-detail-head">${v20Portrait(o.name,true)}<div><h2>${o.name}</h2><b>${o.status}</b><p>${o.force}／${o.city}</p></div></div>
-    <div class="v20-bars">${[['統率',o.lead],['武力',o.war],['知力',o.int],['魅力',o.cha],['政治',o.pol]].map(([n,v])=>`<div><span>${n}</span><b>${v}</b><i><em style="width:${v}%"></em></i></div>`).join('')}</div>
-    <section><h3>特技・戦法</h3><p><b>${special?.name||'固有戦法なし'}</b></p><small>${special?.desc||'通常の命令と兵科特性を活用する武将です。'}</small></section>
-  </aside>`;
-}
-
-function v20TransformRoster(){
-  if(!state||state.battle)return;
-  const panels=[...document.querySelectorAll('.side-stack.left .panel')];
-  const roster=panels.find(p=>p.querySelector('.officer-row'));
-  if(!roster)return;
-  const officers=state.officers.filter(o=>o.force===state.playerForce&&o.status!=='捕虜');
-  if(!V20_SELECTED_OFFICER||!officers.some(o=>o.name===V20_SELECTED_OFFICER))V20_SELECTED_OFFICER=(ruler(state.playerForce)||officers[0])?.name||'';
-  roster.classList.add('v20-roster');
-  roster.innerHTML=`<div class="v20-roster-title"><div class="title">武将一覧</div><span>${officers.length}名</span></div><div class="v20-filter"><button class="active">すべて</button><button>日向坂46</button><button>三国武将</button><button>在野</button></div><div class="v20-card-grid">${officers.map(v20OfficerCard).join('')}</div>`;
-  roster.querySelectorAll('[data-v20-officer]').forEach(btn=>btn.addEventListener('click',()=>{V20_SELECTED_OFFICER=btn.dataset.v20Officer;v20ApplyUI()}));
-  let detail=document.querySelector('.v20-detail');
-  const selected=officers.find(o=>o.name===V20_SELECTED_OFFICER);
-  if(detail)detail.outerHTML=v20DetailPanel(selected);
-  else document.querySelector('.game-grid')?.insertAdjacentHTML('beforeend',v20DetailPanel(selected));
-}
-
-function v20ApplyUI(){
-  if(!state)return;
-  document.body.classList.toggle('v20-battle',!!state.battle);
-  if(state.battle){
-    document.querySelector('.phase-banner')?.insertAdjacentHTML('afterend','<div class="v20-battle-caption">全軍の行動が終了すると自動的に敵軍フェイズへ移行します。</div>');
-    return;
-  }
-  v20AddTopNavigation();
-  v20TransformRoster();
-}
-
-const v20BaseRender=render;
-render=function(){
-  v20BaseRender();
-  setTimeout(v20ApplyUI,0);
+const V20_PROFILE={
+'佐々木久美':{face:'oval',hair:'#3b241d',style:'high',eye:'soft',mouth:'smile',angle:-2,mole:'right',robe:'#654070',accent:'#d9b364'},
+'小坂菜緒':{face:'long',hair:'#171718',style:'straight',eye:'cool',mouth:'calm',angle:2,mole:'none',robe:'#274c70',accent:'#92b4dd'},
+'加藤史帆':{face:'heart',hair:'#5a3528',style:'pony',eye:'cat',mouth:'grin',angle:-4,mole:'left',robe:'#8d3728',accent:'#e4a25b'},
+'河田陽菜':{face:'round',hair:'#282020',style:'side',eye:'round',mouth:'soft',angle:3,mole:'none',robe:'#70517d',accent:'#c7a7df'},
+'上村ひなの':{face:'round',hair:'#211b1f',style:'wave',eye:'dreamy',mouth:'tiny',angle:-3,mole:'none',robe:'#394f7a',accent:'#8aa0e1'},
+'山口陽世':{face:'round',hair:'#44291f',style:'short',eye:'bright',mouth:'smile',angle:4,mole:'right',robe:'#3f704d',accent:'#e3bf65'},
+'東村芽依':{face:'small',hair:'#2d211b',style:'twin',eye:'cat',mouth:'open',angle:-5,mole:'none',robe:'#3f6f4c',accent:'#e4ae62'},
+'富田鈴花':{face:'oval',hair:'#3c2720',style:'long',eye:'strong',mouth:'calm',angle:2,mole:'left',robe:'#68406e',accent:'#cda4db'},
+'高瀬愛奈':{face:'long',hair:'#493024',style:'side',eye:'gentle',mouth:'soft',angle:-2,mole:'right',robe:'#8a5935',accent:'#e6bd6a'},
+'松田好花':{face:'heart',hair:'#3a241d',style:'bob',eye:'sharp',mouth:'smile',angle:3,mole:'none',robe:'#315e78',accent:'#89c2d9'},
+'宮田愛萌':{face:'oval',hair:'#171518',style:'long',eye:'soft',mouth:'calm',angle:-3,mole:'left',robe:'#773c45',accent:'#dda0a9'},
+'丹生明里':{face:'round',hair:'#252025',style:'twin',eye:'bright',mouth:'smile',angle:4,mole:'none',robe:'#365a75',accent:'#96c7dd'}
 };
 
-// 戦闘画面で確認できた残存兵数を、そのまま都市へ引き継ぐ。
-const v20BaseEndBattleGroup=endBattleGroup;
-endBattleGroup=function(win,retreat){
-  if(!state?.battle)return;
-  const b=state.battle;
-  const playerSurvivors=b.units.filter(u=>u.side==='player').reduce((s,u)=>s+Math.max(0,Math.floor(u.troops||0)),0);
-  const enemySurvivors=b.units.filter(u=>u.side==='enemy').reduce((s,u)=>s+Math.max(0,Math.floor(u.troops||0)),0);
-  const sourceBefore=state.cities[b.src]?.troops||0;
-  const targetBefore=state.cities[b.target]?.troops||0;
-  const defense=!!b.defense;
-  const src=b.src,target=b.target;
-  v20BaseEndBattleGroup(win,retreat);
-  if(defense){
-    if(win&&state.cities[target])state.cities[target].troops=playerSurvivors;
-    if(!win&&state.cities[target])state.cities[target].troops=enemySurvivors;
-    if(state.cities[src])state.cities[src].troops=Math.max(0,sourceBefore-enemySurvivors);
-  }else{
-    if(win&&state.cities[target])state.cities[target].troops=playerSurvivors;
-    if(!win&&state.cities[src])state.cities[src].troops=sourceBefore+playerSurvivors;
-    if(!win&&state.cities[target])state.cities[target].troops=Math.max(targetBefore,enemySurvivors);
-  }
-  render();
-};
+const v20FallbackPortraitData=portraitData;
+function v20PortraitSvg(name){
+ const p=V20_PROFILE[name];if(!p)return v20FallbackPortraitData(name);
+ const faceRx={round:24,oval:22,long:20,heart:22,small:20}[p.face]||22;
+ const faceRy={round:25,oval:28,long:30,heart:27,small:25}[p.face]||28;
+ const eye=p.eye==='cat'?'<path d="M34 43q7-5 14 0M57 43q7-5 14 0" fill="none" stroke="#2b1715" stroke-width="2.3"/><circle cx="42" cy="42" r="2.2"/><circle cx="64" cy="42" r="2.2"/>':p.eye==='cool'?'<path d="M34 42q7-2 14 0M57 42q7-2 14 0" fill="none" stroke="#251719" stroke-width="2.2"/><circle cx="42" cy="42" r="1.8"/><circle cx="64" cy="42" r="1.8"/>':p.eye==='round'||p.eye==='bright'?'<ellipse cx="42" cy="43" rx="4" ry="3.4" fill="#2b1815"/><ellipse cx="64" cy="43" rx="4" ry="3.4" fill="#2b1815"/><circle cx="43" cy="42" r="1.1" fill="#fff"/><circle cx="65" cy="42" r="1.1" fill="#fff"/>':'<path d="M35 43q6-4 13 0M58 43q6-4 13 0" fill="none" stroke="#2a1717" stroke-width="2"/><circle cx="42" cy="43" r="2"/><circle cx="64" cy="43" r="2"/>';
+ const mouth=p.mouth==='grin'||p.mouth==='open'?'<path d="M44 61q9 8 18 0q-9 12-18 0" fill="#a84b52" stroke="#743239"/>':p.mouth==='smile'||p.mouth==='soft'?'<path d="M44 60q9 7 18 0" fill="none" stroke="#a14b54" stroke-width="2"/>':'<path d="M47 61q6 2 12 0" fill="none" stroke="#8f454d" stroke-width="1.7"/>';
+ const hairBack=p.style==='short'?'<path d="M28 31Q34 12 54 13Q75 14 79 34L73 60H31Z" fill="'+p.hair+'"/>':p.style==='twin'?'<path d="M29 28Q33 10 54 12Q76 12 79 30L74 78H31Z" fill="'+p.hair+'"/><circle cx="24" cy="35" r="13" fill="'+p.hair+'"/><circle cx="82" cy="35" r="13" fill="'+p.hair+'"/>':'<path d="M27 30Q32 10 54 12Q77 12 80 31L76 86L66 72H40L30 86Z" fill="'+p.hair+'"/>';
+ const fringe=p.style==='straight'?'<path d="M31 32Q40 17 53 19Q66 17 76 32L67 28L61 37L53 27L47 38L41 27Z" fill="'+p.hair+'"/>':p.style==='side'?'<path d="M30 34Q41 15 69 21Q59 27 45 41Z" fill="'+p.hair+'"/>':p.style==='bob'?'<path d="M29 31Q36 12 55 15Q72 15 78 33L72 56Q57 31 31 40Z" fill="'+p.hair+'"/>':'<path d="M30 33Q37 14 56 17Q71 17 77 34Q59 24 31 39Z" fill="'+p.hair+'"/>';
+ const mole=p.mole==='left'?'<circle cx="35" cy="54" r="1.2" fill="#604139"/>':p.mole==='right'?'<circle cx="70" cy="54" r="1.2" fill="#604139"/>':'';
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 126"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ead8b1"/><stop offset="1" stop-color="#705648"/></linearGradient><linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe0c7"/><stop offset="1" stop-color="#dca98c"/></linearGradient></defs><rect width="108" height="126" rx="9" fill="url(#bg)"/><g transform="rotate('+p.angle+' 54 53)"><path d="M10 126Q17 82 54 77Q91 82 98 126" fill="'+p.robe+'"/><path d="M20 126L43 80L54 98L65 80L89 126" fill="none" stroke="'+p.accent+'" stroke-width="4"/>'+hairBack+'<ellipse cx="54" cy="47" rx="'+faceRx+'" ry="'+faceRy+'" fill="url(#skin)" stroke="#9d6c55" stroke-width=".7"/>'+fringe+eye+'<path d="M51 49q3 4 6 0" fill="none" stroke="#b47c65"/>'+mouth+mole+'<path d="M75 25q8-8 15 0q-7 7-15 0" fill="'+p.accent+'"/><circle cx="82" cy="24" r="3" fill="#f8e5a7"/></g><rect x="3" y="101" width="102" height="22" rx="5" fill="#17100ddd"/><text x="54" y="116" text-anchor="middle" fill="#ffe7ae" font-size="12" font-family="serif">'+name+'</text></svg>';
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+portraitData=v20PortraitSvg;
+
+function v20Portrait(name,large=false){return `<img class="v20-face ${large?'large':''}" src="${portraitData(name)}" alt="${name}の肖像">`}
+function v20OfficerCard(o){const active=o.name===V20_SELECTED_OFFICER?'selected':'';const role=o.status==='君主'?'君主':o.status==='太守'?'太守':o.war>=90?'猛将':o.int>=90?'才女':'武将';return `<button class="v20-officer-card ${active}" data-v20-officer="${o.name}"><span class="v20-role">${role}</span>${v20Portrait(o.name)}<strong>${o.name}</strong><small>統${o.lead} 武${o.war} 知${o.int}<br>政${o.pol} 魅${o.cha} 忠${o.loy}</small></button>`}
+function v20DetailPanel(o){if(!o)return'';const sp=(typeof V17_SPECIALS!=='undefined'&&V17_SPECIALS[o.name])||(typeof V18_MARTIAL!=='undefined'&&V18_MARTIAL[o.name]);return `<aside class="v20-detail"><div class="v20-detail-head">${v20Portrait(o.name,true)}<div><h2>${o.name}</h2><b>${o.status}</b><p>${o.force}／${o.city}</p></div></div><div class="v20-bars">${[['統率',o.lead],['武力',o.war],['知力',o.int],['魅力',o.cha],['政治',o.pol]].map(([n,v])=>`<div><span>${n}</span><b>${v}</b><i><em style="width:${v}%"></em></i></div>`).join('')}</div><section><h3>特技・戦法</h3><p><b>${sp?.name||'固有戦法なし'}</b></p><small>${sp?.desc||'通常命令と兵科特性を活用します。'}</small></section></aside>`}
+
+function v20InjectStyle(){if(document.querySelector('#v20-fix-style'))return;const s=document.createElement('style');s.id='v20-fix-style';s.textContent=`.officer-row.v15{display:flex!important}.game-grid{grid-template-columns:minmax(260px,330px) minmax(360px,1fr) minmax(260px,330px)!important}.v20-dashboard{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;width:100%;margin-bottom:10px;position:relative;z-index:1}.v20-dash-roster{background:linear-gradient(135deg,#ddc58f,#b69a65);color:#281b10;border:2px solid #5e3f1d;padding:9px;min-width:0}.v20-dashboard .v20-detail{min-height:0;position:relative;grid-column:auto;grid-row:auto}.v20-nav{pointer-events:auto!important;z-index:100!important}.v20-nav button{pointer-events:auto!important;touch-action:manipulation}.v20-card-grid{grid-template-columns:repeat(5,minmax(105px,1fr))}.v20-officer-card .v20-face{height:132px}@media(max-width:900px){.v20-dashboard{grid-template-columns:1fr}.v20-card-grid{grid-template-columns:repeat(4,1fr)}.game-grid{display:flex!important;flex-direction:column}.game-grid>*{width:100%}}@media(max-width:600px){.v20-card-grid{grid-template-columns:repeat(2,1fr)}.v20-officer-card .v20-face{height:155px}.v20-dashboard{display:block}.v20-detail{margin-top:8px}}`;document.head.appendChild(s)}
+
+function v20OpenTab(kind){const map={城内:['農業','商業','治水','巡察','捜索'],人事:['登用','褒美','移動','太守','軍師'],軍事:['徴兵','訓練','輸送','出兵'],計略:['策略','流言','離間','焼討'],外交:['外交','同盟','停戦','贈物','共同']};document.querySelectorAll('.v20-nav button').forEach(b=>b.classList.toggle('active',b.textContent.trim()===kind));if(kind==='情報'){document.querySelector('.network-map,.v20-dashboard,.city-map')?.scrollIntoView({behavior:'smooth',block:'start'});return}const words=map[kind]||[];const originals=[...document.querySelectorAll('.command-grid button')].filter(b=>words.some(w=>b.textContent.includes(w)));if(!originals.length){document.querySelector('.command-grid')?.scrollIntoView({behavior:'smooth',block:'center'});return}showModal(`<h2>${kind}</h2><div class="choice-list">${originals.map((b,i)=>`<button data-v20cmd="${i}" ${b.disabled?'disabled':''}>${b.textContent.trim()}</button>`).join('')}</div><button data-close class="secondary">閉じる</button>`);card.querySelectorAll('[data-v20cmd]').forEach(b=>b.onclick=()=>{const x=originals[+b.dataset.v20cmd];closeModal();setTimeout(()=>x.click(),0)})}
+function v20AddTopNavigation(){if(state?.battle)return;let nav=document.querySelector('.v20-nav');if(!nav){nav=document.createElement('nav');nav.className='v20-nav';nav.innerHTML=['城内','人事','軍事','計略','外交','情報'].map(x=>`<button type="button" data-tab="${x}">${x}</button>`).join('');document.querySelector('header')?.insertAdjacentElement('afterend',nav)}nav.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>v20OpenTab(b.dataset.tab))}
+function v20Dashboard(){if(!state||state.battle)return;document.querySelector('.v20-dashboard')?.remove();document.querySelectorAll('.v20-roster').forEach(x=>x.classList.remove('v20-roster'));const officers=state.officers.filter(o=>o.force===state.playerForce&&o.status!=='捕虜');if(!officers.length)return;if(!V20_SELECTED_OFFICER||!officers.some(o=>o.name===V20_SELECTED_OFFICER))V20_SELECTED_OFFICER=(ruler(state.playerForce)||officers[0]).name;const selected=officers.find(o=>o.name===V20_SELECTED_OFFICER);const host=document.querySelector('.screen');if(!host)return;const d=document.createElement('section');d.className='v20-dashboard';d.innerHTML=`<div class="v20-dash-roster"><div class="v20-roster-title"><div class="title">武将一覧</div><span>${officers.length}名</span></div><div class="v20-card-grid">${officers.map(v20OfficerCard).join('')}</div></div>${v20DetailPanel(selected)}`;host.insertBefore(d,host.firstChild);d.querySelectorAll('[data-v20-officer]').forEach(b=>b.onclick=()=>{V20_SELECTED_OFFICER=b.dataset.v20Officer;v20Dashboard()})}
+function v20ApplyUI(){if(!state)return;v20InjectStyle();if(state.battle){if(!document.querySelector('.v20-battle-caption'))document.querySelector('.phase-banner')?.insertAdjacentHTML('afterend','<div class="v20-battle-caption">全軍の行動終了後、自動で敵軍フェイズへ移行します。</div>');return}v20AddTopNavigation();v20Dashboard()}
+const v20BaseRender=render;render=function(){v20BaseRender();setTimeout(v20ApplyUI,0)};
+
+const v20BaseEndBattleGroup=endBattleGroup;endBattleGroup=function(win,retreat){if(!state?.battle)return;const b=state.battle,ps=b.units.filter(u=>u.side==='player').reduce((s,u)=>s+Math.max(0,Math.floor(u.troops||0)),0),es=b.units.filter(u=>u.side==='enemy').reduce((s,u)=>s+Math.max(0,Math.floor(u.troops||0)),0),src=b.src,target=b.target,def=!!b.defense,srcBefore=state.cities[src]?.troops||0,targetBefore=state.cities[target]?.troops||0;v20BaseEndBattleGroup(win,retreat);if(def){if(win&&state.cities[target])state.cities[target].troops=ps;if(!win&&state.cities[target])state.cities[target].troops=es}else{if(win&&state.cities[target])state.cities[target].troops=ps;if(!win&&state.cities[src])state.cities[src].troops=srcBefore+ps;if(!win&&state.cities[target])state.cities[target].troops=Math.max(targetBefore,es)}render()};
