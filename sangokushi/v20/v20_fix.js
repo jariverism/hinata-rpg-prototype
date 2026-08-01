@@ -1,5 +1,5 @@
 // v20 corrective layer: real portrait sprite, non-overlapping roster, working tabs.
-const V20_SPRITE='./assets/portrait_sprite.jpg';
+const V20_SPRITE='./assets/portrait_sprite.jpg?v=6';
 const V20_SPRITE_NAMES=['佐々木久美','小坂菜緒','加藤史帆','河田陽菜','上村ひなの','山口陽世','東村芽依','富田鈴花','高瀬愛奈','松田好花','宮田愛萌','丹生明里'];
 const V20_SPRITE_INDEX=Object.fromEntries(V20_SPRITE_NAMES.map((n,i)=>[n,i]));
 
@@ -10,8 +10,8 @@ const V20_SPRITE_INDEX=Object.fromEntries(V20_SPRITE_NAMES.map((n,i)=>[n,i]));
  .v20-shell .v20-roster{grid-column:auto!important;min-width:0;max-height:590px;overflow:auto}
  .v20-shell .v20-detail{grid-column:auto!important;grid-row:auto!important;min-width:0;min-height:0;overflow:hidden}
  .v20-card-grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))!important}
- .v20-sprite-face{display:block;width:100%;aspect-ratio:3/4;border:2px solid #795622;background-color:#2a1a10;background-image:url('${V20_SPRITE}');background-repeat:no-repeat;background-size:600% 200%;box-shadow:inset 0 0 0 2px #d0a84f;pointer-events:none}
- .v20-sprite-face.large{width:142px;min-width:142px;height:180px;aspect-ratio:auto}
+ .v20-sprite-face{display:block;width:100%;aspect-ratio:1/1;border:2px solid #795622;background-color:#2a1a10;background-image:url('${V20_SPRITE}');background-repeat:no-repeat;background-size:600% 200%;box-shadow:inset 0 0 0 2px #d0a84f;pointer-events:none}
+ .v20-sprite-face.large{width:160px;min-width:160px;height:160px;aspect-ratio:1/1}
  .v20-nav{z-index:1000!important;pointer-events:auto!important}
  .v20-nav button{pointer-events:auto!important;position:relative;z-index:1001}
  .v20-tab-menu button{width:100%;margin:4px 0;padding:12px;text-align:left}
@@ -19,7 +19,7 @@ const V20_SPRITE_INDEX=Object.fromEntries(V20_SPRITE_NAMES.map((n,i)=>[n,i]));
  .game-grid>.v20-detail,.game-grid>.v20-roster{display:none!important}
  .officer-row.v15{display:flex!important}
  @media(max-width:900px){.v20-shell{grid-template-columns:1fr}.v20-shell .v20-detail{order:2}.v20-shell .v20-roster{max-height:none}.game-grid{display:flex!important;flex-direction:column}}
- @media(max-width:520px){.v20-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.v20-sprite-face.large{width:105px;min-width:105px;height:134px}}
+ @media(max-width:520px){.v20-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.v20-sprite-face.large{width:120px;min-width:120px;height:120px}}
  `;
  document.head.appendChild(s);
 })();
@@ -34,7 +34,7 @@ function v20SpritePosition(name){
 v20Portrait=function(name,large=false){
  const pos=v20SpritePosition(name);
  if(pos){
-  return `<span class="v20-sprite-face ${large?'large':''}" role="img" aria-label="${name}の肖像" style="background-position:${pos}"></span>`;
+  return `<span class="v20-sprite-face ${large?'large':''}" role="img" aria-label="${name}の画像版肖像" style="background-position:${pos}"></span>`;
  }
  return `<img class="v20-face ${large?'large':''}" src="${portraitData(name)}" alt="${name}の肖像">`;
 };
@@ -48,7 +48,7 @@ function v20BuildShell(){
  const selected=officers.find(o=>o.name===V20_SELECTED_OFFICER)||officers[0];
  const shell=document.createElement('section');
  shell.className='v20-shell';
- shell.innerHTML=`<div class="panel v20-roster"><div class="v20-roster-title"><div class="title">武将一覧</div><span>${officers.length}名</span></div><div class="v20-card-grid">${officers.map(v20OfficerCard).join('')}</div></div>${v20DetailPanel(selected)}`;
+ shell.innerHTML=`<div class="panel v20-roster"><div class="v20-roster-title"><div class="title">武将一覧［画像版］</div><span>${officers.length}名</span></div><div class="v20-card-grid">${officers.map(v20OfficerCard).join('')}</div></div>${v20DetailPanel(selected)}`;
  const screen=document.querySelector('.screen');
  const grid=document.querySelector('.game-grid');
  if(screen)screen.insertBefore(shell,grid||screen.firstChild);else document.querySelector('#app')?.prepend(shell);
