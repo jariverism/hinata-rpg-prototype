@@ -1,0 +1,29 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>日向三国志 改 v7</title><style>html,body,iframe{margin:0;width:100%;height:100%;border:0;background:#f4ead0}#msg{position:fixed;top:8px;right:8px;z-index:99;background:#fff4c8;border:2px solid #b68b3b;border-radius:10px;padding:8px 10px;font:700 12px -apple-system,BlinkMacSystemFont,sans-serif;color:#4b2117;box-shadow:0 2px 8px #0003}</style></head><body><div id="msg">v7：複数武将の連続行動を修正</div><iframe id="game" src="../v6/"></iframe><script>const f=document.getElementById('game');f.onload=()=>{const w=f.contentWindow;w.eval(`
+function runOfficerCommand(command){
+ const list=availableOfficers(selected);
+ if(!list.length)return alert('この都市には未行動の武将がいません');
+ const labels={develop:'内政',recruit:'徴兵',train:'訓練',search:'捜索',plot:'策略',hire:'登用',attack:'出兵'};
+ modal((labels[command]||'命令')+'の担当武将','<div class="choice">'+list.map(o=>'<button data-v7actor="'+o.name+'">'+o.name+'　統'+o.lead+' 武'+o.war+' 知'+o.int+' 政'+o.pol+' 魅'+o.cha+'</button>').join('')+'</div>');
+ qa('[data-v7actor]').forEach(b=>b.onclick=()=>{
+   actingOfficer=officers.find(o=>o.name===b.dataset.v7actor);
+   q('#modal').classList.remove('on');
+   if(command==='develop')develop();
+   else if(command==='recruit')recruit();
+   else if(command==='train')train();
+   else if(command==='search')searchCmd();
+   else if(command==='plot')plotCmd();
+   else if(command==='hire')hireCmd();
+   else if(command==='attack')attackCmd();
+ });
+}
+action=function(a){
+ if(a==='save'){localStorage.setItem('hinata3k_v7',JSON.stringify({cities,officers,turn,selected,logs,found,over}));addLog('v7形式で保存した。');render();return}
+ if(a==='load'){let s=localStorage.getItem('hinata3k_v7');if(!s)return alert('v7の保存データがありません');let d=JSON.parse(s);cities=d.cities;officers=d.officers;turn=d.turn;selected=d.selected;logs=d.logs;found=d.found||[];over=d.over;actingOfficer=null;render();return}
+ if(a==='restart'){if(confirm('最初からやり直しますか？'))reset();return}
+ if(a==='end'){endTurn();return}
+ if(cities[selected].r!=='久美軍'||over)return;
+ if(a==='move'){moveCmd();return}
+ runOfficerCommand(a);
+};
+render();
+`);setTimeout(()=>document.getElementById('msg').remove(),3500)};</script></body></html>
