@@ -1,0 +1,77 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>日向三国志 v9</title><style>html,body,iframe{margin:0;width:100%;height:100%;border:0;background:#f4ead0}#msg{position:fixed;top:8px;right:8px;z-index:99;background:#fff4c8;border:2px solid #b68b3b;border-radius:10px;padding:8px 10px;font:700 12px -apple-system,BlinkMacSystemFont,sans-serif;color:#4b2117;box-shadow:0 2px 8px #0003}</style></head><body><div id="msg">v9：太守登用で城ごと帰順</div><iframe id="game" src="../v8/?v=9"></iframe><script>
+const f=document.getElementById('game');
+f.onload=()=>{const w=f.contentWindow;w.eval(`
+let governors={北平:'佐々木久美',鄴:'金村美玖',洛陽:'齊藤京子',許昌:'富田鈴花',建業:'髙橋未来虹',江陵:'松田好花',成都:'東村芽依'};
+const v8Render=render;
+const v8Action=action;
+const v8Reset=reset;
+function governorOf(city){
+ const name=governors[city];
+ const o=officers.find(x=>x.name===name&&x.c===city);
+ if(o)return o;
+ const force=cities[city].r;
+ const replacement=officers.filter(x=>x.c===city&&x.f===force).sort((a,b)=>(b.lead+b.pol)-(a.lead+a.pol))[0];
+ if(replacement){governors[city]=replacement.name;return replacement}
+ return null;
+}
+function ensureGovernors(){
+ Object.keys(cities).forEach(city=>{
+  if(governorOf(city))return;
+  const force=cities[city].r;
+  let candidate=officers.filter(x=>x.f===force).sort((a,b)=>(b.lead+b.pol)-(a.lead+a.pol))[0];
+  if(candidate){candidate.c=city;governors[city]=candidate.name;log(force+'は'+candidate.name+'を'+city+'太守に任命した。');return}
+  const name=force+'守将'+city;
+  officers.push({name,f:force,c:city,lead:65,war:62,int:60,pol:66,cha:58,loy:85,skill:'城門固守'});
+  governors[city]=name;
+  log(city+'に新たな守将が任命された。');
+ });
+}
+render=function(){
+ ensureGovernors();
+ v8Render();
+ qa('[data-city]').forEach(card=>{
+  const city=card.dataset.city,g=governorOf(city),stats=card.querySelector('.stats');
+  if(stats&&g)stats.innerHTML='<b style="color:#8b2c1d">太守：'+g.name+'</b><br>'+stats.innerHTML;
+ });
+ q('#roster').innerHTML=own().map(o=>'<div class="officer"><b>'+o.name+'</b>（'+o.c+'） '+(governors[o.c]===o.name?'<span style="color:#8b2c1d;font-weight:900">太守</span>　':'')+(o.acted===turn?'<span class="done">行動済</span>':'<span class="ready">行動可</span>')+'<br>統'+o.lead+' 武'+o.war+' 知'+o.int+' 政'+o.pol+' 魅'+o.cha+'　忠'+o.loy+'<br>'+o.skill+'</div>').join('');
+};
+function relocateLoyalists(city,oldForce,exceptName){
+ const destinations=Object.keys(cities).filter(n=>cities[n].r===oldForce&&n!==city);
+ officers.filter(x=>x.c===city&&x.f===oldForce&&x.name!==exceptName).forEach(x=>{
+  if(x.loy<=65){x.f='久美軍';x.loy=Math.max(55,x.loy);x.acted=turn;log(x.name+'も太守に従い帰順した。')}
+  else if(destinations.length){x.c=destinations.sort((a,b)=>cities[a].s-cities[b].s)[0];log(x.name+'は帰順を拒み'+x.c+'へ退いた。')}
+  else{x.f='在野';x.loy=45;log(x.name+'は下野した。')}
+ });
+}
+hire=function(o){
+ let c=cities[selected],local=officers.filter(x=>x.f==='在野'&&x.c===selected),enemy=officers.filter(x=>x.f!=='久美軍'&&x.f!=='在野');
+ let ts=[...local,...enemy];if(!ts.length)return alert('対象なし');
+ modal('登用：実行者 '+o.name,'<div class="choice">'+ts.map(t=>{let wander=t.f==='在野',isGov=governors[t.c]===t.name,cost=wander?80:(isGov?260:180),ch=Math.min(95,(wander?35:5)+o.cha*.55+(100-t.loy)*(wander?.25:.65)-(wander?0:10)+(isGov?(100-cities[t.c].l)*.18:0));return '<button data-h="'+t.name+'">'+t.name+(isGov?'【'+t.c+'太守】':'')+'（'+t.f+'・'+t.c+'・忠'+t.loy+'／金'+cost+'）<div class="chance">成功率 約'+ch.toFixed(0)+'%'+(isGov?'／成功時は城ごと帰順':'')+'</div></button>'}).join('')+'</div>');
+ qa('[data-h]').forEach(b=>b.onclick=()=>{
+  let t=officers.find(x=>x.name===b.dataset.h),wander=t.f==='在野',isGov=governors[t.c]===t.name,oldCity=t.c,oldForce=t.f,cost=wander?80:(isGov?260:180);
+  if(c.g<cost)return alert('金不足');c.g-=cost;
+  let ch=Math.min(95,(wander?35:5)+o.cha*.55+(100-t.loy)*(wander?.25:.65)-(wander?0:10)+(isGov?(100-cities[t.c].l)*.18:0));
+  if(Math.random()*100<ch){
+   if(isGov&&!wander){
+    cities[oldCity].r='久美軍';
+    t.f='久美軍';t.c=oldCity;t.loy=70;t.acted=turn;
+    governors[oldCity]=t.name;
+    relocateLoyalists(oldCity,oldForce,t.name);
+    q('#modal').classList.remove('on');
+    finish(o,t.name+'の登用に成功。'+oldCity+'は兵・金・兵糧とともに久美軍へ帰順した。');
+   }else{
+    t.f='久美軍';t.c=selected;t.loy=wander?75:62;t.acted=turn;
+    q('#modal').classList.remove('on');finish(o,(oldForce==='在野'?'在野の':oldForce+'の')+t.name+'を登用。');
+   }
+  }else{q('#modal').classList.remove('on');finish(o,t.name+'の登用に失敗。')}
+ });
+};
+action=function(a){
+ if(a==='save'){localStorage.setItem('hinata3k_v9',JSON.stringify({cities,officers,turn,selected,logs,found,over,governors}));log('v9形式で保存した。');render();return}
+ if(a==='load'){let s=localStorage.getItem('hinata3k_v9');if(!s)return alert('v9の保存データがありません');let d=JSON.parse(s);cities=d.cities;officers=d.officers;turn=d.turn;selected=d.selected;logs=d.logs;found=d.found||[];over=d.over;governors=d.governors||governors;render();return}
+ if(a==='restart'){if(confirm('最初から？')){governors={北平:'佐々木久美',鄴:'金村美玖',洛陽:'齊藤京子',許昌:'富田鈴花',建業:'髙橋未来虹',江陵:'松田好花',成都:'東村芽依'};v8Reset()}return}
+ v8Action(a);
+};
+render();
+`);setTimeout(()=>document.getElementById('msg').remove(),3500)};
+</script></body></html>
