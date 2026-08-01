@@ -1,0 +1,62 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>日向三国志 改 v6</title><style>html,body,iframe{margin:0;width:100%;height:100%;border:0;background:#f4ead0}#msg{position:fixed;top:8px;right:8px;z-index:99;background:#fff4c8;border:2px solid #b68b3b;border-radius:10px;padding:8px 10px;font:700 12px -apple-system,BlinkMacSystemFont,sans-serif;color:#4b2117;box-shadow:0 2px 8px #0003}</style></head><body><div id="msg">v6：武将1人につき月1行動</div><iframe id="game" src="../v5/"></iframe><script>
+const f=document.getElementById('game');
+f.onload=()=>{const w=f.contentWindow;w.eval(`
+let actingOfficer=null;
+const originalAction=action;
+const originalBest=best;
+const originalRender=render;
+const originalSaveKey='hinata3k_v3';
+function availableOfficers(city){return ownOfficers(city).filter(o=>o.actedTurn!==turn)}
+best=function(city,stat,force='久美軍'){
+ if(actingOfficer&&actingOfficer.c===city&&actingOfficer.f===force)return actingOfficer;
+ return originalBest(city,stat,force);
+};
+mark=function(){
+ if(actingOfficer)actingOfficer.actedTurn=turn;
+ actingOfficer=null;
+ q('#modal').classList.remove('on');
+ checkWin();
+ render();
+};
+function chooseActor(command){
+ const list=availableOfficers(selected);
+ if(!list.length)return alert('この都市には未行動の武将がいません');
+ const labels={develop:'内政',recruit:'徴兵',train:'訓練',search:'捜索',plot:'策略',hire:'登用',attack:'出兵'};
+ modal((labels[command]||'命令')+'の担当武将','<div class="choice">'+list.map(o=>'<button data-actor="'+o.name+'">'+o.name+'　統'+o.lead+' 武'+o.war+' 知'+o.int+' 政'+o.pol+' 魅'+o.cha+'</button>').join('')+'</div>');
+ qa('[data-actor]').forEach(b=>b.onclick=()=>{actingOfficer=officers.find(o=>o.name===b.dataset.actor);q('#modal').classList.remove('on');originalAction(command)});
+}
+action=function(a){
+ if(['save','load','restart','end'].includes(a)){
+   if(a==='save'){localStorage.setItem('hinata3k_v6',JSON.stringify({cities,officers,turn,selected,logs,found,over}));addLog('v6形式で保存した。');render();return}
+   if(a==='load'){let s=localStorage.getItem('hinata3k_v6');if(!s)return alert('v6の保存データがありません');let d=JSON.parse(s);cities=d.cities;officers=d.officers;turn=d.turn;selected=d.selected;logs=d.logs;found=d.found||[];over=d.over;render();return}
+   return originalAction(a);
+ }
+ if(a==='move')return moveCmd();
+ chooseActor(a);
+};
+moveCmd=function(){
+ let list=availableOfficers(selected);
+ if(!list.length)return alert('移動できる未行動武将がいません');
+ let dests=mine().filter(x=>x!==selected);
+ if(!dests.length)return alert('移動先の自軍都市がありません');
+ modal('武将移動','<div class="choice">'+list.map(o=>'<button data-mo="'+o.name+'">'+o.name+'を移動</button>').join('')+'</div>');
+ qa('[data-mo]').forEach(b=>b.onclick=()=>{
+   let o=officers.find(x=>x.name===b.dataset.mo);
+   modal(o.name+'の移動先','<div class="choice">'+dests.map(n=>'<button data-md="'+n+'">'+n+'</button>').join('')+'</div>');
+   qa('[data-md]').forEach(d=>d.onclick=()=>{let from=o.c;o.c=d.dataset.md;o.actedTurn=turn;addLog(o.name+'が'+from+'から'+o.c+'へ移動し、今月の行動を終えた。');q('#modal').classList.remove('on');render()});
+ });
+};
+render=function(){
+ Object.values(cities).forEach(c=>delete c.acted);
+ originalRender();
+ const remain=availableOfficers(selected).length;
+ const total=ownOfficers(selected).length;
+ q('#status').innerHTML += '<br><b>行動可能：'+remain+'／'+total+'人</b>';
+ q('#roster').innerHTML=ownOfficers().map(o=>'<div class="officer"><b>'+o.name+'</b>（'+o.c+'） 忠誠'+o.loy+'　'+(o.actedTurn===turn?'<span style="color:#999">行動済</span>':'<span style="color:#19733b;font-weight:800">行動可</span>')+'<br>統'+o.lead+' 武'+o.war+' 知'+o.int+' 政'+o.pol+' 魅'+o.cha+'<br><span class="skill">'+o.skill+'</span></div>').join('');
+ qa('#commands [data-a]').forEach(b=>{if(b.dataset.a!=='end')b.disabled=(cities[selected].r!=='久美軍'||remain===0||over)});
+};
+const oldEnd=endTurn;
+endTurn=function(){actingOfficer=null;oldEnd()};
+render();
+`);setTimeout(()=>document.getElementById('msg').remove(),3000)};
+</script></body></html>
