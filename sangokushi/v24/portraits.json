@@ -1,0 +1,7 @@
+{
+  "佐々木久美": {"id":"sasaki_kumi","portrait":"../assets/portraits/sasaki_kumi.webp","mini":"../assets/mini/sasaki_kumi.webp","icon":"../assets/icons/sasaki_kumi.webp","status":"approved_pending_asset"},
+  "潮紗理菜": {"id":"ushio_sarina","portrait":"../assets/portraits/ushio_sarina.webp","mini":"../assets/mini/ushio_sarina.webp","icon":"../assets/icons/ushio_sarina.webp","status":"approved_pending_asset"},
+  "影山優佳": {"id":"kageyama_yuka","portrait":"../assets/portraits/kageyama_yuka.webp","mini":"../assets/mini/kageyama_yuka.webp","icon":"../assets/icons/kageyama_yuka.webp","status":"approved_pending_asset"},
+  "高本彩花": {"id":"takamoto_ayaka","portrait":"../assets/portraits/takamoto_ayaka.webp","mini":"../assets/mini/takamoto_ayaka.webp","icon":"../assets/icons/takamoto_ayaka.webp","status":"review"},
+  "上村ひなの": {"id":"kamimura_hinano","portrait":"../assets/portraits/kamimura_hinano.webp","mini":"../assets/mini/kamimura_hinano.webp","icon":"../assets/icons/kamimura_hinano.webp","status":"review"}
+}
