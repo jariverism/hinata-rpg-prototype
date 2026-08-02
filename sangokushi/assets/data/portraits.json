@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "basePath": "../assets/portraits/",
+  "members": {
+    "佐々木久美": {
+      "id": "sasaki_kumi",
+      "role": "君主",
+      "primaryColor": "blue-gold",
+      "portrait": "sasaki_kumi.webp",
+      "mini": "mini/sasaki_kumi.webp",
+      "icon": "icons/sasaki_kumi.webp",
+      "status": "approved_pending_export",
+      "features": [
+        "やや面長",
+        "ダークブラウンのロングヘア",
+        "穏やかな微笑み",
+        "左目の下の小さなほくろ",
+        "青と金の君主装束"
+      ]
+    },
+    "潮紗理菜": {
+      "id": "ushio_sarina",
+      "role": null,
+      "primaryColor": null,
+      "portrait": "ushio_sarina.webp",
+      "mini": "mini/ushio_sarina.webp",
+      "icon": "icons/ushio_sarina.webp",
+      "status": "pending",
+      "features": []
+    },
+    "影山優佳": {"id":"kageyama_yuka","status":"pending"},
+    "加藤史帆": {"id":"kato_shiho","status":"pending"},
+    "齊藤京子": {"id":"saito_kyoko","status":"pending"},
+    "佐々木美玲": {"id":"sasaki_mirei","status":"pending"},
+    "高瀬愛奈": {"id":"takase_mana","status":"pending"},
+    "高本彩花": {"id":"takamoto_ayaka","status":"pending"},
+    "東村芽依": {"id":"higashimura_mei","status":"pending"},
+    "金村美玖": {"id":"kanemura_miku","status":"pending"},
+    "河田陽菜": {"id":"kawata_hina","status":"pending"},
+    "小坂菜緒": {"id":"kosaka_nao","status":"pending"},
+    "富田鈴花": {"id":"tomita_suzuka","status":"pending"},
+    "丹生明里": {"id":"nibu_akari","status":"pending"},
+    "濱岸ひより": {"id":"hamagishi_hiyori","status":"pending"},
+    "松田好花": {"id":"matsuda_konoka","status":"pending"},
+    "宮田愛萌": {"id":"miyata_manamo","status":"pending"},
+    "渡邉美穂": {"id":"watanabe_miho","status":"pending"},
+    "上村ひなの": {"id":"kamimura_hinano","status":"pending"},
+    "山口陽世": {"id":"yamaguchi_haruyo","status":"pending"},
+    "藤嶌果歩": {"id":"fujishima_kaho","status":"pending"}
+  }
+}
