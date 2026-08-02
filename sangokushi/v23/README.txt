@@ -1,0 +1,1 @@
+v23 uses a correctly encoded WebP portrait atlas and a direct portrait mapping. Old SVG and Canvas rasterization are not used for Hinata portraits.
