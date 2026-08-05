@@ -8,18 +8,16 @@
   <title>日向戦記 ―陽だまりの旗―</title>
   <link rel="stylesheet" href="./style.css" />
   <link rel="stylesheet" href="./ui-story-patch.css?v=3" />
+  <link rel="stylesheet" href="./campaign-ui.css?v=1" />
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <div>
         <h1>日向戦記 <small>―陽だまりの旗―</small></h1>
-        <p id="chapterLabel">序章「目覚めた陽光」</p>
+        <p id="chapterLabel">第1章「目覚めた陽光」</p>
       </div>
-      <div style="display:flex;gap:7px">
-        <a href="./chapter2/" class="icon-button" aria-label="第2章を開く">Ⅱ</a>
-        <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
-      </div>
+      <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
     </header>
 
     <section class="hud">
@@ -59,6 +57,7 @@
   </dialog>
 
   <div id="toast" class="toast" role="status"></div>
-  <script src="./exp-level-loader.js?v=1"></script>
+  <script src="./campaign.js?v=1"></script>
+  <script src="./campaign-root-loader.js?v=1"></script>
 </body>
 </html>
