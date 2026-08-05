@@ -1,0 +1,292 @@
+/* UI/story enhancement layer. Kept separate from the battle engine. */
+
+.unit[data-class-enhanced="true"] {
+  flex-direction: column;
+  gap: 0;
+  overflow: visible;
+}
+
+.class-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35em;
+  height: 1.35em;
+  color: #fff;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.65));
+}
+
+.class-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.unit .class-icon {
+  width: 29px;
+  height: 29px;
+}
+
+.unit .class-tag {
+  position: absolute;
+  left: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 3px;
+  border: 1px solid rgba(255,255,255,.9);
+  border-radius: 7px;
+  background: #111a2b;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,.55);
+}
+
+.unit[data-class-name="ソシアルナイト"] .class-icon {
+  transform: translateY(1px);
+}
+
+.unit-class-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.class-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 3px 9px 3px 5px;
+  border: 1px solid #d1b965;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#34466d,#1b2844);
+  color: #fff4c2;
+}
+
+.class-badge .class-icon {
+  width: 23px;
+  height: 23px;
+}
+
+.class-badge b {
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+
+.weapon-label {
+  color: #c7d1e7;
+  font-size: 12px;
+}
+
+.story-open {
+  overflow: hidden;
+}
+
+.story-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 50% 30%, rgba(60,78,120,.35), transparent 52%),
+    rgba(3,7,15,.93);
+  backdrop-filter: blur(4px);
+}
+
+.story-overlay[hidden] {
+  display: none;
+}
+
+.story-frame {
+  width: min(720px, 100%);
+  max-height: min(760px, 94dvh);
+  overflow: auto;
+  border: 2px solid #c7a956;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(41,55,88,.98), rgba(18,27,48,.99));
+  box-shadow:
+    0 22px 65px rgba(0,0,0,.66),
+    inset 0 0 0 2px rgba(255,255,255,.04);
+}
+
+.story-chapter {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(214,187,105,.55);
+  background: linear-gradient(90deg,#202c49,#35476e,#202c49);
+  color: #ffe38b;
+  font-family: serif;
+  font-size: clamp(15px,4vw,20px);
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: .08em;
+}
+
+.story-stage {
+  display: grid;
+  grid-template-columns: 96px minmax(0,1fr);
+  gap: 14px;
+  min-height: 210px;
+  padding: 22px 22px 16px;
+  align-items: center;
+}
+
+.story-stage.portrait-right {
+  grid-template-columns: minmax(0,1fr) 96px;
+}
+
+.story-stage.portrait-right .story-portrait {
+  order: 2;
+}
+
+.story-stage.portrait-right .story-copy {
+  order: 1;
+}
+
+.story-portrait {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  aspect-ratio: 1;
+  border: 3px solid #e6cf85;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%,#8fd2ff,#3e73bd 46%,#1c345d 70%);
+  color: #fff;
+  font-family: serif;
+  font-size: 42px;
+  font-weight: 900;
+  box-shadow:
+    0 5px 0 rgba(0,0,0,.35),
+    0 0 22px rgba(91,158,255,.28);
+}
+
+.story-portrait.narrator {
+  border-style: double;
+  background:
+    radial-gradient(circle,#e5d38f 0 8%,#756536 10% 18%,#202b49 20% 70%);
+  color: #f7df8f;
+  font-size: 26px;
+}
+
+.story-speaker {
+  display: inline-block;
+  min-width: 150px;
+  margin-bottom: 9px;
+  padding: 5px 14px;
+  border-left: 4px solid #f2cf68;
+  background: rgba(8,14,27,.62);
+  color: #ffe69b;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.story-text {
+  min-height: 5.2em;
+  margin: 0;
+  color: #fff;
+  font-family: serif;
+  font-size: clamp(17px,4.2vw,22px);
+  line-height: 1.8;
+  letter-spacing: .02em;
+}
+
+.story-progress {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  min-height: 12px;
+  padding: 0 12px 10px;
+}
+
+.story-progress i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid #8290ad;
+  border-radius: 50%;
+  background: #25314e;
+}
+
+.story-progress i.done {
+  background: #7786aa;
+}
+
+.story-progress i.current {
+  border-color: #ffe384;
+  background: #ffe384;
+  box-shadow: 0 0 8px rgba(255,227,132,.75);
+}
+
+.story-controls {
+  display: grid;
+  grid-template-columns: minmax(84px,.45fr) 1fr;
+  gap: 10px;
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255,255,255,.1);
+  background: rgba(7,12,23,.55);
+}
+
+.story-controls button {
+  min-height: 50px;
+}
+
+.story-controls #storyNext {
+  border-color: #d2b65f;
+  background: linear-gradient(#7f692e,#4d3c18);
+}
+
+@media (max-width: 520px) {
+  .unit .class-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .story-stage,
+  .story-stage.portrait-right {
+    grid-template-columns: 62px minmax(0,1fr);
+    gap: 10px;
+    min-height: 235px;
+    padding: 17px 14px 12px;
+  }
+
+  .story-stage.portrait-right {
+    grid-template-columns: minmax(0,1fr) 62px;
+  }
+
+  .story-portrait {
+    width: 60px;
+    font-size: 29px;
+    align-self: start;
+    margin-top: 30px;
+  }
+
+  .story-portrait.narrator {
+    font-size: 20px;
+  }
+
+  .story-speaker {
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .story-text {
+    font-size: 17px;
+    line-height: 1.72;
+  }
+}
