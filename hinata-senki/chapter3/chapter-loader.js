@@ -2,6 +2,11 @@
   'use strict';
 
   function patchSource(source) {
+    const oldWeapon = "    slimSword:{name:'細身の剣',type:'sword',might:3,hit:100,crit:5,weight:2,range:[1],uses:30},\n    ironLance:";
+    const newWeapon = "    slimSword:{name:'細身の剣',type:'sword',might:3,hit:100,crit:5,weight:2,range:[1],uses:30},\n    dagger:{name:'鋼の短剣',type:'sword',might:4,hit:95,crit:5,weight:2,range:[1],uses:35},\n    ironLance:";
+    if (!source.includes(oldWeapon)) throw new Error('第3章の武器定義を特定できませんでした');
+    source = source.replace(oldWeapon,newWeapon);
+
     const oldFreshHeader = "    return {\n      turn:1,";
     const newFreshHeader = "    return {\n      sourceCampaignUpdatedAt:window.HinataCampaign?.load()?.updatedAt || 0,\n      turn:1,";
     if (!source.includes(oldFreshHeader)) throw new Error('第3章の初期状態を特定できませんでした');
