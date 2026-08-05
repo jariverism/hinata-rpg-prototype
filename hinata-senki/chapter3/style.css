@@ -1,0 +1,16 @@
+:root { --tile:54px; }
+.tile.plain { background:linear-gradient(135deg,#718d4b,#59743d); }
+.tile.road { background:linear-gradient(135deg,#b59769,#987a53); }
+.tile.forest { background:radial-gradient(circle at 25% 30%,#234a2b 0 22%,transparent 23%),radial-gradient(circle at 72% 65%,#1d3f25 0 25%,transparent 26%),#42683a; }
+.tile.river { background:repeating-linear-gradient(165deg,#2d78a5 0 7px,#368bb7 8px 14px,#21698f 15px 21px); }
+.tile.bridge { background:repeating-linear-gradient(90deg,#86613c 0 8px,#ad8050 9px 17px); }
+.tile.wall { background:repeating-linear-gradient(0deg,#545d66 0 8px,#707a84 9px 17px); }
+.tile.gate { background:linear-gradient(90deg,#543d2e 0 17%,#865f3c 18% 34%,#543d2e 35% 51%,#865f3c 52% 68%,#543d2e 69% 85%,#865f3c 86%); }
+.tile.village { background:linear-gradient(145deg,transparent 0 35%,#9b4639 36% 60%,transparent 61%),linear-gradient(90deg,#dcc27c 25%,#734b30 26% 42%,#dcc27c 43% 74%,#734b30 75%); }
+.tile.fort { background:radial-gradient(circle,#707a83 0 32%,#414951 33% 53%,#7a8790 54% 67%,#343b42 68%); }
+.tile.beacon { background:radial-gradient(circle,#f4d66a 0 12%,#734a95 13% 34%,#30254a 35% 58%,#1b1730 59%); }
+.unit.guest { background:linear-gradient(145deg,#c48cff,#6a42a8); border-color:#efdfff; }
+.unit.commander { border-color:#e4c76e; box-shadow:0 0 13px rgba(255,222,102,.85); }
+.unit.healed { filter:brightness(1.8); box-shadow:0 0 18px #8dffb0; }
+.tile.village.saved::before { content:'済'; background:rgba(23,96,66,.92); }
+@media (max-width:800px) { :root { --tile:50px; } }
