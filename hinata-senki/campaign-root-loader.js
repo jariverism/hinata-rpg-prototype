@@ -7,6 +7,11 @@
     if (!source.includes(waitBlock)) throw new Error('移動後待機処理を特定できませんでした');
     source = source.replace(waitBlock,directWaitBlock);
 
+    const unitSelectionBlock = "    if (unit) {\n      if (unit.faction === 'ally' && !unit.acted) {\n        selectUnit(unit);";
+    const stationaryActionBlock = "    if (unit && selected && unit.id === selected.id && selected.faction === 'ally' && !selected.acted) {\n      showActions(selected);\n      return;\n    }\n\n    if (unit) {\n      if (unit.faction === 'ally' && !unit.acted) {\n        selectUnit(unit);";
+    if (!source.includes(unitSelectionBlock)) throw new Error('その場行動の選択処理を特定できませんでした');
+    source = source.replace(unitSelectionBlock,stationaryActionBlock);
+
     const enemyBattleStart = source.indexOf('  async function battleEnemy(enemy,target) {');
     const enemyBattleEnd = source.indexOf('  function healForts() {',enemyBattleStart);
     if (enemyBattleStart < 0 || enemyBattleEnd < 0) throw new Error('敵フェイズ戦闘処理を特定できませんでした');
