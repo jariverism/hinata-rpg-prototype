@@ -28,17 +28,33 @@
     return carried;
   }
 
+  function normalizeCampaign(data) {
+    if (!data || !Array.isArray(data.units)) return null;
+    data.checkpoints = data.checkpoints || {};
+    if (!data.checkpoints[data.completedChapter]) {
+      data.checkpoints[data.completedChapter] = data.units.map(normalizeUnit);
+    }
+    return data;
+  }
+
   function load() {
-    const campaign = parse(CAMPAIGN_KEY);
-    if (campaign && Array.isArray(campaign.units)) return campaign;
+    const campaign = normalizeCampaign(parse(CAMPAIGN_KEY));
+    if (campaign) {
+      localStorage.setItem(CAMPAIGN_KEY,JSON.stringify(campaign));
+      return campaign;
+    }
 
     const legacy = parse(LEGACY_ROSTER_KEY);
     if (legacy && Array.isArray(legacy.units)) {
+      const completedChapter = Number(legacy.chapter) || 1;
+      const roster = legacy.units.map(normalizeUnit);
       const migrated = {
         version:2,
-        completedChapter:Number(legacy.chapter) || 1,
-        currentChapter:(Number(legacy.chapter) || 1) + 1,
-        units:legacy.units.map(normalizeUnit),
+        completedChapter,
+        currentChapter:completedChapter + 1,
+        units:roster,
+        checkpoints:{ [completedChapter]:roster },
+        extra:{},
         updatedAt:Date.now()
       };
       localStorage.setItem(CAMPAIGN_KEY,JSON.stringify(migrated));
@@ -51,13 +67,17 @@
     const roster = units
       .filter(unit => unit && unit.faction === 'ally' && unit.hp > 0)
       .map(normalizeUnit);
+    const previous = load();
+    const checkpoints = clone(previous?.checkpoints || {});
+    checkpoints[completedChapter] = clone(roster);
 
     const data = {
       version:2,
       completedChapter,
       currentChapter:completedChapter + 1,
       units:roster,
-      extra:{ ...(load()?.extra || {}), ...extra },
+      checkpoints,
+      extra:{ ...(previous?.extra || {}), ...extra },
       updatedAt:Date.now()
     };
 
@@ -69,7 +89,8 @@
   function loadRoster(requiredCompletedChapter=0) {
     const data = load();
     if (!data || data.completedChapter < requiredCompletedChapter) return null;
-    return clone(data.units);
+    const checkpoint = data.checkpoints?.[requiredCompletedChapter];
+    return clone(checkpoint || data.units);
   }
 
   function pathFor(chapter) {
@@ -86,12 +107,16 @@
   function resetFrom(chapter) {
     const data = load();
     if (!data) return;
-    if (data.completedChapter >= chapter) {
-      data.completedChapter = Math.max(0,chapter-1);
-      data.currentChapter = chapter;
-      data.updatedAt = Date.now();
-      localStorage.setItem(CAMPAIGN_KEY,JSON.stringify(data));
-    }
+    const completedChapter = Math.max(0,chapter-1);
+    const checkpoint = data.checkpoints?.[completedChapter];
+    data.completedChapter = completedChapter;
+    data.currentChapter = chapter;
+    if (checkpoint) data.units = clone(checkpoint);
+    Object.keys(data.checkpoints || {}).forEach(key => {
+      if (Number(key) >= chapter) delete data.checkpoints[key];
+    });
+    data.updatedAt = Date.now();
+    localStorage.setItem(CAMPAIGN_KEY,JSON.stringify(data));
   }
 
   window.HinataCampaign = {
