@@ -1,6 +1,13 @@
 (() => {
   'use strict';
 
+  function patchLegacyItems(source) {
+    const oldItem = "    slimSword:{name:'細身の剣',kind:'weapon',type:'sword',might:3,hit:100,crit:5,weight:2,range:[1],uses:30,price:480},\n    steelSword:";
+    const newItem = "    slimSword:{name:'細身の剣',kind:'weapon',type:'sword',might:3,hit:100,crit:5,weight:2,range:[1],uses:30,price:480},\n    dagger:{name:'鋼の短剣',kind:'weapon',type:'sword',might:4,hit:95,crit:5,weight:2,range:[1],uses:35,price:700},\n    steelSword:";
+    if (!source.includes(oldItem)) throw new Error('短剣の追加位置を特定できませんでした');
+    return source.replace(oldItem,newItem);
+  }
+
   function patchEquipment(source) {
     const syncStart = source.indexOf('  function syncEquipped(unit){');
     const syncEnd = source.indexOf('  function currentEntry(unit)',syncStart);
@@ -170,6 +177,7 @@
       const response=await fetch('./game.js?v=2');
       if(!response.ok)throw new Error(`game.js ${response.status}`);
       let source=await response.text();
+      source=patchLegacyItems(source);
       source=patchEquipment(source);
       source=patchActions(source);
       source=patchStaffAndEquipMenus(source);
