@@ -186,23 +186,43 @@
     overlay.innerHTML = `
       <div class="story-frame" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
         <div class="story-chapter" id="storyTitle"></div>
-        <div class="story-stage">
-          <div class="story-portrait" id="storyPortrait" aria-hidden="true"></div>
-          <div class="story-copy">
-            <div class="story-speaker" id="storySpeaker"></div>
-            <p class="story-text" id="storyText"></p>
-          </div>
+        <div class="story-canvas" id="storyCanvas">
+          <section class="dialogue-row dialogue-left" id="storyLeftRow" hidden>
+            <div class="portrait-panel" id="storyLeftPortrait" aria-hidden="true"></div>
+            <div class="speech-window">
+              <div class="speech-name" id="storyLeftSpeaker"></div>
+              <p class="speech-text" id="storyLeftText"></p>
+              <i class="advance-caret" aria-hidden="true"></i>
+            </div>
+          </section>
+
+          <section class="dialogue-row dialogue-right" id="storyRightRow" hidden>
+            <div class="speech-window">
+              <div class="speech-name" id="storyRightSpeaker"></div>
+              <p class="speech-text" id="storyRightText"></p>
+              <i class="advance-caret" aria-hidden="true"></i>
+            </div>
+            <div class="portrait-panel" id="storyRightPortrait" aria-hidden="true"></div>
+          </section>
+
+          <section class="narration-window" id="storyNarration" hidden>
+            <div class="speech-name" id="storyNarrationSpeaker"></div>
+            <p class="speech-text" id="storyNarrationText"></p>
+            <i class="advance-caret" aria-hidden="true"></i>
+          </section>
         </div>
-        <div class="story-progress" id="storyProgress" aria-label="会話の進行"></div>
-        <div class="story-controls">
-          <button type="button" id="storyBack">前へ</button>
-          <button type="button" id="storyNext">次へ</button>
+
+        <div class="story-footer">
+          <button type="button" id="storyBack">◀ 前へ</button>
+          <div class="story-progress" id="storyProgress" aria-label="会話の進行"></div>
+          <button type="button" id="storyNext">次へ ▶</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
 
     overlay.querySelector('#storyBack').addEventListener('click', () => stepScene(-1));
     overlay.querySelector('#storyNext').addEventListener('click', () => stepScene(1));
+    overlay.querySelector('#storyCanvas').addEventListener('click', () => stepScene(1));
     return overlay;
   }
 
@@ -221,26 +241,87 @@
     renderScene();
   }
 
+  function latestLineForSide(side) {
+    if (!activeScene) return null;
+    for (let i = activeScene.index; i >= 0; i--) {
+      const line = activeScene.lines[i];
+      if (line.side === side) return line;
+    }
+    return null;
+  }
+
+  function renderPortrait(element, line) {
+    element.innerHTML = '';
+    element.dataset.initial = line?.portrait || '？';
+    element.dataset.speaker = line?.speaker || '';
+
+    if (line?.portraitUrl) {
+      const image = document.createElement('img');
+      image.src = line.portraitUrl;
+      image.alt = '';
+      element.appendChild(image);
+      element.classList.add('has-image');
+      return;
+    }
+
+    element.classList.remove('has-image');
+    const silhouette = document.createElement('span');
+    silhouette.className = 'portrait-silhouette';
+    silhouette.innerHTML = '<i></i><b></b>';
+    const initial = document.createElement('strong');
+    initial.className = 'portrait-initial';
+    initial.textContent = line?.portrait || '？';
+    element.append(silhouette, initial);
+  }
+
+  function fillDialogueSide(side, line, currentSide) {
+    const cap = side === 'left' ? 'Left' : 'Right';
+    const row = document.querySelector(`#story${cap}Row`);
+    if (!line) {
+      row.hidden = true;
+      return;
+    }
+
+    row.hidden = false;
+    row.classList.toggle('active', currentSide === side);
+    row.classList.toggle('memory', currentSide !== side);
+    document.querySelector(`#story${cap}Speaker`).textContent = line.speaker;
+    document.querySelector(`#story${cap}Text`).textContent = line.text;
+    renderPortrait(document.querySelector(`#story${cap}Portrait`), line);
+  }
+
   function renderScene() {
     if (!activeScene) return;
     const overlay = document.querySelector('#storyOverlay');
     const line = activeScene.lines[activeScene.index];
-    const portrait = overlay.querySelector('#storyPortrait');
-    const stage = overlay.querySelector('.story-stage');
+    const narration = overlay.querySelector('#storyNarration');
+    const leftRow = overlay.querySelector('#storyLeftRow');
+    const rightRow = overlay.querySelector('#storyRightRow');
 
     overlay.querySelector('#storyTitle').textContent = activeScene.title;
-    overlay.querySelector('#storySpeaker').textContent = line.speaker;
-    overlay.querySelector('#storyText').textContent = line.text;
 
-    portrait.textContent = line.portrait || '◆';
-    portrait.className = `story-portrait ${line.portrait ? '' : 'narrator'}`;
-    stage.className = `story-stage ${line.side === 'right' ? 'portrait-right' : ''}`;
+    if (line.side === 'left' || line.side === 'right') {
+      overlay.classList.add('dialogue-mode');
+      overlay.classList.remove('narration-mode');
+      narration.hidden = true;
+      fillDialogueSide('left', latestLineForSide('left'), line.side);
+      fillDialogueSide('right', latestLineForSide('right'), line.side);
+    } else {
+      overlay.classList.remove('dialogue-mode');
+      overlay.classList.add('narration-mode');
+      leftRow.hidden = true;
+      rightRow.hidden = true;
+      narration.hidden = false;
+      narration.classList.add('active');
+      overlay.querySelector('#storyNarrationSpeaker').textContent = line.speaker;
+      overlay.querySelector('#storyNarrationText').textContent = line.text;
+    }
 
     overlay.querySelector('#storyBack').disabled = activeScene.index === 0;
     const isLast = activeScene.index === activeScene.lines.length - 1;
     overlay.querySelector('#storyNext').textContent = isLast
       ? activeScene.finalLabel
-      : `次へ ${activeScene.index + 1}/${activeScene.lines.length}`;
+      : '次へ ▶';
 
     overlay.querySelector('#storyProgress').innerHTML = activeScene.lines
       .map((_, i) => `<i class="${i === activeScene.index ? 'current' : i < activeScene.index ? 'done' : ''}"></i>`)
@@ -323,6 +404,18 @@
     if (button) sessionStorage.removeItem(INTRO_SESSION_KEY);
   }
 
+  function handleStoryKeys(event) {
+    if (!activeScene) return;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      stepScene(-1);
+    }
+    if (event.key === 'ArrowRight' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      stepScene(1);
+    }
+  }
+
   function start() {
     createStoryOverlay();
     enhanceUnits();
@@ -338,6 +431,7 @@
 
     document.addEventListener('click', hookTalkButton, true);
     document.addEventListener('click', clearIntroOnRestart, true);
+    document.addEventListener('keydown', handleStoryKeys);
 
     if (shouldShowIntro()) {
       sessionStorage.setItem(INTRO_SESSION_KEY, '1');
