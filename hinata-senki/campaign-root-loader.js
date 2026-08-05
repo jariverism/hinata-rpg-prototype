@@ -85,6 +85,45 @@
     return loaderSource.replace(oldReturn,newReturn);
   }
 
+  function readSave(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function offerCompletedSaveResume() {
+    const saved = readSave('hinata-senki-save-v1');
+    if (!saved?.cleared || !Array.isArray(saved.units)) return;
+
+    const existing = window.HinataCampaign?.load();
+    if (!existing || existing.completedChapter < 1) {
+      window.HinataCampaign?.saveRoster(1,saved.units,{ migratedFromLegacy:true });
+    }
+
+    const modal = document.querySelector('#modal');
+    const content = document.querySelector('#modalContent');
+    if (!modal || !content) return;
+    content.innerHTML = `
+      <h2>第1章クリア済み</h2>
+      <p>以前のセーブデータをキャンペーン形式へ引き継ぎました。</p>
+      <div class="campaign-next">
+        <button id="continueLegacyCampaign">次章へ進む</button>
+        <button id="restartLegacyChapter">この章を最初から</button>
+      </div>`;
+    if (!modal.open) modal.showModal();
+    document.querySelector('#continueLegacyCampaign').onclick = () => { location.href='./chapter2/'; };
+    document.querySelector('#restartLegacyChapter').onclick = () => {
+      localStorage.removeItem('hinata-senki-save-v1');
+      window.HinataCampaign?.resetFrom(1);
+      location.reload();
+    };
+  }
+
+  window.addEventListener('hinata-game-ready',offerCompletedSaveResume,{once:true});
+
   async function start() {
     try {
       const response = await fetch('./exp-level-loader.js?v=1');
