@@ -2,6 +2,21 @@
   'use strict';
 
   function patchSource(source) {
+    const oldFreshHeader = "    return {\n      turn:1,";
+    const newFreshHeader = "    return {\n      sourceCampaignUpdatedAt:window.HinataCampaign?.load()?.updatedAt || 0,\n      turn:1,";
+    if (!source.includes(oldFreshHeader)) throw new Error('第3章の初期状態を特定できませんでした');
+    source = source.replace(oldFreshHeader,newFreshHeader);
+
+    const oldMigrate = "  function migrate(saved) {\n    if (!saved?.units) return null;";
+    const newMigrate = "  function migrate(saved) {\n    if (!saved?.units) return null;\n    const sourceStamp=window.HinataCampaign?.load()?.updatedAt || 0;\n    if (!saved.cleared && saved.sourceCampaignUpdatedAt!==sourceStamp) return null;";
+    if (!source.includes(oldMigrate)) throw new Error('第3章のセーブ移行処理を特定できませんでした');
+    source = source.replace(oldMigrate,newMigrate);
+
+    const oldIntro = "    if (!sessionStorage.getItem('hinata-senki-ch3-intro')) {\n      sessionStorage.setItem('hinata-senki-ch3-intro','1');";
+    const newIntro = "    const introKey=`hinata-senki-ch3-intro-${state.sourceCampaignUpdatedAt || 0}`;\n    if (!sessionStorage.getItem(introKey)) {\n      sessionStorage.setItem(introKey,'1');";
+    if (!source.includes(oldIntro)) throw new Error('第3章導入処理を特定できませんでした');
+    source = source.replace(oldIntro,newIntro);
+
     const selectionBlock = "    if (clicked) {\n      if (clicked.faction==='ally' && !clicked.acted) selectUnit(clicked);";
     const stationaryActionBlock = "    if (clicked && selected && clicked.id===selected.id && selected.faction==='ally' && !selected.acted) {\n      showActions(selected);\n      return;\n    }\n\n    if (clicked) {\n      if (clicked.faction==='ally' && !clicked.acted) selectUnit(clicked);";
     if (!source.includes(selectionBlock)) throw new Error('その場行動の選択処理を特定できませんでした');
