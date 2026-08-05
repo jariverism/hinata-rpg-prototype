@@ -7,6 +7,16 @@
     if (!source.includes(oldCarry)) throw new Error('部隊引継ぎ処理を特定できませんでした');
     source = source.replace(oldCarry,newCarry);
 
+    const oldFreshHeader = "      version:SAVE_VERSION,\n      chapter:2,";
+    const newFreshHeader = "      version:SAVE_VERSION,\n      sourceCampaignUpdatedAt:window.HinataCampaign?.load()?.updatedAt || 0,\n      chapter:2,";
+    if (!source.includes(oldFreshHeader)) throw new Error('第2章の初期状態を特定できませんでした');
+    source = source.replace(oldFreshHeader,newFreshHeader);
+
+    const oldMigrate = "  function migrate(saved) {\n    if (!saved || !Array.isArray(saved.units)) return null;";
+    const newMigrate = "  function migrate(saved) {\n    if (!saved || !Array.isArray(saved.units)) return null;\n    const sourceStamp=window.HinataCampaign?.load()?.updatedAt || 0;\n    if (!saved.cleared && saved.sourceCampaignUpdatedAt!==sourceStamp) return null;";
+    if (!source.includes(oldMigrate)) throw new Error('第2章のセーブ移行処理を特定できませんでした');
+    source = source.replace(oldMigrate,newMigrate);
+
     const oldWait = "      if (x === pendingMove.x && y === pendingMove.y) {\n        showActions(selected);\n        return;\n      }";
     const newWait = "      if (x === pendingMove.x && y === pendingMove.y) {\n        finishAction(selected);\n        return;\n      }";
     if (!source.includes(oldWait)) throw new Error('待機操作を特定できませんでした');
@@ -90,7 +100,7 @@
 
   async function start() {
     try {
-      const response = await fetch('./game.js?v=1');
+      const response = await fetch('./game.js?v=2');
       if (!response.ok) throw new Error(`game.js ${response.status}`);
       const patched = patchSource(await response.text());
       const url = URL.createObjectURL(new Blob([patched],{type:'text/javascript'}));
