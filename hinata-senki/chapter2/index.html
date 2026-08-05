@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>日向戦記　第2章</title>
   <link rel="stylesheet" href="./style.css?v=1">
+  <link rel="stylesheet" href="../campaign-ui.css?v=1">
 </head>
 <body>
   <div id="app">
@@ -15,10 +16,7 @@
         <h1>日向戦記 <small>第2章</small></h1>
         <p id="chapterLabel">第2章</p>
       </div>
-      <div class="top-actions">
-        <a class="icon-button" href="../" aria-label="序章へ戻る">Ⅰ</a>
-        <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
-      </div>
+      <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
     </header>
 
     <section class="hud">
@@ -84,12 +82,13 @@
 
   <div id="toast" class="toast" role="status"></div>
 
+  <script src="../campaign.js?v=1"></script>
   <script src="../portraits/kumi.js?v=1"></script>
   <script src="../portraits/toshi.js?v=1"></script>
   <script src="../portraits/kyoko.js?v=1"></script>
   <script src="../portraits/mao.js?v=1"></script>
   <script src="../portraits/sarina.js?v=1"></script>
   <script src="../portraits/hina.js?v=1"></script>
-  <script src="./game.js?v=1"></script>
+  <script src="./chapter-loader.js?v=1"></script>
 </body>
 </html>
