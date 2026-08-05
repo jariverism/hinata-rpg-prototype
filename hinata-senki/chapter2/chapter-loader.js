@@ -48,6 +48,41 @@
     return source.slice(0,clearStart) + replacement + source.slice(clearEnd);
   }
 
+  function readSave(key) {
+    try {
+      const raw=localStorage.getItem(key);
+      return raw?JSON.parse(raw):null;
+    } catch {
+      return null;
+    }
+  }
+
+  function offerCompletedSaveResume() {
+    const saved=readSave('hinata-senki-chapter2-save-v1');
+    if (!saved?.cleared||!Array.isArray(saved.units)) return;
+    const existing=window.HinataCampaign?.load();
+    if (!existing||existing.completedChapter<2) {
+      window.HinataCampaign?.saveRoster(2,saved.units,{migratedFromLegacy:true});
+    }
+    const modal=document.querySelector('#modal');
+    const content=document.querySelector('#modalContent');
+    if (!modal||!content) return;
+    content.innerHTML=`
+      <h2>第2章クリア済み</h2>
+      <p>以前のセーブデータをキャンペーン形式へ引き継ぎました。</p>
+      <div class="campaign-next">
+        <button id="continueLegacyCampaign">次章へ進む</button>
+        <button id="restartLegacyChapter">この章を最初から</button>
+      </div>`;
+    if (!modal.open) modal.showModal();
+    document.querySelector('#continueLegacyCampaign').onclick=()=>{location.href='../chapter3/';};
+    document.querySelector('#restartLegacyChapter').onclick=()=>{
+      localStorage.removeItem('hinata-senki-chapter2-save-v1');
+      window.HinataCampaign?.resetFrom(2);
+      location.reload();
+    };
+  }
+
   async function start() {
     try {
       const response = await fetch('./game.js?v=1');
@@ -56,8 +91,11 @@
       const url = URL.createObjectURL(new Blob([patched],{type:'text/javascript'}));
       const script = document.createElement('script');
       script.src = url;
-      script.onload = () => URL.revokeObjectURL(url);
-      script.onerror = () => { throw new Error('第2章の更新読み込みに失敗しました'); };
+      script.onload = () => {
+        URL.revokeObjectURL(url);
+        setTimeout(offerCompletedSaveResume,0);
+      };
+      script.onerror = () => console.error('第2章の更新読み込みに失敗しました');
       document.body.appendChild(script);
     } catch (error) {
       console.error(error);
