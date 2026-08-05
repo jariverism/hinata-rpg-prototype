@@ -12,6 +12,11 @@
     if (!source.includes(oldWait)) throw new Error('待機操作を特定できませんでした');
     source = source.replace(oldWait,newWait);
 
+    const selectionBlock = "    if (clicked) {\n      if (clicked.faction === 'ally' && !clicked.acted) selectUnit(clicked);";
+    const stationaryActionBlock = "    if (clicked && selected && clicked.id === selected.id && selected.faction === 'ally' && !selected.acted) {\n      showActions(selected);\n      return;\n    }\n\n    if (clicked) {\n      if (clicked.faction === 'ally' && !clicked.acted) selectUnit(clicked);";
+    if (!source.includes(selectionBlock)) throw new Error('その場行動の選択処理を特定できませんでした');
+    source = source.replace(selectionBlock,stationaryActionBlock);
+
     const clearStart = source.indexOf('  function clearChapter() {');
     const clearEnd = source.indexOf('  function checkDefeat() {',clearStart);
     if (clearStart < 0 || clearEnd < 0) throw new Error('章クリア処理を特定できませんでした');
