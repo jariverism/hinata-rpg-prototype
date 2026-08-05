@@ -1,8 +1,6 @@
 (() => {
   'use strict';
 
-  function installCampaignPatch(loaderSource) {
-    const helper = String.raw`
   function patchCampaignFeatures(source) {
     const waitBlock = "      if (x === pendingMove.x && y === pendingMove.y) {\n        showActions(selected);\n        return;\n      }";
     const directWaitBlock = "      if (x === pendingMove.x && y === pendingMove.y) {\n        finishAction(selected);\n        return;\n      }";
@@ -36,7 +34,7 @@
       "  }",
       "",
       ""
-    ].join('\\n');
+    ].join('\n');
     source = source.slice(0,enemyBattleStart) + enemyBattle + source.slice(enemyBattleEnd);
 
     const clearStart = source.indexOf('  function seize() {');
@@ -70,13 +68,13 @@
       "  }",
       "",
       ""
-    ].join('\\n');
+    ].join('\n');
     source = source.slice(0,clearStart) + clearBlock + source.slice(clearEnd);
     return source;
   }
 
-`;
-
+  function installCampaignPatch(loaderSource) {
+    const helper = patchCampaignFeatures.toString().replace(/^  /gm,'    ').replace(/^function /,'  function ') + '\n\n';
     const marker = '  function patchGameSource(source) {';
     if (!loaderSource.includes(marker)) throw new Error('更新ローダーの構造を確認できませんでした');
     loaderSource = loaderSource.replace(marker,helper + marker);
@@ -96,7 +94,7 @@
       const script = document.createElement('script');
       script.src = url;
       script.onload = () => URL.revokeObjectURL(url);
-      script.onerror = () => { throw new Error('キャンペーン更新の起動に失敗しました'); };
+      script.onerror = () => console.error('キャンペーン更新の起動に失敗しました');
       document.body.appendChild(script);
     } catch (error) {
       console.error(error);
