@@ -105,8 +105,8 @@
     return data;
   }
 
-  function persist(data) {
-    data.updatedAt = Date.now();
+  function persist(data,{touch=true}={}) {
+    if (touch || !Number.isFinite(data.updatedAt)) data.updatedAt = Date.now();
     localStorage.setItem(CAMPAIGN_KEY,JSON.stringify(data));
     localStorage.setItem(LEGACY_ROSTER_KEY,JSON.stringify({
       chapter:data.completedChapter,
@@ -117,7 +117,7 @@
 
   function load() {
     const campaign = normalizeCampaign(parse(CAMPAIGN_KEY));
-    if (campaign) return persist(campaign);
+    if (campaign) return persist(campaign,{touch:false});
 
     const legacy = parse(LEGACY_ROSTER_KEY);
     if (legacy && Array.isArray(legacy.units)) {
@@ -206,6 +206,7 @@
         });
     return clone({
       completedChapter:required,
+      updatedAt:data.updatedAt,
       units:source.units || [],
       gold:Number.isFinite(source.gold) ? source.gold : DEFAULT_GOLD,
       convoy:source.convoy || [],
