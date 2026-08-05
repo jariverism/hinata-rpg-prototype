@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "policy": {
+    "compositeImagesAreReferencesOnly": true,
+    "oneMemberPerMasterFile": true,
+    "classVariantsMustDeriveFromTheSameMemberMaster": true,
+    "neverRegenerateAGroupSheetAsNewFaces": true
+  },
+  "approvedBases": [
+    { "id": "tomita_suzuka", "name": "富田鈴花", "masterFile": "tomita_suzuka_base.png", "status": "approved" },
+    { "id": "kamimura_hinano", "name": "上村ひなの", "masterFile": "kamimura_hinano_base.png", "status": "approved" },
+    { "id": "kageyama_yuka", "name": "影山優佳", "masterFile": "kageyama_yuka_base.png", "status": "approved-retry-version" },
+    { "id": "sasakimirei", "name": "佐々木美玲", "masterFile": "sasakimirei_base.png", "status": "approved" },
+    { "id": "kanemura_miku", "name": "金村美玖", "masterFile": "kanemura_miku_base.png", "status": "approved" },
+    { "id": "nibu_akari", "name": "丹生明里", "masterFile": "nibu_akari_base.png", "status": "approved" },
+    { "id": "kosaka_nao", "name": "小坂菜緒", "masterFile": "kosaka_nao_base.png", "status": "approved" }
+  ]
+}
