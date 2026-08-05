@@ -59,11 +59,11 @@
   }
 
   function patchStaffAndEquipMenus(source) {
-    const start = source.indexOf('  function getHealTargets(unit){');
-    const end = source.indexOf('  async function playAllyTalk',start);
-    if (start < 0 || end < 0) throw new Error('杖処理を特定できませんでした');
+    const healStart = source.indexOf('  function getHealTargets(unit){');
+    const healEnd = source.indexOf('  function adjacentAllies(unit)',healStart);
+    if (healStart < 0 || healEnd < 0) throw new Error('回復対象処理を特定できませんでした');
 
-    const block = `  function availableStaffEntries(unit){
+    const healBlock = `  function availableStaffEntries(unit){
     ensureInventory(unit);
     return unit.inventory
       .map((entry,index)=>({entry,index,def:items[entry.id]}))
@@ -77,12 +77,12 @@
       staffs.some(staff=>staff.range.includes(dist(unit,target)))
     );
   }
-  function adjacentAllies(unit){return state.units.filter(other=>other.faction==='ally'&&other.id!==unit.id&&other.hp>0&&dist(unit,other)===1);}
-  function talkKey(a,b){return[a.id,b.id].sort().join(':');}
-  function availableAllyTalk(unit){return adjacentAllies(unit).find(other=>allyTalks[talkKey(unit,other)]&&!state.eventFlags[\`allyTalk:\${talkKey(unit,other)}\`]);}
-  function bossTalkAvailable(unit){const boss=byId('boss');return unit.id==='mao'&&boss?.hp>0&&dist(unit,boss)===1&&!state.eventFlags.chapter4BossTalk;}
+`;
+    source = source.slice(0,healStart)+healBlock+source.slice(healEnd);
 
-  function showEquipMenu(unit){
+    const actionStart = source.indexOf('  function showActions(unit){');
+    if (actionStart < 0) throw new Error('行動メニュー位置を特定できませんでした');
+    const equipBlock = `  function showEquipMenu(unit){
     const candidates=unit.inventory.map((entry,index)=>({entry,index})).filter(record=>canEquip(unit,record.entry));
     $('#modalContent').innerHTML=\`<h2>装備変更</h2><div id="equipList" class="inventory-list"></div><div class="modal-actions"><button id="equipCancel">戻る</button></div>\`;
     candidates.forEach(({entry,index})=>{
@@ -92,7 +92,15 @@
       const button=document.createElement('button');
       button.textContent=index===unit.equippedIndex?'装備中':'装備';
       button.disabled=index===unit.equippedIndex;
-      button.onclick=()=>{unit.equippedIndex=index;syncEquipped(unit);addLog(\`\${unit.name}は\${items[entry.id].name}を装備した。\`);$('#modal').close();showActions(unit);render();save(true);};
+      button.onclick=()=>{
+        unit.equippedIndex=index;
+        syncEquipped(unit);
+        addLog(\`\${unit.name}は\${items[entry.id].name}を装備した。\`);
+        $('#modal').close();
+        showActions(unit);
+        render();
+        save(true);
+      };
       row.appendChild(button);
       $('#equipList').appendChild(row);
     });
@@ -100,7 +108,14 @@
     if(!$('#modal').open)$('#modal').showModal();
   }
 
-  function showStaffMenu(healer){
+`;
+    source = source.slice(0,actionStart)+equipBlock+source.slice(actionStart);
+
+    const staffStart = source.indexOf('  function chooseHealTarget(healer,targets){');
+    const staffEnd = source.indexOf('  async function playAllyTalk',staffStart);
+    if (staffStart < 0 || staffEnd < 0) throw new Error('杖選択処理を特定できませんでした');
+
+    const staffBlock = `  function showStaffMenu(healer){
     const staffs=availableStaffEntries(healer);
     if(!staffs.length)return toast('使える杖がありません');
     $('#modalContent').innerHTML='<h2>杖を選ぶ</h2><div id="staffList" class="modal-actions"></div><div class="modal-actions"><button id="staffCancel">戻る</button></div>';
@@ -147,7 +162,7 @@
   }
 
 `;
-    return source.slice(0,start)+block+source.slice(end);
+    return source.slice(0,staffStart)+staffBlock+source.slice(staffEnd);
   }
 
   async function start() {
