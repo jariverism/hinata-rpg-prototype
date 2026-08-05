@@ -1,0 +1,92 @@
+/* Shared map-object visibility and campaign controls. */
+.tile.village::before,
+.tile.gate::before,
+.tile.chest::before,
+.tile.door::before,
+.tile.exit::before,
+.tile.cell::before,
+.tile.fort::before,
+.tile.bridge::before,
+.tile.beacon::before {
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:3;
+  transform:translate(-50%,-50%);
+  display:grid;
+  place-items:center;
+  min-width:30px;
+  min-height:24px;
+  padding:2px 5px;
+  border:2px solid rgba(255,239,171,.95);
+  border-radius:7px;
+  background:rgba(10,21,42,.88);
+  color:#fff3b0;
+  font-size:10px;
+  font-weight:900;
+  line-height:1;
+  text-shadow:0 1px 0 #000;
+  box-shadow:0 2px 0 rgba(0,0,0,.45),0 0 8px rgba(255,222,111,.28);
+  pointer-events:none;
+}
+
+.tile.village::before { content:'村'; }
+.tile.gate::before { content:'城門'; min-width:38px; }
+.tile.chest::before { content:'宝箱'; background:rgba(86,48,13,.94); }
+.tile.door::before { content:'扉'; background:rgba(75,45,25,.94); }
+.tile.door.open::before { content:'開'; opacity:.46; }
+.tile.exit::before { content:'出口'; background:rgba(18,81,62,.94); animation:objectPulse 1s steps(2,end) infinite; }
+.tile.cell::before { content:'牢'; opacity:.8; }
+.tile.fort::before { content:'砦'; opacity:.8; }
+.tile.bridge::before { content:'橋'; opacity:.72; }
+.tile.beacon::before { content:'標'; background:rgba(77,48,111,.94); }
+.tile.object-done::before,
+.tile.chest.opened::before { opacity:.36; filter:grayscale(1); }
+
+.campaign-next {
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  margin-top:14px;
+}
+.campaign-next button,
+.campaign-next a {
+  display:grid;
+  place-items:center;
+  min-height:48px;
+  padding:8px 12px;
+  border:2px solid #d7bd68;
+  border-radius:9px;
+  background:linear-gradient(#6d5926,#423314);
+  color:#fff7c8;
+  font-weight:900;
+  text-decoration:none;
+}
+.campaign-note {
+  margin:10px 0 0;
+  color:#c9d2e8;
+  font-size:12px;
+  line-height:1.55;
+}
+
+@keyframes objectPulse {
+  0%,100% { box-shadow:0 2px 0 rgba(0,0,0,.45),0 0 5px rgba(123,255,201,.35); }
+  50% { box-shadow:0 2px 0 rgba(0,0,0,.45),0 0 15px rgba(123,255,201,.75); }
+}
+
+@media (max-width:600px) {
+  .tile.village::before,
+  .tile.gate::before,
+  .tile.chest::before,
+  .tile.door::before,
+  .tile.exit::before,
+  .tile.cell::before,
+  .tile.fort::before,
+  .tile.bridge::before,
+  .tile.beacon::before {
+    min-width:25px;
+    min-height:20px;
+    padding:1px 3px;
+    font-size:8px;
+  }
+}
