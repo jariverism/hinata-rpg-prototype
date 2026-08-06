@@ -6,7 +6,8 @@
   const CHAPTER_KEYS=[
     'hinata-senki-chapter3-save-v1',
     'hinata-senki-chapter4-save-v1',
-    'hinata-senki-chapter5-save-v1'
+    'hinata-senki-chapter5-save-v1',
+    'hinata-senki-chapter6-save-v1'
   ];
 
   function read(key){
