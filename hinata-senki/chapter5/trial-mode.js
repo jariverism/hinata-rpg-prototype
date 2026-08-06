@@ -2,7 +2,7 @@
   'use strict';
 
   const params = new URLSearchParams(location.search);
-  const active = params.get('mode') === 'trial' || sessionStorage.getItem('hs-trial-active-v1') === '1';
+  const active = params.get('mode') === 'trial' || localStorage.getItem('hs-trial-active-v1') === '1';
   if (!active) return;
 
   document.documentElement.dataset.trialMode = 'chapter5';
