@@ -6,10 +6,33 @@
   const AUDIO_KEY = 'hinata-senki-audio-v1';
   const CAMPAIGN_KEY = 'hinata-senki-campaign-v2';
   const LEGACY_ROSTER_KEY = 'hinata-senki-campaign-roster-v1';
+  const TRIAL_BACKUP_KEY = 'hs-trial-backup-v1';
+  const TRIAL_ACTIVE_KEY = 'hs-trial-active-v1';
   const CHAPTER_SAVE_KEYS = [
     'hinata-senki-save-v1',
     ...Array.from({ length:MAX_CHAPTER - 1 }, (_,index) => `hinata-senki-chapter${index + 2}-save-v1`)
   ];
+
+  function restoreTrialBackup() {
+    if (sessionStorage.getItem(TRIAL_ACTIVE_KEY) !== '1') return;
+    const raw = sessionStorage.getItem(TRIAL_BACKUP_KEY);
+    let backup = {};
+    try { backup = raw ? JSON.parse(raw) : {}; } catch { backup = {}; }
+
+    const trialKeys = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith('hinata-senki-') && key !== AUDIO_KEY) trialKeys.push(key);
+    }
+    trialKeys.forEach(key => localStorage.removeItem(key));
+    Object.entries(backup).forEach(([key,value]) => localStorage.setItem(key,value));
+
+    sessionStorage.removeItem(TRIAL_BACKUP_KEY);
+    sessionStorage.removeItem(TRIAL_ACTIVE_KEY);
+    sessionStorage.removeItem(LAUNCH_MODE_KEY);
+  }
+
+  restoreTrialBackup();
 
   const style = document.createElement('style');
   style.id = 'startMenuStyles';
@@ -25,6 +48,8 @@
     .start-menu-button{min-height:58px;border:3px solid #d6bd6d;border-radius:5px;background:#173d82;color:#fff;font:inherit;font-size:19px;font-weight:900;letter-spacing:.08em;box-shadow:inset 0 0 0 2px #315fae,0 4px 0 #1b1308;cursor:pointer}
     .start-menu-button:hover,.start-menu-button:focus-visible{background:#2455a3;outline:3px solid #fff2a4;outline-offset:3px}
     .start-menu-button.secondary{background:#273451;box-shadow:inset 0 0 0 2px #4c608c,0 4px 0 #1b1308}
+    .start-menu-button.trial{margin-top:5px;border-color:#c7adff;background:#4c347c;box-shadow:inset 0 0 0 2px #765ab0,0 4px 0 #1b1308}
+    .start-menu-button.trial:hover,.start-menu-button.trial:focus-visible{background:#65499a}
     .start-menu-button:disabled{opacity:.38;cursor:not-allowed;filter:grayscale(.7)}
     .start-menu-save{min-height:44px;margin:17px auto 0;padding:10px 12px;border:1px solid rgba(211,226,255,.35);border-radius:6px;background:rgba(0,0,0,.22);color:#cdd9ef;font-size:13px;line-height:1.65}
     .start-menu-note{margin:18px 0 0;color:#9fb0d2;font-size:12px;line-height:1.65}
@@ -97,6 +122,23 @@
     localStorage.removeItem(LEGACY_ROSTER_KEY);
   }
 
+  function backupGameplayData() {
+    const backup = {};
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith('hinata-senki-') && key !== AUDIO_KEY) backup[key] = localStorage.getItem(key);
+    }
+    return backup;
+  }
+
+  function startTrial(chapter) {
+    sessionStorage.setItem(TRIAL_BACKUP_KEY,JSON.stringify(backupGameplayData()));
+    sessionStorage.setItem(TRIAL_ACTIVE_KEY,'1');
+    clearGameplayData();
+    sessionStorage.setItem(LAUNCH_MODE_KEY,'trial');
+    location.href = `./chapter${chapter}/?mode=trial`;
+  }
+
   function loadScript(src) {
     return new Promise((resolve,reject) => {
       const script = document.createElement('script');
@@ -149,9 +191,10 @@
         <div class="start-menu-actions">
           <button class="start-menu-button" id="newGameButton">ニューゲーム</button>
           <button class="start-menu-button secondary" id="continueButton" ${continueInfo ? '' : 'disabled'}>コンティニュー</button>
+          <button class="start-menu-button trial" id="chapter5TrialButton">第5章から試遊</button>
         </div>
         <div class="start-menu-save">${continueInfo ? `保存データあり<br>第${continueInfo.chapter}章から再開します` : '保存データはありません'}</div>
-        <p class="start-menu-note">ニューゲームは、音量設定を残して現在の進行データを消去し、第1章から開始します。</p>
+        <p class="start-menu-note">第5章から試遊は現在のセーブを一時退避します。試遊終了後、元のコンティニューデータへ戻ります。</p>
         <div class="start-menu-error" id="startMenuError" aria-live="polite"></div>
       </div>`;
     document.body.appendChild(overlay);
@@ -166,6 +209,8 @@
       if (!continueInfo) return;
       continueCampaign(continueInfo,overlay);
     });
+
+    overlay.querySelector('#chapter5TrialButton').addEventListener('click',() => startTrial(5));
   }
 
   render();
