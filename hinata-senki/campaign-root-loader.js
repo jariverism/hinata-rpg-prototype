@@ -1,7 +1,47 @@
 (() => {
   'use strict';
 
+  function patchChapterOneStory(source) {
+    source = source
+      .replace("        '城門の向こうへ脱出せよ。',", "        '北門の指揮官を退け、取り残された人々の退路を確保せよ。',")
+      .replace("        '久美「まずはみんな、生きてここを出るよ！」'", "        '久美「一人の正解で進まない。みんなの判断をつないで北門を抜けるよ」'");
+
+    const oldRecruit = [
+      "    addLog('久美「紗理菜、一緒に来て。ここに残るより、助けられる人を増やそう」');",
+      "    addLog('紗理菜「……うん。みんなを置いてはいけないから」');",
+      "    addLog('潮紗理菜が仲間になった！');"
+    ].join('\n');
+    const newRecruit = [
+      "    addLog('久美「紗理菜、治療院の人たちは？」');",
+      "    addLog('紗理菜「裏道へ誘導しました。今度は私も一緒に行きます」');",
+      "    addLog('潮紗理菜が仲間になった！');"
+    ].join('\n');
+    if (source.includes(oldRecruit)) source = source.replace(oldRecruit, newRecruit);
+
+    const visitStart = source.indexOf('  function visitVillage(unit) {');
+    const visitEnd = source.indexOf('  function showForecast(', visitStart);
+    if (visitStart < 0 || visitEnd < 0) throw new Error('第1章の村訪問処理を特定できませんでした');
+    const visitBlock = [
+      "  function visitVillage(unit) {",
+      "    state.villageVisited = true;",
+      "    state.storyFlags = state.storyFlags || {};",
+      "    state.storyFlags.villageEvacuated = true;",
+      "    unit.hp = Math.min(unit.maxHp,unit.hp+10);",
+      "    addLog(`${unit.name}は村の人々を裏道へ避難させ、負傷者用の薬を受け取った。`);",
+      "    addLog('村人「北街道の牢獄砦から、救援の火が上がっています」');",
+      "    toast('住民の避難を完了し、薬を受け取った');",
+      "    finishAction(unit);",
+      "  }",
+      "",
+      ""
+    ].join('\n');
+    source = source.slice(0, visitStart) + visitBlock + source.slice(visitEnd);
+    return source;
+  }
+
   function patchCampaignFeatures(source) {
+    source = patchChapterOneStory(source);
+
     const waitBlock = "      if (x === pendingMove.x && y === pendingMove.y) {\n        showActions(selected);\n        return;\n      }";
     const directWaitBlock = "      if (x === pendingMove.x && y === pendingMove.y) {\n        finishAction(selected);\n        return;\n      }";
     if (!source.includes(waitBlock)) throw new Error('移動後待機処理を特定できませんでした');
@@ -48,16 +88,21 @@
     const clearBlock = [
       "  function seize() {",
       "    state.cleared = true;",
-      "    addLog('城門を制圧した！');",
+      "    addLog('北門を突破した！');",
       "    const roster = state.units",
       "      .filter(unit => unit.faction === 'ally' && unit.hp > 0)",
       "      .map(unit => ({ ...unit, acted:false, hp:unit.maxHp }));",
-      "    window.HinataCampaign?.saveRoster(1,roster,{ lastTurn:state.turn });",
+      "    const storyFlags = state.storyFlags || {};",
+      "    window.HinataCampaign?.saveRoster(1,roster,{",
+      "      lastTurn:state.turn,",
+      "      flags:{ chapter1VillageEvacuated:Boolean(storyFlags.villageEvacuated) },",
+      "      extra:{ chapter1Reworked:true }",
+      "    });",
       "    render();",
       "    save(true);",
       "    $('#modalContent').innerHTML = `",
       "      <h2>第1章クリア</h2>",
-      "      <p>部隊の状態、経験値、装備を保存しました。</p>",
+      "      <p>北門を突破しました。部隊の状態、経験値、装備、救援結果を保存しました。</p>",
       "      <div class=\"campaign-next\">",
       "        <button id=\"continueCampaign\">次章へ進む</button>",
       "        <button id=\"replayChapter\">この章をやり直す</button>",
@@ -80,9 +125,10 @@
 
   function installCampaignPatch(loaderSource) {
     const helper = patchCampaignFeatures.toString().replace(/^  /gm,'    ').replace(/^function /,'  function ') + '\n\n';
+    const storyHelper = patchChapterOneStory.toString().replace(/^  /gm,'    ').replace(/^function /,'  function ') + '\n\n';
     const marker = '  function patchGameSource(source) {';
     if (!loaderSource.includes(marker)) throw new Error('更新ローダーの構造を確認できませんでした');
-    loaderSource = loaderSource.replace(marker,helper + marker);
+    loaderSource = loaderSource.replace(marker,storyHelper + helper + marker);
 
     const oldReturn = '    return source.slice(0,gainStart) + patchedExperienceBlock() + source.slice(finishStart);';
     const newReturn = '    source = source.slice(0,gainStart) + patchedExperienceBlock() + source.slice(finishStart);\n    return patchCampaignFeatures(source);';
@@ -105,7 +151,10 @@
 
     const existing = window.HinataCampaign?.load();
     if (!existing || existing.completedChapter < 1) {
-      window.HinataCampaign?.saveRoster(1,saved.units,{ migratedFromLegacy:true });
+      window.HinataCampaign?.saveRoster(1,saved.units,{
+        migratedFromLegacy:true,
+        flags:{chapter1VillageEvacuated:Boolean(saved.storyFlags?.villageEvacuated)}
+      });
     }
 
     const modal = document.querySelector('#modal');
