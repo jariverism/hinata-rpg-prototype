@@ -5,3 +5,11 @@
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Movement range must remain blue even when the same tile is also inside an attack or danger range. */
+.tile.move::before,
+.tile.move.attack::before,
+.tile.move.danger-zone::before,
+.tile.move.attack.danger-zone::before {
+  background: rgba(60,139,255,.46) !important;
+}

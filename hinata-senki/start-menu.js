@@ -50,11 +50,7 @@
     if (isUsableSave(campaign) && (campaign.units.length > 0 || Number(campaign.completedChapter) > 0)) {
       const completed = Math.max(0,Number(campaign.completedChapter) || 0);
       const current = Math.max(1,Number(campaign.currentChapter) || completed + 1);
-      return {
-        chapter:Math.min(MAX_CHAPTER,current),
-        completed,
-        source:'campaign'
-      };
+      return { chapter:Math.min(MAX_CHAPTER,current), completed, source:'campaign' };
     }
 
     for (let chapter = MAX_CHAPTER; chapter >= 2; chapter -= 1) {
@@ -69,21 +65,13 @@
 
     const chapterOne = read(localStorage,'hinata-senki-save-v1');
     if (isUsableSave(chapterOne)) {
-      return {
-        chapter:chapterOne.cleared ? 2 : 1,
-        completed:chapterOne.cleared ? 1 : 0,
-        source:'chapter1'
-      };
+      return { chapter:chapterOne.cleared ? 2 : 1, completed:chapterOne.cleared ? 1 : 0, source:'chapter1' };
     }
 
     const legacy = read(localStorage,LEGACY_ROSTER_KEY);
     if (isUsableSave(legacy)) {
       const completed = Math.max(1,Number(legacy.chapter) || 1);
-      return {
-        chapter:Math.min(MAX_CHAPTER,completed + 1),
-        completed,
-        source:'legacy'
-      };
+      return { chapter:Math.min(MAX_CHAPTER,completed + 1), completed, source:'legacy' };
     }
 
     return null;
@@ -124,8 +112,8 @@
     overlay.remove();
     document.body.classList.remove('awaiting-start');
     try {
-      await loadScript('./chapter1-intro-v4.js?v=1');
-      await loadScript('./chapter1-character-scenes.js?v=1');
+      await loadScript('./chapter1-intro-v4.js?v=2');
+      await loadScript('./chapter1-character-scenes.js?v=2');
       await loadScript('./campaign-root-loader.js?v=4');
       await loadScript('./audio-prototype.js?v=1');
     } catch (error) {
