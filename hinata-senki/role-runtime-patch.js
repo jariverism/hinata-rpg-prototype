@@ -44,18 +44,24 @@
       }
     }
 
-    source=source.replace(
-      "healTargets=getHealTargets(unit),partner=adjacentAllies(unit)[0]",
-      "healTargets=getHealTargets(unit),encourageTargets=encouragementTargets(unit),partner=adjacentAllies(unit)[0]"
-    );
-    source=source.replace(
-      "if(healTargets.length)addAction('杖',()=>showStaffMenu(unit));",
-      "if(healTargets.length)addAction('杖',()=>showStaffMenu(unit));if(encourageTargets.length)addAction('応援',()=>chooseEncouragement(unit,encourageTargets));"
-    );
-    source=source.replace(
-      "if(healTargets.length)addAction('杖',()=>chooseHealTarget(unit,healTargets));",
-      "if(healTargets.length)addAction('杖',()=>chooseHealTarget(unit,healTargets));if(encourageTargets.length)addAction('応援',()=>chooseEncouragement(unit,encourageTargets));"
-    );
+    const declaration="healTargets=getHealTargets(unit),partner=adjacentAllies(unit)[0]";
+    if(source.includes(declaration)){
+      source=source.replace(
+        declaration,
+        "healTargets=getHealTargets(unit),encourageTargets=encouragementTargets(unit),partner=adjacentAllies(unit)[0]"
+      );
+    }
+
+    if(source.includes('encourageTargets=encouragementTargets(unit)')){
+      source=source.replace(
+        "if(healTargets.length)addAction('杖',()=>showStaffMenu(unit));",
+        "if(healTargets.length)addAction('杖',()=>showStaffMenu(unit));if(encourageTargets.length)addAction('応援',()=>chooseEncouragement(unit,encourageTargets));"
+      );
+      source=source.replace(
+        "if(healTargets.length)addAction('杖',()=>chooseHealTarget(unit,healTargets));",
+        "if(healTargets.length)addAction('杖',()=>chooseHealTarget(unit,healTargets));if(encourageTargets.length)addAction('応援',()=>chooseEncouragement(unit,encourageTargets));"
+      );
+    }
     return source;
   }
 
