@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0d2133">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>日向戦記　第6章</title>
+  <link rel="stylesheet" href="../chapter2/style.css?v=2">
+  <link rel="stylesheet" href="../unit-input.css?v=1">
+  <link rel="stylesheet" href="../chapter3/style.css?v=1">
+  <link rel="stylesheet" href="../chapter4/style.css?v=1">
+  <link rel="stylesheet" href="../campaign-ui.css?v=1">
+  <link rel="stylesheet" href="../audio-prototype.css?v=1">
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <h1>日向戦記 <small>第6章</small></h1>
+        <p id="chapterLabel">第6章</p>
+      </div>
+      <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
+    </header>
+
+    <section class="hud">
+      <div><span>ターン</span><strong id="turnLabel">1</strong></div>
+      <div><span>フェイズ</span><strong id="phaseLabel">自軍</strong></div>
+      <div><span>軍資金</span><strong id="goldLabel">0 G</strong></div>
+      <div><span>救助</span><strong id="rescueLabel">0/3</strong></div>
+      <div class="objective"><span>勝利条件</span><strong id="objectiveLabel">作戦開始後に表示</strong></div>
+    </section>
+
+    <main>
+      <div id="mapViewport" class="map-viewport" aria-label="戦場マップ">
+        <div id="map" class="map"></div>
+      </div>
+      <aside class="side-panel">
+        <section id="unitCard" class="panel-card empty">
+          <h2>ユニット情報</h2>
+          <p>ユニットをタップしてください。</p>
+        </section>
+        <section class="panel-card controls">
+          <div id="actionButtons" class="action-buttons"></div>
+          <button id="dangerButton">敵危険範囲</button>
+          <button id="endTurnButton" class="danger">ターン終了</button>
+        </section>
+        <section class="panel-card log-card">
+          <h2>戦況</h2>
+          <div id="battleLog" class="battle-log" aria-live="polite"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="modal">
+    <div id="modalContent"></div>
+    <form method="dialog"><button class="wide">閉じる</button></form>
+  </dialog>
+
+  <section id="storyOverlay" class="story-overlay" hidden>
+    <div class="story-scene" role="dialog" aria-modal="true">
+      <div id="storyChapter" class="story-chapter"></div>
+      <div id="storyWindows" class="story-windows"></div>
+      <div class="story-controls">
+        <button id="storyBack">前へ</button>
+        <button id="storyNext">次へ</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="../campaign.js?v=3"></script>
+  <script src="../role-migration.js?v=1"></script>
+  <script src="../role-runtime-patch.js?v=1"></script>
+  <script src="../portraits/kumi.js?v=1"></script>
+  <script src="../portraits/toshi.js?v=1"></script>
+  <script src="../portraits/kyoko.js?v=1"></script>
+  <script src="../portraits/mao.js?v=1"></script>
+  <script src="../portraits/sarina.js?v=1"></script>
+  <script src="../portraits/hina.js?v=1"></script>
+  <script src="./game-loader.js?v=1"></script>
+  <script src="../audio-prototype.js?v=1"></script>
+</body>
+</html>
