@@ -53,15 +53,6 @@
     return changed;
   }
 
-  function ensureDialogueFaceGuard(){
-    if(document.querySelector('script[data-dialogue-face-guard]')||document.querySelector('#dialogueFaceGuardStyles'))return;
-    const script=document.createElement('script');
-    const base=document.currentScript?.src||location.href;
-    script.src=new URL('./dialogue-face-guard.js?v=1',base).href;
-    script.dataset.dialogueFaceGuard='1';
-    document.head.appendChild(script);
-  }
-
   const campaign=read(CAMPAIGN_KEY);
   if(migrateCampaign(campaign))write(CAMPAIGN_KEY,campaign);
 
@@ -72,6 +63,4 @@
     const save=read(key);
     if(save&&migrateCollection(save.units))write(key,save);
   });
-
-  ensureDialogueFaceGuard();
 })();
