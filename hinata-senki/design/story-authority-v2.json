@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "status": "authoritative",
+  "effectiveFrom": "chapter-revisions-and-all-future-chapters",
+  "documents": {
+    "worldAndEndingFoundation": "internal-ending-story-bible.md",
+    "characterAndDialogueAuthority": "internal-character-story-bible-v2.md",
+    "campaignPlotAuthority": "internal-campaign-plot-v2.md",
+    "arcCoverageValidation": "character-arc-coverage-v2.json",
+    "mapFoundation": "campaign-map-plan.json",
+    "researchRules": "research-basis.md"
+  },
+  "precedence": [
+    "internal-character-story-bible-v2.md",
+    "internal-campaign-plot-v2.md",
+    "character-arc-coverage-v2.json",
+    "internal-ending-story-bible.md",
+    "campaign-map-plan.json",
+    "older chapter-specific plot notes"
+  ],
+  "nonNegotiableRules": {
+    "storyBeforePortrait": true,
+    "unillustratedCharactersMayLeadChapters": true,
+    "unillustratedCharactersMayJoinAndReceiveSupportScenes": true,
+    "portraitCompletionMustNotChangePlotOrder": true,
+    "noBorrowedPortraits": true,
+    "allMembersHaveDistinctDecisionPrinciples": true,
+    "relationshipsChangeGameplayAndNotOnlyDialogue": true,
+    "joinIsNotEndOfArc": true,
+    "everyMemberHasEndgamePayoff": true,
+    "mainPlotCannotDependOnOptionalSupport": true,
+    "publicProgressReportsMustRemainSpoilerFree": true
+  },
+  "implementationOrder": [
+    "revise chapters 1-5 dialogue and recruitment beats without discarding stable map code",
+    "build chapter 6 from the v2 plot and map foundation",
+    "add shared support and timed-conversation event engine",
+    "implement chapters 7-10 and validate first-half causality",
+    "implement chapters 11-15 and validate all-member recruitment coverage",
+    "implement chapters 16-20 and ending variants",
+    "add or replace individual portraits independently when approved"
+  ]
+}
