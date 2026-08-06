@@ -34,8 +34,8 @@
   }
   function encourage(unit,target){
     target.acted=false;
-    addLog(\`${unit.name}の応援で${target.name}が再び行動できる。\`);
-    toast(\`${target.name}が再行動\`);
+    addLog(\`\${unit.name}の応援で\${target.name}が再び行動できる。\`);
+    toast(\`\${target.name}が再行動\`);
     finishAction(unit);
   }
 
