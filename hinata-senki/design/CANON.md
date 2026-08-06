@@ -11,6 +11,7 @@
 7. `campaign-map-plan.json`
 8. `roster-archetypes.json`
 9. `research-basis.md`
+10. `personality-source-notes.md`
 
 ## 運用原則
 
