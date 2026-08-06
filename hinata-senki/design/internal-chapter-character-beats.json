@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 2,
+  "canonicalPlot": "internal-character-driven-plot-v2.md",
+  "purpose": "各章で新規加入者だけでなく既存人物の弱点・関係・後半回収を進める",
+  "sceneRules": {
+    "maxOpeningSpeakers": 5,
+    "requiredFunctions": ["戦況説明", "感情", "異論または懸念", "人物らしい軽さ"],
+    "postJoinFrictionWithinChapters": 2,
+    "minimumMainPlotDecisionsPerMemberOutsideJoinChapter": 2,
+    "bossTalkPriority": ["価値観が衝突する人物", "現在または過去に関係する人物", "同兵種または同じ役割の人物", "主人公"]
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "newFocus": ["kumi", "toshi", "kyoko", "sarina"],
+      "existingGrowth": [],
+      "relationshipBeat": "親衛隊三人の判断差を久美が統合する",
+      "emotionalQuestion": "全員を守ることと全員の判断を尊重することは両立するか",
+      "requiredPayoffLater": [3, 15, 20]
+    },
+    {
+      "chapter": 2,
+      "newFocus": ["hina"],
+      "existingGrowth": ["kumi", "toshi", "kyoko", "sarina"],
+      "relationshipBeat": "旧友関係より現地家族の救出を先に置く",
+      "emotionalQuestion": "昔の仲間は現在の責任を理解できるか",
+      "requiredPayoffLater": [4, 6, 10, 20]
+    },
+    {
+      "chapter": 3,
+      "newFocus": ["mao"],
+      "existingGrowth": ["sarina", "hina", "kyoko"],
+      "relationshipBeat": "潮が井口の本心を聞き、井口が潮の疲労を表へ出す",
+      "emotionalQuestion": "戦闘力以外の力を本人と軍が認められるか",
+      "requiredPayoffLater": [10, 17, 19, 20]
+    },
+    {
+      "chapter": 4,
+      "newFocus": ["mirei"],
+      "existingGrowth": ["kumi", "mao", "hina", "toshi", "kyoko"],
+      "relationshipBeat": "大義より生活を優先する美玲が軍の目的を具体化する",
+      "emotionalQuestion": "王国を取り戻すことは人々の今日を守ることになっているか",
+      "requiredPayoffLater": [6, 14, 17, 20]
+    },
+    {
+      "chapter": 5,
+      "newFocus": ["ayaka", "mei"],
+      "existingGrowth": ["toshi", "kyoko", "kumi"],
+      "relationshipBeat": "感覚を共有できる二人が、説明不足を越えて全軍へ合図を渡す",
+      "emotionalQuestion": "相手を信じることと意図を説明する責任は両立するか",
+      "requiredPayoffLater": [14, 16, 19, 20]
+    },
+    {
+      "chapter": 6,
+      "newFocus": ["hiyori", "haruyo"],
+      "existingGrowth": ["mirei", "hina", "mao"],
+      "relationshipBeat": "みーぱんファミリーが保護関係から役割分担へ変わる",
+      "emotionalQuestion": "守るために手を離せるか",
+      "requiredPayoffLater": [12, 17, 20]
+    },
+    {
+      "chapter": 7,
+      "newFocus": ["manamo"],
+      "existingGrowth": ["kumi", "mirei", "hina"],
+      "relationshipBeat": "王家の公式史と民衆が読める歴史を対立させる",
+      "emotionalQuestion": "自分に不利な真実を公開できるか",
+      "requiredPayoffLater": [13, 15, 19, 20]
+    },
+    {
+      "chapter": 8,
+      "newFocus": ["hinano"],
+      "existingGrowth": ["kumi", "sarina", "ayaka", "mei"],
+      "relationshipBeat": "ひなのが王国か帝国かという二択を崩す",
+      "emotionalQuestion": "既存の選択肢を拒み第三の道を作れるか",
+      "requiredPayoffLater": [11, 14, 16, 20]
+    },
+    {
+      "chapter": 9,
+      "newFocus": ["akari", "miho"],
+      "existingGrowth": ["toshi", "kyoko", "kumi"],
+      "relationshipBeat": "突破と守備のどちらかを正解にせず両方を必要とする",
+      "emotionalQuestion": "異なる守り方を裏切りと誤解せず認められるか",
+      "requiredPayoffLater": [10, 14, 18, 20]
+    },
+    {
+      "chapter": 10,
+      "newFocus": ["konoka", "suzuka"],
+      "existingGrowth": ["miho", "mao", "manamo"],
+      "relationshipBeat": "勢い、設計、責任の三者が共同で退路を作る",
+      "emotionalQuestion": "完全な準備を待たず、無謀にもならず決断できるか",
+      "requiredPayoffLater": [13, 14, 19, 20]
+    },
+    {
+      "chapter": 11,
+      "newFocus": ["mikuni"],
+      "existingGrowth": ["kumi", "hinano", "hiyori", "haruyo"],
+      "relationshipBeat": "未来虹が久美の模倣ではない守備型指揮を確立する",
+      "emotionalQuestion": "迷いを見せる指揮官も信頼されるか",
+      "requiredPayoffLater": [14, 18, 19, 20]
+    },
+    {
+      "chapter": 12,
+      "newFocus": ["nao", "miku"],
+      "existingGrowth": ["hiyori", "kumi", "manamo"],
+      "relationshipBeat": "なおみくが救う側と救われる側を固定せず弱さを交換する",
+      "emotionalQuestion": "完璧でない自分を親しい相手へ見せられるか",
+      "requiredPayoffLater": [14, 18, 20]
+    },
+    {
+      "chapter": 13,
+      "newFocus": ["kage", "mana"],
+      "existingGrowth": ["konoka", "manamo", "kumi"],
+      "relationshipBeat": "仮説、検証、実装、解読の知識型四役を分ける",
+      "emotionalQuestion": "不完全な情報を共有した上で責任を持って決められるか",
+      "requiredPayoffLater": [15, 16, 19, 20]
+    },
+    {
+      "chapter": 14,
+      "newFocus": ["marii"],
+      "existingGrowth": ["mikuni", "hinano", "haruyo", "all"],
+      "relationshipBeat": "三期生が独立部隊となり自由な発想と規律を結び付ける",
+      "emotionalQuestion": "大胆さを失わず意図を共有できるか",
+      "requiredPayoffLater": [18, 19, 20]
+    },
+    {
+      "chapter": 15,
+      "newFocus": ["memi"],
+      "existingGrowth": ["kumi", "kyoko", "sarina", "hina", "mirei", "all"],
+      "relationshipBeat": "敵側に残ることで守った人物を、帰還要求ではなく責任分担で迎える",
+      "emotionalQuestion": "王国を取り戻しても元の権力へ戻らない選択ができるか",
+      "requiredPayoffLater": [17, 18, 19, 20]
+    },
+    {
+      "chapter": 16,
+      "newFocus": [],
+      "existingGrowth": ["kyoko", "hinano", "kage", "sarina", "toshi"],
+      "relationshipBeat": "討伐を急ぐ判断と、痛みを聞き取る判断を両立させる",
+      "emotionalQuestion": "倒せる相手を倒さず正体を確かめる強さを持てるか",
+      "requiredPayoffLater": [19, 20]
+    },
+    {
+      "chapter": 17,
+      "newFocus": [],
+      "existingGrowth": ["mirei", "hina", "hiyori", "haruyo", "toshi", "kyoko", "sarina", "mao"],
+      "relationshipBeat": "保護、親衛、聞き役の関係をそれぞれ双方向へ完成させる",
+      "emotionalQuestion": "離れて別の役割を担うことを信頼として受け入れられるか",
+      "requiredPayoffLater": [20]
+    },
+    {
+      "chapter": 18,
+      "newFocus": [],
+      "existingGrowth": ["miho", "akari", "miku", "nao", "mikuni", "kumi"],
+      "relationshipBeat": "敵国民と支配者を分け、勝ち方そのものを選ぶ",
+      "emotionalQuestion": "復讐を拒みながら責任を曖昧にしない方法はあるか",
+      "requiredPayoffLater": [20]
+    },
+    {
+      "chapter": 19,
+      "newFocus": [],
+      "existingGrowth": ["all"],
+      "relationshipBeat": "専門性の違う分隊が互いの不完全さを前提に作戦を成立させる",
+      "emotionalQuestion": "帰還不能と召喚の真相を同じ速度で受け入れられない仲間同士で進めるか",
+      "requiredPayoffLater": [20]
+    },
+    {
+      "chapter": 20,
+      "newFocus": [],
+      "existingGrowth": ["all"],
+      "relationshipBeat": "元の関係へ戻るのではなく、現在の違いを保ったまま同じ未来を選ぶ",
+      "emotionalQuestion": "一緒にいることではなく離れてもつながることを結末にできるか",
+      "requiredPayoffLater": []
+    }
+  ],
+  "memberSpotlightChecks": {
+    "kumi": [1, 4, 7, 11, 15, 18, 20],
+    "toshi": [1, 2, 9, 17, 20],
+    "kyoko": [1, 3, 9, 15, 16, 17, 20],
+    "sarina": [1, 2, 3, 8, 15, 16, 17, 19, 20],
+    "mao": [3, 4, 6, 10, 17, 19, 20],
+    "mirei": [4, 6, 7, 17, 19, 20],
+    "mana": [13, 19, 20],
+    "ayaka": [5, 8, 16, 19, 20],
+    "mei": [5, 8, 16, 19, 20],
+    "memi": [15, 19, 20],
+    "kage": [13, 16, 19, 20],
+    "miku": [9, 12, 18, 20],
+    "nao": [12, 18, 20],
+    "hina": [2, 3, 4, 6, 17, 19, 20],
+    "akari": [9, 18, 19, 20],
+    "suzuka": [10, 14, 19, 20],
+    "konoka": [10, 13, 19, 20],
+    "manamo": [7, 10, 13, 19, 20],
+    "miho": [9, 10, 18, 20],
+    "hiyori": [6, 11, 12, 17, 20],
+    "hinano": [8, 11, 14, 16, 19, 20],
+    "mikuni": [11, 14, 18, 19, 20],
+    "marii": [14, 19, 20],
+    "haruyo": [6, 11, 14, 17, 20]
+  },
+  "validation": [
+    "全メンバーが登場章以外に最低二回、本筋または攻略を動かす",
+    "加入後二章以内に本人の弱点・異論・失敗のいずれかを描く",
+    "同じ関係性で同じ会話パターンを繰り返さない",
+    "終章の固有役割が兵種と人物弧の双方に由来する",
+    "主人公不在でも成立する会話と分隊を複数用意する",
+    "早期加入や支援不足で本筋が破綻しない代替話者を持つ"
+  ]
+}
