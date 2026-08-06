@@ -1,0 +1,21 @@
+:root{--tile:52px}
+.tile.sand{background:#c99c59;background-image:linear-gradient(135deg,rgba(255,255,255,.08) 25%,transparent 25%),linear-gradient(315deg,rgba(92,56,22,.08) 25%,transparent 25%)}
+.tile.dune{background:#b9833f;box-shadow:inset 0 0 0 2px rgba(255,224,151,.14)}
+.tile.road{background:#aa7743}
+.tile.ruin{background:#8f765a;box-shadow:inset 0 0 0 3px #5c4b39}
+.tile.oasis{background:#438b81;box-shadow:inset 0 0 0 3px #79c2a6}
+.tile.seal{background:#69568e;box-shadow:inset 0 0 0 3px #d3b8ff}
+.tile.seal.activated{background:#c5a94c;box-shadow:inset 0 0 0 3px #fff4a4,0 0 14px #ffe770}
+.tile.armory{background:#7a5538}.tile.vendor{background:#536948}.tile.exit{background:#81503c}.tile.camp{background:#456071}
+.tile.wall{background:#4c4037}
+.tile.hidden-found::after{content:'✦';position:absolute;inset:0;display:grid;place-items:center;color:#fff1a3;font-size:22px;text-shadow:0 1px 3px #000}
+.unit .unit-portrait{width:100%;height:100%;object-fit:cover;border-radius:50%;image-rendering:auto}
+.unit .unit-mark{position:absolute;inset:auto 0 0 0;background:rgba(0,0,0,.65);font-size:10px;line-height:14px;text-align:center}
+.unit-card-head{display:grid;grid-template-columns:74px 1fr;gap:10px;align-items:center}
+.unit-card-head img{width:74px;height:74px;object-fit:cover;border:2px solid #d8bd6a;border-radius:8px;background:#12244a}
+.story-windows .speech-card{display:grid;grid-template-columns:92px 1fr;gap:14px;align-items:center;padding:18px}
+.story-windows .speech-card img{width:92px;height:92px;object-fit:cover;border:3px solid #d8bd6a;border-radius:10px;background:#12244a}
+.story-windows .speech-card .fallback{width:92px;height:92px;display:grid;place-items:center;border:3px solid #d8bd6a;border-radius:10px;background:#18366c;color:#fff;font-size:30px;font-weight:900}
+.story-windows .speech-name{color:#ffe58a;font-weight:900;margin-bottom:8px}.story-windows .speech-text{font-size:18px;line-height:1.7}
+.research-note{padding:10px 12px;border:1px solid #9079b4;background:#251d3a;border-radius:8px;color:#f2eaff}
+@media(max-width:700px){:root{--tile:46px}.story-windows .speech-card{grid-template-columns:68px 1fr;padding:13px;gap:10px}.story-windows .speech-card img,.story-windows .speech-card .fallback{width:68px;height:68px}.story-windows .speech-text{font-size:16px}.unit-card-head{grid-template-columns:58px 1fr}.unit-card-head img{width:58px;height:58px}}

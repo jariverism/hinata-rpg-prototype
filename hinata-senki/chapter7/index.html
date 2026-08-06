@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <meta name="theme-color" content="#0d2133">
+  <meta name="theme-color" content="#3b2916">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>日向戦記　第6章</title>
+  <title>日向戦記　第7章</title>
   <link rel="stylesheet" href="../chapter2/style.css?v=2">
   <link rel="stylesheet" href="../unit-input.css?v=1">
   <link rel="stylesheet" href="../chapter3/style.css?v=1">
@@ -18,8 +18,8 @@
   <div id="app">
     <header class="topbar">
       <div>
-        <h1>日向戦記 <small>第6章</small></h1>
-        <p id="chapterLabel">第6章</p>
+        <h1>日向戦記 <small>第7章</small></h1>
+        <p id="chapterLabel">第7章</p>
       </div>
       <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
     </header>
@@ -28,7 +28,7 @@
       <div><span>ターン</span><strong id="turnLabel">1</strong></div>
       <div><span>フェイズ</span><strong id="phaseLabel">自軍</strong></div>
       <div><span>軍資金</span><strong id="goldLabel">0 G</strong></div>
-      <div><span>救助</span><strong id="rescueLabel">0/3</strong></div>
+      <div><span>調査</span><strong id="sealLabel">0/3</strong></div>
       <div class="objective"><span>勝利条件</span><strong id="objectiveLabel">作戦開始後に表示</strong></div>
     </section>
 
@@ -70,11 +70,27 @@
     </div>
   </section>
 
+  <section id="levelOverlay" class="level-overlay" hidden>
+    <div class="level-panel" role="dialog" aria-modal="true">
+      <div class="level-title">LEVEL UP!</div>
+      <div class="level-main">
+        <div class="level-profile">
+          <img id="levelPortrait" alt="">
+          <strong id="levelName"></strong>
+          <span id="levelClass"></span>
+          <div class="level-change"><b id="oldLevel"></b><span>→</span><strong id="newLevel"></strong></div>
+        </div>
+        <div id="levelStats" class="level-stats"></div>
+      </div>
+      <p id="levelMessage"></p>
+      <button id="levelConfirm">確認</button>
+    </div>
+  </section>
+
   <div id="toast" class="toast" role="status"></div>
 
   <script src="../campaign.js?v=3"></script>
   <script src="../role-migration.js?v=2"></script>
-  <script src="../role-runtime-patch.js?v=1"></script>
   <script src="../portraits/kumi.js?v=1"></script>
   <script src="../portraits/toshi.js?v=1"></script>
   <script src="../portraits/kyoko.js?v=1"></script>
@@ -83,9 +99,8 @@
   <script src="../portraits/hina.js?v=1"></script>
   <script src="../portraits/hiyori.js?v=1"></script>
   <script src="../portraits/haruyo.js?v=1"></script>
-  <script src="./portrait-runtime-patch.js?v=1"></script>
+  <script src="../portraits/manamo.js?v=1"></script>
   <script src="./game-loader.js?v=1"></script>
-  <script src="./chapter7-transition.js?v=1"></script>
   <script src="../audio-prototype.js?v=1"></script>
 </body>
 </html>
