@@ -1,0 +1,27 @@
+:root { --tile:52px; }
+.tile.plain { background:linear-gradient(135deg,#566c42,#415538); }
+.tile.road { background:linear-gradient(135deg,#88765d,#6e604d); }
+.tile.forest { background:radial-gradient(circle at 27% 31%,#193923 0 22%,transparent 23%),radial-gradient(circle at 71% 68%,#15321f 0 25%,transparent 26%),#345537; }
+.tile.mountain { background:linear-gradient(135deg,transparent 0 24%,#596068 25% 51%,transparent 52%),linear-gradient(225deg,transparent 0 29%,#404850 30% 58%,transparent 59%),#2d343a; }
+.tile.mist { background:repeating-linear-gradient(165deg,rgba(188,203,211,.45) 0 7px,rgba(70,83,98,.64) 8px 15px),#303b48; }
+.tile.river { background:repeating-linear-gradient(165deg,#244f72 0 7px,#2e6288 8px 14px,#1d435f 15px 21px); }
+.tile.bridge { background:repeating-linear-gradient(90deg,#74563b 0 8px,#98714c 9px 17px); }
+.tile.wall { background:repeating-linear-gradient(0deg,#424a54 0 8px,#59636e 9px 17px); }
+.tile.village { background:linear-gradient(145deg,transparent 0 35%,#7f3d37 36% 60%,transparent 61%),linear-gradient(90deg,#c4ad70 25%,#61432e 26% 42%,#c4ad70 43% 74%,#61432e 75%); }
+.tile.fort { background:radial-gradient(circle,#69737b 0 32%,#373f47 33% 53%,#727e86 54% 67%,#292f35 68%); }
+.tile.camp { background:linear-gradient(145deg,transparent 0 30%,#a88753 31% 56%,transparent 57%),radial-gradient(circle at 50% 67%,#df8b42 0 10%,#803f25 11% 18%,transparent 19%),#3f4e3a; }
+.tile.beacon { background:radial-gradient(circle,#2a2732 0 20%,#5f586d 21% 39%,#292530 40% 61%,#17151d 62%); }
+.tile.beacon::after { content:'灯'; position:absolute; inset:5px; display:grid; place-items:center; border-radius:50%; background:rgba(26,24,34,.78); color:#9aa5b4; font-weight:800; font-size:12px; }
+.tile.beacon.lit { background:radial-gradient(circle,#fff0a1 0 12%,#e6a347 13% 29%,#804533 30% 45%,#33243a 46% 66%,#17151d 67%); box-shadow:inset 0 0 14px rgba(255,210,91,.75),0 0 14px rgba(255,198,66,.45); }
+.tile.beacon.lit::after { content:'点火'; color:#fff2ae; background:rgba(111,55,31,.58); }
+.tile.exit { background:radial-gradient(circle,#cfe9ff 0 12%,#527ca8 13% 30%,#273e62 31% 56%,#18233a 57%); }
+.tile.exit::after { content:'離脱'; position:absolute; inset:7px 3px; display:grid; place-items:center; border:1px solid rgba(223,239,255,.7); color:#eff8ff; background:rgba(19,36,59,.76); font-size:10px; font-weight:800; }
+.tile.armory::after,.tile.vendor::after,.tile.village::after,.tile.camp::after { position:absolute; right:2px; bottom:2px; padding:1px 3px; border-radius:3px; background:rgba(12,18,25,.78); color:#fff4c0; font-size:9px; font-weight:800; }
+.tile.armory::after { content:'武'; }
+.tile.vendor::after { content:'道'; }
+.tile.village::after { content:'村'; }
+.tile.camp::after { content:'陣'; }
+.tile.village.saved::before { content:'済'; background:rgba(22,91,63,.92); }
+.unit.boss { box-shadow:0 0 14px rgba(193,80,203,.85); }
+.unit.healed { filter:brightness(1.8); box-shadow:0 0 18px #8dffb0; }
+@media (max-width:800px) { :root { --tile:48px; } }
