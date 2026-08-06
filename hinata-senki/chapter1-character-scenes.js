@@ -156,8 +156,8 @@
 
   function inspectLog() {
     const text = document.querySelector('#battleLog')?.textContent || '';
-    if (/潮紗理菜が仲間になった/.test(text)) {
-      enqueue('reunion', '治療院からの合流', reunionScene);
+    if (/潮紗理菜が(?:仲間になった|部隊へ合流した)/.test(text)) {
+      enqueue('reunion', '治療院からの再合流', reunionScene);
     }
     if (/村人から|村の人々|避難/.test(text) && !seen('village')) {
       saveStoryFlag('villageEvacuated');
