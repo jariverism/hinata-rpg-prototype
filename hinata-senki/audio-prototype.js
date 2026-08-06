@@ -17,31 +17,59 @@
   let nextStepTime = 0;
   let stepIndex = 0;
   let lastPhase = '';
-  let lastLogText = '';
   let lastModalTitle = '';
   let dock = null;
+  let eventTrack = '';
+  let eventTrackUntil = 0;
+  let eventTrackTimer = null;
+  let resumeAfterVisibility = false;
+  const recentLogSounds = new Map();
+  let lastObservedLogText = '';
 
   const tracks = {
-    story: {
-      tempo:82,
-      melody:[64,null,67,null,69,null,67,null,64,null,62,null,60,null,62,null,64,null,67,null,71,null,69,null,67,null,64,null,62,null,60,null],
-      harmony:[55,null,null,null,57,null,null,null,52,null,null,null,55,null,null,null,55,null,null,null,59,null,null,null,57,null,null,null,52,null,null,null],
-      bass:[48,null,null,null,45,null,null,null,43,null,null,null,45,null,null,null,48,null,null,null,47,null,null,null,45,null,null,null,43,null,null,null],
-      drums:false
+    dialogue: {
+      tempo:96,
+      stepsPerBeat:2,
+      melody:[64,null,67,null,71,null,69,null,67,null,64,null,62,null,64,null,67,null,72,null,71,null,67,null,69,null,67,null,64,null,62,null],
+      harmony:[55,null,null,null,59,null,null,null,57,null,null,null,52,null,null,null,55,null,null,null,60,null,null,null,59,null,null,null,55,null,null,null],
+      bass:[48,null,null,null,43,null,null,null,45,null,null,null,48,null,null,null,48,null,null,null,45,null,null,null,43,null,null,null,48,null,null,null],
+      drums:false,
+      melodyGain:0.046,
+      harmonyGain:0.020,
+      bassGain:0.052
     },
     ally: {
-      tempo:116,
-      melody:[72,null,76,74,72,null,69,null,67,69,72,null,71,null,69,null,72,null,76,79,76,null,74,null,72,74,76,null,71,null,72,null],
-      harmony:[64,null,67,null,64,null,60,null,62,null,64,null,62,null,59,null,62,null,64,null,67,null,71,null,67,null,65,null,64,null,62,null,59,null,60,null],
-      bass:[48,null,48,null,45,null,45,null,43,null,43,null,47,null,47,null,48,null,48,null,52,null,52,null,50,null,50,null,47,null,48,null,48,null],
-      drums:true
+      tempo:150,
+      stepsPerBeat:4,
+      melody:[72,74,76,79,76,74,72,69,71,72,74,76,79,81,79,76,74,76,77,81,77,76,74,72,69,71,72,76,74,71,72,74],
+      harmony:[64,null,67,null,64,null,62,null,62,null,64,null,67,null,71,null,65,null,69,null,65,null,64,null,60,null,64,null,62,null,67,null],
+      bass:[48,null,48,null,45,null,45,null,43,null,43,null,47,null,47,null,50,null,50,null,45,null,45,null,43,null,47,null,48,null,48,null],
+      drums:'march',
+      melodyGain:0.050,
+      harmonyGain:0.021,
+      bassGain:0.065
     },
     enemy: {
-      tempo:106,
-      melody:[69,null,68,null,69,72,70,null,69,null,65,null,67,68,69,null,72,null,73,72,69,null,68,null,65,67,68,null,64,null,65,null],
-      harmony:[60,null,59,null,60,null,62,null,60,null,56,null,58,null,60,null,63,null,64,null,60,null,59,null,56,null,58,null,55,null,56,null],
-      bass:[45,null,45,null,41,null,41,null,43,null,43,null,40,null,40,null,45,null,45,null,44,null,44,null,41,null,43,null,40,null,41,null],
-      drums:true
+      tempo:146,
+      stepsPerBeat:4,
+      melody:[69,68,69,72,70,69,68,65,67,68,69,73,72,69,68,64,65,67,68,72,70,68,67,63,64,65,67,70,68,65,64,65],
+      harmony:[60,null,59,null,60,null,56,null,58,null,60,null,64,null,63,null,56,null,58,null,60,null,59,null,55,null,56,null,58,null,55,null,56,null],
+      bass:[45,null,45,null,41,null,41,null,43,null,43,null,40,null,40,null,44,null,44,null,41,null,41,null,43,null,40,null,41,null,41,null],
+      drums:'assault',
+      melodyGain:0.050,
+      harmonyGain:0.021,
+      bassGain:0.068
+    },
+    join: {
+      tempo:132,
+      stepsPerBeat:4,
+      melody:[67,71,74,79,71,74,79,83,72,76,79,84,76,79,84,88,79,76,74,71,72,74,76,79,83,81,79,76,74,72,71,67],
+      harmony:[59,null,62,null,59,null,62,null,64,null,67,null,64,null,67,null,71,null,67,null,64,null,67,null,71,null,69,null,67,null,62,null],
+      bass:[43,null,43,null,47,null,47,null,48,null,48,null,52,null,52,null,55,null,55,null,48,null,48,null,50,null,50,null,43,null,43,null],
+      drums:'celebration',
+      melodyGain:0.054,
+      harmonyGain:0.023,
+      bassGain:0.060
     }
   };
 
@@ -114,8 +142,8 @@
     osc.frequency.setValueAtTime(midiToFrequency(note),time);
     osc.detune.setValueAtTime(detune,time);
     gain.gain.setValueAtTime(0.0001,time);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002,gainValue),time+0.012);
-    gain.gain.setValueAtTime(Math.max(0.0002,gainValue*0.8),Math.max(time+0.014,time+duration*0.55));
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002,gainValue),time+0.009);
+    gain.gain.setValueAtTime(Math.max(0.0002,gainValue*0.78),Math.max(time+0.012,time+duration*0.56));
     gain.gain.exponentialRampToValueAtTime(0.0001,time+duration);
     osc.connect(gain);
     gain.connect(destination);
@@ -129,13 +157,13 @@
     const length = Math.max(1,Math.floor(context.sampleRate*0.18));
     const buffer = context.createBuffer(1,length,context.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i=0;i<length;i++) data[i] = Math.random()*2-1;
+    for (let index=0; index<length; index+=1) data[index] = Math.random()*2-1;
     noiseBuffer = buffer;
     return buffer;
   }
 
   function noise(time,duration,gainValue,highpass=700,destination=sfxGain) {
-    if (!context || !sfxGain) return;
+    if (!context || !destination) return;
     const source = context.createBufferSource();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
@@ -151,25 +179,27 @@
     source.stop(time+duration+0.02);
   }
 
-  function scheduleTrackStep(track,time,index) {
-    const stepDuration = 60 / track.tempo / 2;
-    const i = index % track.melody.length;
-    const melody = track.melody[i];
-    const harmony = track.harmony[i % track.harmony.length];
-    const bass = track.bass[i % track.bass.length];
-    if (melody != null) tone(melody,time,stepDuration*0.82,'square',0.055,bgmGain);
-    if (harmony != null) tone(harmony,time,stepDuration*0.92,'square',0.025,bgmGain,5);
-    if (bass != null) tone(bass,time,stepDuration*0.95,'triangle',0.072,bgmGain);
-    if (track.drums) {
-      if (i % 4 === 0) {
-        tone(36,time,0.10,'sine',0.055,bgmGain);
-        noise(time,0.035,0.018,500,bgmGain);
-      } else if (i % 4 === 2) {
-        noise(time,0.055,0.028,1300,bgmGain);
-      } else {
-        noise(time,0.018,0.010,3200,bgmGain);
-      }
+  function scheduleDrums(track,time,index,stepDuration) {
+    if (!track.drums) return;
+    const step = index % 16;
+    if (step % 4 === 0) {
+      tone(track.drums === 'assault' ? 34 : 36,time,Math.min(0.10,stepDuration*0.9),'sine',0.055,bgmGain);
+      noise(time,Math.min(0.035,stepDuration*0.55),0.015,520,bgmGain);
     }
+    if (step === 4 || step === 12) noise(time,Math.min(0.055,stepDuration*0.85),track.drums === 'assault' ? 0.034 : 0.028,1250,bgmGain);
+    if (step % 2 === 1) noise(time,Math.min(0.022,stepDuration*0.45),0.010,3300,bgmGain);
+    if (track.drums === 'celebration' && (step === 6 || step === 14)) tone(79,time,Math.min(0.05,stepDuration*0.7),'square',0.018,bgmGain);
+  }
+
+  function scheduleTrackStep(track,time,index) {
+    const stepDuration = 60 / track.tempo / (track.stepsPerBeat || 2);
+    const melody = track.melody[index % track.melody.length];
+    const harmony = track.harmony[index % track.harmony.length];
+    const bass = track.bass[index % track.bass.length];
+    if (melody != null) tone(melody,time,stepDuration*0.88,'square',track.melodyGain || 0.05,bgmGain);
+    if (harmony != null) tone(harmony,time,stepDuration*0.92,'square',track.harmonyGain || 0.022,bgmGain,5);
+    if (bass != null) tone(bass,time,stepDuration*0.96,'triangle',track.bassGain || 0.064,bgmGain);
+    scheduleDrums(track,time,index,stepDuration);
     return stepDuration;
   }
 
@@ -178,8 +208,7 @@
     const track = tracks[currentTrack];
     if (!track) return;
     while (nextStepTime < context.currentTime + 0.18) {
-      const stepDuration = scheduleTrackStep(track,nextStepTime,stepIndex);
-      nextStepTime += stepDuration;
+      nextStepTime += scheduleTrackStep(track,nextStepTime,stepIndex);
       stepIndex += 1;
     }
   }
@@ -197,95 +226,139 @@
     if (!tracks[name]) return;
     currentTrack = name;
     stepIndex = 0;
-    nextStepTime = context.currentTime + 0.06;
+    nextStepTime = context.currentTime + 0.045;
     scheduler();
-    schedulerTimer = setInterval(scheduler,60);
+    schedulerTimer = setInterval(scheduler,45);
+  }
+
+  function conversationVisible() {
+    return Boolean(document.querySelector([
+      '#storyOverlay:not([hidden])',
+      '.story-overlay:not([hidden])',
+      '#chapter1CharacterScene:not([hidden])',
+      '#chapter1LoreOverlay:not([hidden])'
+    ].join(',')));
+  }
+
+  function activeEventTrack() {
+    if (eventTrack && performance.now() < eventTrackUntil) return eventTrack;
+    if (eventTrack) {
+      eventTrack = '';
+      eventTrackUntil = 0;
+    }
+    return '';
   }
 
   function desiredTrack() {
-    const story = document.querySelector('#storyOverlay:not([hidden]), .story-overlay:not([hidden])');
-    if (story) return 'story';
+    const temporary = activeEventTrack();
+    if (temporary) return temporary;
+    if (conversationVisible()) return 'dialogue';
     const phase = document.querySelector('#phaseLabel')?.textContent || '';
     return phase.includes('敵') ? 'enemy' : 'ally';
   }
 
-  function syncTrack() {
+  function syncTrack(force=false) {
     if (!unlocked || !settings.enabled || !settings.bgm) return;
-    startTrack(desiredTrack());
+    startTrack(desiredTrack(),force);
+  }
+
+  function playEventTrack(name,duration=4800) {
+    if (!tracks[name]) return;
+    eventTrack = name;
+    eventTrackUntil = performance.now() + duration;
+    if (eventTrackTimer) clearTimeout(eventTrackTimer);
+    if (unlocked && settings.enabled && settings.bgm) startTrack(name,true);
+    eventTrackTimer = setTimeout(() => {
+      eventTrack = '';
+      eventTrackUntil = 0;
+      eventTrackTimer = null;
+      syncTrack(true);
+    },duration);
   }
 
   function playSfx(name) {
     if (!unlocked || !context || !settings.enabled || !settings.sfx) return;
-    const t = context.currentTime + 0.012;
+    const time = context.currentTime + 0.012;
     switch (name) {
       case 'cursor':
-        tone(76,t,0.045,'square',0.045);
+        tone(76,time,0.045,'square',0.045);
         break;
       case 'confirm':
-        tone(72,t,0.055,'square',0.055);
-        tone(79,t+0.045,0.075,'square',0.05);
+        tone(72,time,0.055,'square',0.055);
+        tone(79,time+0.045,0.075,'square',0.05);
         break;
       case 'phase':
-        tone(60,t,0.08,'square',0.055);
-        tone(67,t+0.07,0.09,'square',0.052);
-        tone(72,t+0.14,0.13,'square',0.06);
+        tone(60,time,0.07,'square',0.055);
+        tone(67,time+0.055,0.08,'square',0.052);
+        tone(72,time+0.11,0.11,'square',0.06);
         break;
       case 'enemyPhase':
-        tone(50,t,0.10,'sawtooth',0.045);
-        tone(49,t+0.09,0.12,'sawtooth',0.052);
+        tone(50,time,0.08,'sawtooth',0.045);
+        tone(49,time+0.07,0.10,'sawtooth',0.052);
         break;
       case 'hit':
-        noise(t,0.085,0.16,650);
-        tone(42,t,0.10,'sawtooth',0.07);
+        noise(time,0.085,0.16,650);
+        tone(42,time,0.10,'sawtooth',0.07);
         break;
       case 'critical':
-        tone(84,t,0.05,'square',0.075);
-        tone(88,t+0.045,0.06,'square',0.075);
-        noise(t+0.08,0.14,0.20,500);
-        tone(38,t+0.08,0.16,'sawtooth',0.09);
+        tone(84,time,0.05,'square',0.075);
+        tone(88,time+0.045,0.06,'square',0.075);
+        noise(time+0.08,0.14,0.20,500);
+        tone(38,time+0.08,0.16,'sawtooth',0.09);
         break;
       case 'miss':
-        noise(t,0.055,0.05,2600);
-        tone(70,t,0.09,'triangle',0.035);
+        noise(time,0.055,0.05,2600);
+        tone(70,time,0.09,'triangle',0.035);
         break;
       case 'heal':
-        [72,76,79,84].forEach((note,index)=>tone(note,t+index*0.07,0.16,'sine',0.052));
+        [72,76,79,84].forEach((note,index)=>tone(note,time+index*0.065,0.15,'sine',0.052));
         break;
       case 'chest':
-        [67,72,76,79].forEach((note,index)=>tone(note,t+index*0.08,0.13,'square',0.052));
+        [67,72,76,79].forEach((note,index)=>tone(note,time+index*0.07,0.12,'square',0.052));
         break;
       case 'door':
-        tone(45,t,0.08,'square',0.055);
-        noise(t+0.05,0.08,0.07,900);
+        tone(45,time,0.08,'square',0.055);
+        noise(time+0.05,0.08,0.07,900);
         break;
       case 'level':
-        [60,64,67,72,76].forEach((note,index)=>tone(note,t+index*0.075,0.18,'square',0.06));
+        [60,64,67,72,76].forEach((note,index)=>tone(note,time+index*0.07,0.17,'square',0.06));
         break;
       case 'join':
-        [67,71,74,79].forEach((note,index)=>tone(note,t+index*0.09,0.20,'triangle',0.06));
+        [67,71,74,79,83].forEach((note,index)=>tone(note,time+index*0.075,0.20,index<3?'square':'triangle',0.06));
         break;
       case 'victory':
         stopTrack();
-        [60,64,67,72,67,72,76,79].forEach((note,index)=>tone(note,t+index*0.105,0.24,index<4?'square':'triangle',0.065));
-        setTimeout(()=>startTrack('story',true),1550);
+        [60,64,67,72,67,72,76,79].forEach((note,index)=>tone(note,time+index*0.095,0.22,index<4?'square':'triangle',0.065));
+        setTimeout(()=>syncTrack(true),1450);
         break;
       default:
         break;
     }
   }
 
+  function shouldHandleLog(text) {
+    const now = performance.now();
+    for (const [value,stamp] of recentLogSounds) if (now-stamp > 1800) recentLogSounds.delete(value);
+    if (!text || recentLogSounds.has(text)) return false;
+    recentLogSounds.set(text,now);
+    return true;
+  }
+
   function soundFromLog(text) {
-    if (!text || text === lastLogText) return;
-    lastLogText = text;
-    if (/必殺/.test(text)) return playSfx('critical');
-    if (/外れ|回避/.test(text)) return playSfx('miss');
-    if (/ライブ|リライブ|回復|杖を使/.test(text)) return playSfx('heal');
-    if (/宝箱/.test(text)) return playSfx('chest');
-    if (/扉を開|開錠/.test(text)) return playSfx('door');
-    if (/レベル\d+になった|LEVEL UP/.test(text)) return playSfx('level');
-    if (/仲間になった|行動を共に/.test(text)) return playSfx('join');
-    if (/制圧|章クリア|勝利/.test(text)) return playSfx('victory');
-    if (/ダメージ|戦闘不能/.test(text)) return playSfx('hit');
+    const value = String(text || '').trim();
+    if (!shouldHandleLog(value)) return;
+    if (/必殺/.test(value)) return playSfx('critical');
+    if (/外れ|回避/.test(value)) return playSfx('miss');
+    if (/ライブ|リライブ|回復|杖を使/.test(value)) return playSfx('heal');
+    if (/宝箱/.test(value)) return playSfx('chest');
+    if (/扉を開|開錠/.test(value)) return playSfx('door');
+    if (/レベル\d+になった|LEVEL UP/.test(value)) return playSfx('level');
+    if (/仲間になった|仲間に加わった|行動を共に|部隊へ合流|合流した/.test(value)) {
+      playEventTrack('join',5200);
+      return playSfx('join');
+    }
+    if (/制圧|章クリア|勝利/.test(value)) return playSfx('victory');
+    if (/ダメージ|戦闘不能/.test(value)) return playSfx('hit');
   }
 
   function observeGame() {
@@ -304,11 +377,15 @@
 
     const log = document.querySelector('#battleLog');
     if (log) {
-      new MutationObserver(records => {
-        const added = [];
-        records.forEach(record => record.addedNodes.forEach(node => added.push(node.textContent || '')));
-        added.filter(Boolean).forEach(soundFromLog);
-      }).observe(log,{childList:true,subtree:true});
+      const inspectNewestLog = () => {
+        const entries = [...log.querySelectorAll('.log-entry')];
+        const newest = (entries[0]?.textContent || log.lastElementChild?.textContent || '').trim();
+        if (!newest || newest === lastObservedLogText) return;
+        lastObservedLogText = newest;
+        soundFromLog(newest);
+      };
+      new MutationObserver(inspectNewestLog).observe(log,{childList:true,subtree:true,characterData:true});
+      lastObservedLogText = (log.querySelector('.log-entry')?.textContent || '').trim();
     }
 
     const bodyObserver = new MutationObserver(() => {
@@ -335,12 +412,12 @@
       <button type="button" id="audioMainButton" class="audio-main" aria-expanded="false">♪ タップで音楽</button>
       <button type="button" id="audioMenuButton" class="audio-menu-button" aria-label="音量設定">⚙</button>
       <div id="audioPanel" class="audio-panel" hidden>
-        <strong>サウンド試作</strong>
+        <strong>サウンド</strong>
         <label><input id="audioEnabled" type="checkbox"> 音声を使う</label>
         <label><input id="audioBgm" type="checkbox"> BGM</label>
         <label><input id="audioSfx" type="checkbox"> 効果音</label>
         <label class="audio-volume">音量<input id="audioVolume" type="range" min="0" max="1" step="0.05"></label>
-        <small>iPhoneでは最初のタップ後に再生されます。</small>
+        <small>戦場・敵軍・会話・合流で曲が切り替わります。</small>
       </div>`;
     document.body.appendChild(dock);
 
@@ -435,21 +512,38 @@
     }
   }
 
+  async function handleVisibilityChange() {
+    if (!context) return;
+    if (document.hidden) {
+      resumeAfterVisibility = unlocked && settings.enabled;
+      await context.suspend().catch(()=>{});
+      return;
+    }
+    if (!resumeAfterVisibility || !settings.enabled) return;
+    try {
+      await context.resume();
+      unlocked = context.state === 'running';
+      if (unlocked) syncTrack(true);
+    } catch {
+      unlocked = false;
+    }
+    updateDock();
+  }
+
   function start() {
     createDock();
     observeGame();
     document.addEventListener('pointerdown',firstGestureUnlock,true);
     document.addEventListener('keydown',firstGestureUnlock,true);
-    document.addEventListener('visibilitychange',() => {
-      if (!context) return;
-      if (document.hidden) {
-        context.suspend().catch(()=>{});
-      } else if (settings.enabled) {
-        unlocked = false;
-        updateDock();
-      }
-    });
-    window.HinataAudio = { unlock:unlockAudio, play:playSfx, startTrack, stop:stopTrack };
+    document.addEventListener('visibilitychange',handleVisibilityChange);
+    window.HinataAudio = {
+      unlock:unlockAudio,
+      play:playSfx,
+      startTrack,
+      eventTrack:playEventTrack,
+      sync:syncTrack,
+      stop:stopTrack
+    };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',start,{once:true});
