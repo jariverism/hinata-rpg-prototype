@@ -1,0 +1,7 @@
+/* Map unit sprites are visual overlays. Let the underlying tile receive taps/clicks. */
+.unit,
+.unit * {
+  pointer-events: none !important;
+  -webkit-user-select: none;
+  user-select: none;
+}
