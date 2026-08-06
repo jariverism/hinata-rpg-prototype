@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative-non-negotiable",
+  "purpose": "肖像制作の進捗に左右されず、人物中心の全20章プロットを完成・実装する",
+  "canonicalStoryDocuments": [
+    "internal-character-driven-plot-v2.md",
+    "internal-character-voice-bible.md",
+    "internal-chapter-character-beats.json",
+    "continuity-ledger.json",
+    "internal-ending-story-bible.md"
+  ],
+  "storyFirstRules": {
+    "portraitRequiredForAppearance": false,
+    "portraitRequiredForRecruitment": false,
+    "portraitRequiredForChapterLead": false,
+    "portraitRequiredForBossTalk": false,
+    "portraitRequiredForSupportConversation": false,
+    "portraitRequiredForEndingRole": false,
+    "portraitCompletionMayChangePlotOrder": false,
+    "portraitCompletionMayChangeClassOrPersonality": false,
+    "unillustratedCharacterMayBeCentralToPlot": true
+  },
+  "chapterCompletionGates": {
+    "required": [
+      "chapter cause and result connect to the full campaign",
+      "map objective expresses the chapter conflict",
+      "new character has a present-life reason for their position",
+      "existing allies receive continuing character beats",
+      "boss first-combat dialogue and relevant talk events are designed",
+      "village and civilian conversations support world and gameplay",
+      "current campaign data carries into the next chapter",
+      "fallback speakers prevent story failure after unit withdrawal"
+    ],
+    "notRequired": [
+      "final portrait PNG",
+      "class-change portrait",
+      "event illustration",
+      "group image",
+      "fully animated battle sprite"
+    ]
+  },
+  "temporaryPresentation": {
+    "use": [
+      "character name",
+      "class icon",
+      "unique accent identifier",
+      "short unit glyph",
+      "original dialogue text"
+    ],
+    "forbid": [
+      "another member's portrait as a substitute",
+      "a regenerated group sheet as an identity master",
+      "a generic face presented as an approved individual portrait",
+      "removing or replacing a character because art is missing"
+    ],
+    "laterPortraitIntegration": "Replace only the visual reference. Preserve character id, plot position, class, stats, relationships, dialogue, recruitment logic and save compatibility."
+  },
+  "rosterCoverage": {
+    "expectedCharacterCount": 24,
+    "allCharactersStoryEnabled": true,
+    "allCharactersMayAppearWithoutPortrait": true,
+    "allCharactersMustHave": [
+      "foreshadow or trace before appearance",
+      "present-world responsibility",
+      "recruitment or formal alliance decision",
+      "post-join friction within two chapters",
+      "at least two main-plot decisions outside the join chapter",
+      "endgame payoff based on personality and class"
+    ]
+  },
+  "implementationOrder": [
+    "preserve the complete story and character arcs",
+    "implement map, dialogue and event logic",
+    "validate chapter-to-chapter data continuity",
+    "use temporary non-face presentation where needed",
+    "add each approved individual portrait independently later"
+  ],
+  "spoilerPolicy": "Public progress reports, pull-request titles, pull-request bodies and change logs must not disclose hidden identities, allegiances, recruitment conditions, major reveals or ending details."
+}

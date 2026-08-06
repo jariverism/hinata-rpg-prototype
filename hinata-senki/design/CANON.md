@@ -5,11 +5,13 @@
 1. `internal-character-driven-plot-v2.md`
 2. `internal-character-voice-bible.md`
 3. `internal-chapter-character-beats.json`
-4. `continuity-ledger.json`
-5. `internal-ending-story-bible.md`
-6. `campaign-map-plan.json`
-7. `roster-archetypes.json`
-8. `research-basis.md`
+4. `story-production-policy.json`
+5. `continuity-ledger.json`
+6. `internal-ending-story-bible.md`
+7. `campaign-map-plan.json`
+8. `roster-archetypes.json`
+9. `research-basis.md`
+10. `personality-source-notes.md`
 
 ## 運用原則
 
@@ -19,3 +21,12 @@
 - 同じ性格の優しい人物へ均すことを禁止する。直感、慎重さ、冗談、厳しさ、負けず嫌い、献身、分析、独特な発想などの違いを会話と判断へ出す。
 - 実在人物の発言をそのまま転載せず、人物像を参考にしたオリジナル台詞を書く。
 - ファイアーエムブレム的な国家・戦争・古代史の骨格と、日向坂的な関係・支え方・再会の感情を、別々の層にせず同じ事件の中で動かす。
+
+## シナリオと肖像の優先順位
+
+- シナリオ、人物弧、登場順、加入、兵種、説得者、終章の役割を、肖像画像の完成状況より常に優先する。
+- 肖像未搭載の人物も、物語上必要なら章の中心人物、友軍、敵・中立ユニット、加入者、ボス会話の話者として正式に登場させる。
+- 未搭載時は名前、兵種アイコン、固有識別表示を使用し、別人物の肖像や集合画像を代用しない。
+- 後日肖像を追加する際は表示だけを差し替え、キャラクターID、能力、兵種、会話、加入条件、支援、章順、セーブ互換性を変更しない。
+- 画像がないことを理由に人物を削除、統合、後回しにすることを禁止する。
+- 章の完成判定に、最終肖像、クラスチェンジ肖像、一枚絵の完成を含めない。物語とゲーム処理を先に完成させる。
