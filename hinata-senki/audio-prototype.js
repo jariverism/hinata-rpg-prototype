@@ -379,13 +379,15 @@
     if (log) {
       const inspectNewestLog = () => {
         const entries = [...log.querySelectorAll('.log-entry')];
-        const newest = (entries[0]?.textContent || log.lastElementChild?.textContent || '').trim();
+        const newestEntry = entries[entries.length-1];
+        const newest = (newestEntry?.textContent || log.lastElementChild?.textContent || '').trim();
         if (!newest || newest === lastObservedLogText) return;
         lastObservedLogText = newest;
         soundFromLog(newest);
       };
       new MutationObserver(inspectNewestLog).observe(log,{childList:true,subtree:true,characterData:true});
-      lastObservedLogText = (log.querySelector('.log-entry')?.textContent || '').trim();
+      const initialEntries = [...log.querySelectorAll('.log-entry')];
+      lastObservedLogText = (initialEntries[initialEntries.length-1]?.textContent || '').trim();
     }
 
     const bodyObserver = new MutationObserver(() => {
