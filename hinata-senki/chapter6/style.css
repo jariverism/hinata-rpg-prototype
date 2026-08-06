@@ -1,0 +1,28 @@
+:root{--harbor-deep:#062a42;--harbor-mid:#0b4665;--harbor-foam:#78bfd4;--dock:#745536;--ship:#8a663e;--lamp:#f3d46b}
+.tile.sea{background:linear-gradient(135deg,var(--harbor-deep),var(--harbor-mid));box-shadow:inset 0 0 0 1px rgba(120,191,212,.25)}
+.tile.sea::after{content:"";position:absolute;left:15%;right:15%;top:48%;height:2px;background:rgba(191,233,241,.42);transform:skewX(-28deg)}
+.tile.dock{background:repeating-linear-gradient(90deg,#6d4b2f 0 8px,#805d39 8px 16px);box-shadow:inset 0 0 0 2px #49311f}
+.tile.ship{background:repeating-linear-gradient(0deg,#76502f 0 9px,#91663e 9px 18px);box-shadow:inset 0 0 0 2px #3e2818}
+.tile.warehouse{background:linear-gradient(135deg,#49392e,#6a5140);box-shadow:inset 0 0 0 3px #2b211b}
+.tile.lighthouse{background:radial-gradient(circle at 50% 35%,#fff1a5 0 9%,#c9b15b 10% 19%,#e8e0c9 20% 50%,#8d7f66 51%);box-shadow:inset 0 0 0 2px #3e392d}
+.tile.bell{background:radial-gradient(circle at 50% 45%,#f3d46b 0 18%,#9c7127 19% 32%,#604019 33%);box-shadow:inset 0 0 0 2px #38240d}
+.tile.armory,.tile.vendor{outline:2px solid rgba(255,233,143,.45);outline-offset:-3px}
+.tile.passage-open{box-shadow:inset 0 0 0 4px rgba(124,222,255,.7),0 0 12px rgba(124,222,255,.65)}
+.tile.lit{filter:brightness(1.22);box-shadow:inset 0 0 0 3px #fff0a3,0 0 18px #ffe582}
+.unit.guest{background:#1d7b5e;border-color:#9af0c9;color:#fff}
+.unit.civilian{background:#a87f3f;border-color:#ffe3a5;color:#fff}
+.unit.ship-enemy{background:#713744}
+.unit .unit-mark{font-size:.68em;opacity:.86}
+.unit-card-main{display:grid;grid-template-columns:76px 1fr;gap:12px;align-items:center}
+.unit-card-main img,.portrait-placeholder{width:76px;height:76px;object-fit:cover;border:3px solid #c8ad62;border-radius:8px;background:#10254c}
+.portrait-placeholder{display:grid;place-items:center;font-weight:900;font-size:28px;color:#ffec9c;background:linear-gradient(135deg,#132d62,#081a3f)}
+.inventory-list{display:grid;gap:6px;margin-top:10px}
+.inventory-row{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid rgba(255,255,255,.16);border-radius:6px;background:rgba(0,0,0,.13)}
+.objective-progress{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.objective-progress span{padding:3px 7px;border-radius:999px;background:#1c3157;color:#dce8ff;font-size:.82rem}
+.objective-progress span.done{background:#1d6d54;color:#eafff6}
+.story-portrait.placeholder{display:grid;place-items:center;font-size:30px;font-weight:900;color:#ffe992;background:linear-gradient(135deg,#173269,#08183d)}
+.shop-grid,.trade-grid,.equip-grid{display:grid;gap:8px}
+.shop-entry,.trade-entry,.equip-entry{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px;border:1px solid rgba(255,255,255,.16);border-radius:8px}
+.status-warning{color:#ffd18a}
+@media(max-width:640px){.hud{grid-template-columns:repeat(2,minmax(0,1fr))}.hud .objective{grid-column:1/-1}.unit-card-main{grid-template-columns:60px 1fr}.unit-card-main img,.portrait-placeholder{width:60px;height:60px}}
