@@ -14,8 +14,8 @@
   ];
 
   function restoreTrialBackup() {
-    if (sessionStorage.getItem(TRIAL_ACTIVE_KEY) !== '1') return;
-    const raw = sessionStorage.getItem(TRIAL_BACKUP_KEY);
+    if (localStorage.getItem(TRIAL_ACTIVE_KEY) !== '1') return;
+    const raw = localStorage.getItem(TRIAL_BACKUP_KEY);
     let backup = {};
     try { backup = raw ? JSON.parse(raw) : {}; } catch { backup = {}; }
 
@@ -27,8 +27,8 @@
     trialKeys.forEach(key => localStorage.removeItem(key));
     Object.entries(backup).forEach(([key,value]) => localStorage.setItem(key,value));
 
-    sessionStorage.removeItem(TRIAL_BACKUP_KEY);
-    sessionStorage.removeItem(TRIAL_ACTIVE_KEY);
+    localStorage.removeItem(TRIAL_BACKUP_KEY);
+    localStorage.removeItem(TRIAL_ACTIVE_KEY);
     sessionStorage.removeItem(LAUNCH_MODE_KEY);
   }
 
@@ -132,8 +132,8 @@
   }
 
   function startTrial(chapter) {
-    sessionStorage.setItem(TRIAL_BACKUP_KEY,JSON.stringify(backupGameplayData()));
-    sessionStorage.setItem(TRIAL_ACTIVE_KEY,'1');
+    localStorage.setItem(TRIAL_BACKUP_KEY,JSON.stringify(backupGameplayData()));
+    localStorage.setItem(TRIAL_ACTIVE_KEY,'1');
     clearGameplayData();
     sessionStorage.setItem(LAUNCH_MODE_KEY,'trial');
     location.href = `./chapter${chapter}/?mode=trial`;
