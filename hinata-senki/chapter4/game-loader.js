@@ -8,6 +8,13 @@
     return source.replace(oldItem,newItem);
   }
 
+  function patchVillageCoordinates(source) {
+    const oldEvent = "    '13,6':{scene:";
+    const newEvent = "    '12,6':{scene:";
+    if (!source.includes(oldEvent)) throw new Error('右側の村イベント座標を特定できませんでした');
+    return source.replace(oldEvent,newEvent);
+  }
+
   function patchEquipment(source) {
     const syncStart = source.indexOf('  function syncEquipped(unit){');
     const syncEnd = source.indexOf('  function currentEntry(unit)',syncStart);
@@ -178,6 +185,7 @@
       if(!response.ok)throw new Error(`game.js ${response.status}`);
       let source=await response.text();
       source=patchLegacyItems(source);
+      source=patchVillageCoordinates(source);
       source=patchEquipment(source);
       source=patchActions(source);
       source=patchStaffAndEquipMenus(source);
