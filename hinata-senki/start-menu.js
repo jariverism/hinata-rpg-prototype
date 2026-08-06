@@ -115,7 +115,7 @@
       await loadScript('./chapter1-intro-v4.js?v=2');
       await loadScript('./chapter1-character-scenes.js?v=2');
       await loadScript('./campaign-root-loader.js?v=4');
-      await loadScript('./audio-prototype.js?v=2');
+      await loadScript('./audio-prototype-v3.js?v=1');
     } catch (error) {
       console.error(error);
       document.body.classList.add('awaiting-start');
