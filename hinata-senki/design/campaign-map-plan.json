@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "workingTitle": "日向戦記 ―陽だまりの旗―",
+  "spoilerPolicy": "PR、更新報告、公開変更履歴には人物の登場章、所属、説得条件、後半の真相を記載しない",
+  "campaignLength": 20,
+  "world": {
+    "centralKingdom": "陽向王国",
+    "royalSymbol": "陽光の紋章",
+    "mainConflict": "王都の政変により王家の生存者が追われ、各地方の秩序が崩壊している",
+    "antagonisticNetwork": "政変勢力と、古い竜信仰を利用する宗教組織が各国の不満と恐怖を結び付けている",
+    "campaignQuestion": "失った王国を取り戻すだけでなく、異なる土地で新しい人生を得た仲間たちが、何のために再び同じ旗の下へ集まるのか"
+  },
+  "acts": [
+    {
+      "id": 1,
+      "chapters": [1, 2, 3, 4, 5],
+      "purpose": "逃走、少数部隊形成、敵勢力と世界の基本提示",
+      "mapProgression": ["野外脱出", "屋内救出", "橋と村", "市街地", "山岳追撃"]
+    },
+    {
+      "id": 2,
+      "chapters": [6, 7, 8, 9, 10],
+      "purpose": "地方勢力との接触、同盟形成、反攻拠点の獲得",
+      "mapProgression": ["港湾", "砂漠遺跡", "森林聖域", "占領都市", "地下水路"]
+    },
+    {
+      "id": 3,
+      "chapters": [11, 12, 13, 14, 15],
+      "purpose": "王都帰還、戦争の真相、味方勢力内部の対立",
+      "mapProgression": ["城塞攻防", "雪山", "魔道学院", "三正面会戦", "王宮"]
+    },
+    {
+      "id": 4,
+      "chapters": [16, 17, 18, 19, 20],
+      "purpose": "国家を越えた最終連合、竜信仰の中枢、積み重ねた関係の回収",
+      "mapProgression": ["竜谷", "潮汐神殿", "帝都包囲", "祭壇迷宮", "多段階終章"]
+    }
+  ],
+  "chapters": [
+    {
+      "chapter": 1,
+      "designStatus": "implemented-needs-narrative-pass",
+      "storyFunction": "政変、主人公の立場、敵と自軍の目的を一度に示す",
+      "mapType": "王都外縁の脱出戦",
+      "primaryObjective": "敵将を退けて城門を突破",
+      "secondaryPressure": "追手と限られた初期戦力",
+      "objects": ["村", "武器屋", "砦", "城門"],
+      "tutorialFocus": ["移動", "攻撃", "地形", "杖", "制圧"],
+      "recruitmentPattern": "初期部隊と救援加入",
+      "mapLesson": "安全な道と短い危険路の選択"
+    },
+    {
+      "chapter": 2,
+      "designStatus": "implemented-needs-recruitment-pass",
+      "storyFunction": "敵占領地で暮らす転生者が、現地の守るべき人々を持つことを示す",
+      "mapType": "牢獄砦の屋内救出戦",
+      "primaryObjective": "捕虜救出後に脱出",
+      "secondaryPressure": "鍵、扉、宝箱、中立ユニットの独自行動",
+      "objects": ["牢", "扉", "宝箱", "脱出地点", "砦"],
+      "tutorialFocus": ["鍵", "救出", "中立フェイズ", "二段階会話"],
+      "recruitmentPattern": "最初の会話で事情を知り、救出達成後に関係者が再説得",
+      "fallback": "条件不足でも章終了時に合流するが、早期加入報酬は失う",
+      "mapLesson": "戦闘と救出を並行し、部隊を分ける"
+    },
+    {
+      "chapter": 3,
+      "designStatus": "implemented-needs-class-and-recruitment-pass",
+      "storyFunction": "敵味方の旗だけでは善悪を決められないことを示す",
+      "mapType": "二本橋と国境集落",
+      "primaryObjective": "二集落を守り、関門を確保",
+      "secondaryPressure": "橋の狭さ、両翼の村、敵増援",
+      "objects": ["橋", "村", "砦", "関門", "標石"],
+      "tutorialFocus": ["複数目標", "説得者の選択", "支援職の再行動"],
+      "recruitmentPattern": "指揮官ではなく、本人と強い関係を持つ仲間が本心を引き出す",
+      "fallback": "主人公の交渉だけでも通過可能だが、戦闘中加入はしない",
+      "mapLesson": "中央突破と両翼救援の両立"
+    },
+    {
+      "chapter": 4,
+      "designStatus": "implemented-needs-story-alignment",
+      "storyFunction": "軍資金、物流、民衆の支持が戦争を支えることを示す",
+      "mapType": "市場町の防衛と反撃",
+      "primaryObjective": "複数の生活拠点を守り敵将を退ける",
+      "secondaryPressure": "村、店、交換、輸送隊、時間差増援",
+      "objects": ["武器屋", "道具屋", "村", "橋", "倉庫"],
+      "tutorialFocus": ["売買", "軍資金", "交換", "装備変更", "村会話"],
+      "recruitmentPattern": "現地の仕事と責任を果たした後に加入",
+      "mapLesson": "軍資金を使って不足兵種を補う"
+    },
+    {
+      "chapter": 5,
+      "designStatus": "implemented-needs-story-alignment",
+      "storyFunction": "小部隊から反攻軍へ移るための試練",
+      "mapType": "視界と高低差のある山岳戦",
+      "primaryObjective": "複数の経路を開き高所の拠点へ到達",
+      "secondaryPressure": "視界、狭道、落石予告、側面増援",
+      "objects": ["山道", "洞窟", "祠", "見張り台", "山村"],
+      "tutorialFocus": ["視界", "移動コスト", "遠距離攻撃", "分隊"],
+      "recruitmentPattern": "別動隊との共同作戦を成功させて合流",
+      "mapLesson": "速い部隊と堅い部隊の役割分担"
+    },
+    {
+      "chapter": 6,
+      "designStatus": "planned",
+      "storyFunction": "海路を確保し、国外との接点を作る",
+      "mapType": "港町と船着場",
+      "primaryObjective": "停泊船を守り港の門を開く",
+      "secondaryPressure": "海賊による倉庫破壊、船上の救出対象、潮路増援",
+      "objects": ["船", "桟橋", "倉庫", "武器屋", "酒場", "灯台"],
+      "featuredClasses": ["飛行", "弓", "盗賊", "騎兵"],
+      "recruitmentPattern": "救助対象と関係の深い仲間を船へ到達させる",
+      "mapLesson": "細い桟橋と広い市街地を同時に管理する"
+    },
+    {
+      "chapter": 7,
+      "designStatus": "planned",
+      "storyFunction": "古代竜信仰の痕跡と敵の目的を断片的に示す",
+      "mapType": "砂漠遺跡",
+      "primaryObjective": "遺跡の三つの封印点を調べる",
+      "secondaryPressure": "砂地の移動低下、隠し財宝、盗賊の先行",
+      "objects": ["遺跡", "流砂", "オアシス", "隠し財宝", "封印扉"],
+      "featuredClasses": ["魔道士", "飛行", "盗賊", "歩兵"],
+      "recruitmentPattern": "敵対する探索者を、知識を共有する人物が説得",
+      "mapLesson": "全滅より探索順序が重要"
+    },
+    {
+      "chapter": 8,
+      "designStatus": "planned",
+      "storyFunction": "自然信仰の共同体と王国側の価値観を衝突させる",
+      "mapType": "森林聖域の防衛",
+      "primaryObjective": "祭壇と避難民を一定ターン守る",
+      "secondaryPressure": "森から現れる敵、火計、救援到着までの耐久",
+      "objects": ["深い森", "祭壇", "泉", "村", "焼却可能地形"],
+      "featuredClasses": ["剣士", "弓", "杖", "飛行"],
+      "recruitmentPattern": "本人を攻撃せず、守っている対象を救うことで相手側から接触",
+      "mapLesson": "敵を倒すより守備線の維持を優先する"
+    },
+    {
+      "chapter": 9,
+      "designStatus": "planned",
+      "storyFunction": "占領統治の実態と、市民の抵抗を描く",
+      "mapType": "三区画の占領都市",
+      "primaryObjective": "三地区を解放して中央庁舎を制圧",
+      "secondaryPressure": "処刑予告、市民避難、騎兵巡回",
+      "objects": ["城壁", "路地", "広場", "民家", "地下入口", "店"],
+      "featuredClasses": ["重装", "盗賊", "騎兵", "魔道士"],
+      "recruitmentPattern": "別地区にいる二人を互いの生存確認後に説得",
+      "mapLesson": "攻略順で敵増援と店の利用可能時期が変わる"
+    },
+    {
+      "chapter": 10,
+      "designStatus": "planned",
+      "storyFunction": "反攻軍の存在を敵中枢へ知らしめる転換点",
+      "mapType": "地下水路からの潜入・脱出",
+      "primaryObjective": "情報を入手して全員離脱",
+      "secondaryPressure": "水門切替、追跡隊、有限ターン",
+      "objects": ["水路", "水門", "梯子", "牢", "宝物庫", "脱出地点"],
+      "featuredClasses": ["盗賊", "魔道士", "歩兵", "杖"],
+      "recruitmentPattern": "牢の人物を解放し、本人が指定する別人物も救う",
+      "mapLesson": "行きと帰りで通路状態が変わる"
+    },
+    {
+      "chapter": 11,
+      "designStatus": "planned",
+      "storyFunction": "味方候補の城を外敵と内通者から同時に守る",
+      "mapType": "城外と城内の同時攻防",
+      "primaryObjective": "門を守り、内部の内通者を制圧",
+      "secondaryPressure": "外周攻城兵器、内側の扉、友軍の混乱",
+      "objects": ["城門", "城壁", "階段", "宝箱", "バリスタ"],
+      "featuredClasses": ["重装", "飛行", "弓", "盗賊"],
+      "recruitmentPattern": "城内外に分かれた関係者が会話し、誤解を解く",
+      "mapLesson": "初期配置を二部隊に分ける"
+    },
+    {
+      "chapter": 12,
+      "designStatus": "planned",
+      "storyFunction": "追放された一族と王国の過去の過ちを示す",
+      "mapType": "吹雪く山岳峠",
+      "primaryObjective": "輸送隊を護衛して峠を越える",
+      "secondaryPressure": "吹雪による視界変動、雪崩予告、飛竜",
+      "objects": ["雪原", "洞窟", "吊橋", "避難小屋", "崖"],
+      "featuredClasses": ["騎兵", "飛行", "弓", "杖"],
+      "recruitmentPattern": "敵部隊長の家族を先に保護し、特定人物が説得",
+      "mapLesson": "速さだけではなく護衛隊形が必要"
+    },
+    {
+      "chapter": 13,
+      "designStatus": "planned",
+      "storyFunction": "魔法と記憶の関係を解明する",
+      "mapType": "魔道学院の仕掛けマップ",
+      "primaryObjective": "四つの研究棟を巡り中央塔を開く",
+      "secondaryPressure": "転移床、魔法封印区域、長射程魔法",
+      "objects": ["研究室", "転移床", "封印床", "図書館", "宝箱"],
+      "featuredClasses": ["軍師", "魔道士", "司祭", "盗賊"],
+      "recruitmentPattern": "知識型ユニット同士の対話と研究資料の回収",
+      "mapLesson": "戦闘力以外の専門性が攻略を変える"
+    },
+    {
+      "chapter": 14,
+      "designStatus": "planned",
+      "storyFunction": "王都反攻の前哨戦で、各地方の協力を一つにする",
+      "mapType": "三正面の野戦",
+      "primaryObjective": "三拠点を同一ターン内に確保",
+      "secondaryPressure": "敵将同士の相互援護、増援拠点、友軍救援",
+      "objects": ["平原", "砦", "川", "橋", "村", "本陣"],
+      "featuredClasses": ["全兵種"],
+      "recruitmentPattern": "過去章で救った勢力が条件に応じて援軍となる",
+      "mapLesson": "育てた軍全体を使う総合試験"
+    },
+    {
+      "chapter": 15,
+      "designStatus": "planned",
+      "storyFunction": "王都奪還と、政変の表向きの首謀者との決着",
+      "mapType": "王宮内部",
+      "primaryObjective": "玉座へ到達し王宮を制圧",
+      "secondaryPressure": "鍵付き区画、捕虜、宝物庫、階段増援",
+      "objects": ["玉座", "牢", "宝物庫", "中庭", "秘密通路"],
+      "featuredClasses": ["重装", "盗賊", "魔道士", "杖"],
+      "recruitmentPattern": "敵側に残った人物へ、最も関係の深い仲間が最後の説得",
+      "mapLesson": "最短決着と救出・宝物回収の両立"
+    },
+    {
+      "chapter": 16,
+      "designStatus": "planned",
+      "storyFunction": "奪還後も戦いが終わらない理由を示す",
+      "mapType": "竜の谷",
+      "primaryObjective": "三つの竜門を封鎖し谷を突破",
+      "secondaryPressure": "飛行敵、長射程、周期的な地形変化",
+      "objects": ["竜門", "溶岩", "高台", "洞窟", "古碑"],
+      "featuredClasses": ["弓", "飛行", "軍師", "司祭"],
+      "recruitmentPattern": "古い敵対者との一時共闘から正式加入へ移る",
+      "mapLesson": "対飛行装備と地形予告を読む"
+    },
+    {
+      "chapter": 17,
+      "designStatus": "planned",
+      "storyFunction": "海と陸の国家を最終連合へ結ぶ",
+      "mapType": "潮汐で通路が変わる島神殿",
+      "primaryObjective": "干潮時に祭壇へ到達し、満潮前に退避地点を確保",
+      "secondaryPressure": "潮位変化、船上増援、孤立区画",
+      "objects": ["浅瀬", "神殿", "船", "水門", "祭壇"],
+      "featuredClasses": ["飛行", "騎兵", "歩兵", "杖"],
+      "recruitmentPattern": "複数の関係者による連続会話で対立を終わらせる",
+      "mapLesson": "ターン経過で地形そのものが変わる"
+    },
+    {
+      "chapter": 18,
+      "designStatus": "planned",
+      "storyFunction": "敵対国家の民衆と支配者を分けて考える",
+      "mapType": "外城壁から帝都内部への包囲戦",
+      "primaryObjective": "二つの城門を開き中央へ進軍",
+      "secondaryPressure": "市民区への攻撃、攻城兵器、友軍の暴走",
+      "objects": ["二重城壁", "市民区", "兵器庫", "城門", "広場"],
+      "featuredClasses": ["重装", "飛行", "盗賊", "軍師"],
+      "recruitmentPattern": "敵兵を無差別に倒さない行動が会話と援軍へ影響",
+      "mapLesson": "勝つだけでなく、どう勝つかを選ばせる"
+    },
+    {
+      "chapter": 19,
+      "designStatus": "planned",
+      "storyFunction": "竜信仰組織の中枢と転生の仕組みを明かす",
+      "mapType": "祭壇迷宮",
+      "primaryObjective": "四区画の封印を解除して中央扉を開く",
+      "secondaryPressure": "ワープ床、増殖する魔物、分断、限られた回復地点",
+      "objects": ["封印部屋", "転移床", "祭壇", "回復泉", "牢"],
+      "featuredClasses": ["軍師", "魔道士", "司祭", "盗賊", "踊り子"],
+      "recruitmentPattern": "これまでの支援会話や救出結果で救済方法が増える",
+      "mapLesson": "全専門職を組み合わせる最終準備"
+    },
+    {
+      "chapter": 20,
+      "designStatus": "planned",
+      "storyFunction": "王国、転生後の人生、日向坂の記憶の三つを統合して結末へ進む",
+      "mapType": "三段階終章",
+      "primaryObjective": "各段階で異なる目標を達成し最終封印を完成",
+      "secondaryPressure": "分隊、時間制限、救済対象、最終選択",
+      "objects": ["外郭", "竜の祭壇", "記憶の間", "最終封印"],
+      "featuredClasses": ["全兵種"],
+      "recruitmentPattern": "新規加入ではなく、全加入者の関係と会話を回収",
+      "mapLesson": "ゲーム全体で築いた部隊を使い切る"
+    }
+  ],
+  "mapQualityChecklist": [
+    "主目的と副目的が地理的に競合している",
+    "最低一つはその章固有の地形または仕掛けがある",
+    "村・店・宝箱の配置に分隊判断がある",
+    "増援の出現理由と予告がある",
+    "活躍する兵種と苦戦する兵種が意図されている",
+    "加入対象を誤って倒さないための会話・AI・表示がある",
+    "章開始会話だけで、戦う理由と勝利条件が理解できる",
+    "章終了会話が次の目的地へ自然につながる"
+  ]
+}

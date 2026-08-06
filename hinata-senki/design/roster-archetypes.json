@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "status": "design-proposal",
+  "rules": {
+    "athletics": "50m走を主に速さ・回避・移動適性へ反映する",
+    "academics": "学力テストを主に技・魔力・魔防・軍略適性へ反映する",
+    "relationships": "公式ユニット、本人発言、主要媒体の対談を強い説得関係として優先する",
+    "balance": "同一兵種への集中を避け、本人らしさを損なわない範囲で役割を分ける"
+  },
+  "members": [
+    {
+      "id": "kumi",
+      "name": "佐々木久美",
+      "generation": 1,
+      "baseClass": "ロード",
+      "advancedClass": "スターロード",
+      "role": "統率・支援範囲・制圧",
+      "statBias": ["統率", "技", "幸運", "守備"],
+      "relationshipTags": ["一期生", "キャプテン", "としきょん支援", "影山との作戦会議"]
+    },
+    {
+      "id": "toshi",
+      "name": "加藤史帆",
+      "generation": 1,
+      "baseClass": "ソシアルナイト",
+      "advancedClass": "パラディン",
+      "role": "高速突撃・救援",
+      "statBias": ["力", "速さ", "HP"],
+      "relationshipTags": ["としきょん", "一期生", "久美親衛隊"]
+    },
+    {
+      "id": "kyoko",
+      "name": "齊藤京子",
+      "generation": 1,
+      "baseClass": "ソシアルナイト",
+      "advancedClass": "グレートナイト",
+      "role": "重打撃・前線維持",
+      "statBias": ["力", "HP", "守備"],
+      "relationshipTags": ["としきょん", "一期生", "久美親衛隊"]
+    },
+    {
+      "id": "sarina",
+      "name": "潮紗理菜",
+      "generation": 1,
+      "baseClass": "シスター",
+      "advancedClass": "ヴァルキュリア",
+      "role": "回復・交渉・感情の橋渡し",
+      "statBias": ["魔力", "速さ", "幸運", "魔防"],
+      "relationshipTags": ["一期生", "井口との強い説得関係", "後輩支援"]
+    },
+    {
+      "id": "mao",
+      "name": "井口眞緒",
+      "generation": 1,
+      "baseClass": "踊り子",
+      "advancedClass": "吟遊詩人",
+      "role": "再行動・士気上昇・民間人との接触",
+      "statBias": ["HP", "幸運", "魔防"],
+      "statWeakness": ["技", "速さ", "守備"],
+      "relationshipTags": ["一期生", "潮による説得", "場を動かす存在"]
+    },
+    {
+      "id": "kage",
+      "name": "影山優佳",
+      "generation": 1,
+      "baseClass": "軍師",
+      "advancedClass": "マスターストラテジスト",
+      "role": "作戦助言・地形解析・魔法支援",
+      "statBias": ["技", "魔力", "速さ", "魔防"],
+      "relationshipTags": ["一期生", "久美との指揮連携", "クイズ・知識型"]
+    },
+    {
+      "id": "mirei",
+      "name": "佐々木美玲",
+      "generation": 1,
+      "baseClass": "傭兵",
+      "advancedClass": "勇者",
+      "role": "高HP万能前衛・家族的支援",
+      "statBias": ["HP", "力", "速さ"],
+      "relationshipTags": ["一期生", "みーぱんファミリー"]
+    },
+    {
+      "id": "mana",
+      "name": "高瀬愛奈",
+      "generation": 1,
+      "baseClass": "魔道士",
+      "advancedClass": "賢者",
+      "role": "高精度魔法・対魔法",
+      "statBias": ["魔力", "技", "魔防"],
+      "relationshipTags": ["一期生", "学力上位", "遠距離支援"]
+    },
+    {
+      "id": "ayaka",
+      "name": "高本彩花",
+      "generation": 1,
+      "baseClass": "ペガサスナイト",
+      "advancedClass": "ファルコンナイト",
+      "role": "飛行救援・物資回収",
+      "statBias": ["速さ", "幸運", "魔防"],
+      "relationshipTags": ["一期生", "あゃめぃちゃん"]
+    },
+    {
+      "id": "mei",
+      "name": "東村芽依",
+      "generation": 1,
+      "baseClass": "剣士",
+      "advancedClass": "ソードマスター",
+      "role": "最速回避・必殺",
+      "statBias": ["速さ", "技", "幸運"],
+      "relationshipTags": ["一期生", "あゃめぃちゃん"]
+    },
+    {
+      "id": "memi",
+      "name": "柿崎芽実",
+      "generation": 1,
+      "baseClass": "トルバドール",
+      "advancedClass": "ヴァルキュリア",
+      "role": "機動回復・保護対象との接触",
+      "statBias": ["魔力", "速さ", "幸運"],
+      "relationshipTags": ["一期生", "初期王国関係者"]
+    },
+    {
+      "id": "miku",
+      "name": "金村美玖",
+      "generation": 2,
+      "baseClass": "アーチャー",
+      "advancedClass": "スナイパー",
+      "role": "高命中・観察・精密射撃",
+      "statBias": ["技", "速さ", "魔防"],
+      "relationshipTags": ["なおみく", "二期生", "2002年組"]
+    },
+    {
+      "id": "nao",
+      "name": "小坂菜緒",
+      "generation": 2,
+      "baseClass": "剣士",
+      "advancedClass": "ソードマスター",
+      "role": "高速前衛・回避・決戦火力",
+      "statBias": ["速さ", "技", "力"],
+      "relationshipTags": ["なおみく", "二期生", "2002年組"]
+    },
+    {
+      "id": "hina",
+      "name": "河田陽菜",
+      "generation": 2,
+      "baseClass": "盗賊",
+      "advancedClass": "ローグ",
+      "role": "開錠・探索・高幸運",
+      "statBias": ["速さ", "技", "幸運"],
+      "relationshipTags": ["二期生", "みーぱんファミリー"]
+    },
+    {
+      "id": "akari",
+      "name": "丹生明里",
+      "generation": 2,
+      "baseClass": "兵士",
+      "advancedClass": "ハルバーディア",
+      "role": "安定した槍前衛・仲間支援",
+      "statBias": ["HP", "技", "守備", "幸運"],
+      "relationshipTags": ["二期生", "金村・渡邉との連携"]
+    },
+    {
+      "id": "suzuka",
+      "name": "富田鈴花",
+      "generation": 2,
+      "baseClass": "戦士",
+      "advancedClass": "ウォーリア",
+      "role": "高HP・斧火力・士気",
+      "statBias": ["HP", "力", "幸運"],
+      "relationshipTags": ["二期生", "松田との会話"]
+    },
+    {
+      "id": "konoka",
+      "name": "松田好花",
+      "generation": 2,
+      "baseClass": "魔道士",
+      "advancedClass": "賢者",
+      "role": "知識・魔法・装置解除",
+      "statBias": ["技", "魔力", "魔防", "幸運"],
+      "relationshipTags": ["二期生", "学力上位", "富田との会話"]
+    },
+    {
+      "id": "manamo",
+      "name": "宮田愛萌",
+      "generation": 2,
+      "baseClass": "司祭見習い",
+      "advancedClass": "司祭",
+      "role": "古文書解読・杖・封印解除",
+      "statBias": ["魔力", "技", "魔防"],
+      "relationshipTags": ["二期生", "学力上位", "文化・書物"]
+    },
+    {
+      "id": "miho",
+      "name": "渡邉美穂",
+      "generation": 2,
+      "baseClass": "傭兵",
+      "advancedClass": "勇者",
+      "role": "運動能力と判断力を備えた万能前衛",
+      "statBias": ["HP", "力", "速さ", "技"],
+      "relationshipTags": ["二期生", "金村・丹生との連携"]
+    },
+    {
+      "id": "hiyori",
+      "name": "濱岸ひより",
+      "generation": 2,
+      "baseClass": "ペガサスナイト",
+      "advancedClass": "ファルコンナイト",
+      "role": "飛行・救出・広域移動",
+      "statBias": ["速さ", "幸運", "魔防"],
+      "relationshipTags": ["二期生", "みーぱんファミリー", "2002年組"]
+    },
+    {
+      "id": "hinano",
+      "name": "上村ひなの",
+      "generation": 3,
+      "baseClass": "シャーマン",
+      "advancedClass": "ドルイド",
+      "role": "特殊魔法・状態異常・独自発想",
+      "statBias": ["魔力", "魔防", "幸運"],
+      "relationshipTags": ["三期生", "独特な言語感覚"]
+    },
+    {
+      "id": "mikuni",
+      "name": "髙橋未来虹",
+      "generation": 3,
+      "baseClass": "アーマーナイト",
+      "advancedClass": "ジェネラル",
+      "role": "防衛線・次世代指揮",
+      "statBias": ["HP", "守備", "技", "統率"],
+      "relationshipTags": ["三期生", "学力上位", "後輩統率"]
+    },
+    {
+      "id": "marii",
+      "name": "森本茉莉",
+      "generation": 3,
+      "baseClass": "トリックスター",
+      "advancedClass": "アサシン",
+      "role": "罠・偽装・変則行動",
+      "statBias": ["速さ", "幸運", "技"],
+      "relationshipTags": ["三期生", "自由行動"]
+    },
+    {
+      "id": "haruyo",
+      "name": "山口陽世",
+      "generation": 3,
+      "baseClass": "ハンター",
+      "advancedClass": "ホースメン",
+      "role": "弓・機動・遠距離援護",
+      "statBias": ["力", "技", "HP"],
+      "relationshipTags": ["三期生", "みーぱんファミリー"]
+    }
+  ],
+  "strongRelationshipGroups": [
+    {
+      "id": "toshikyon",
+      "members": ["toshi", "kyoko"],
+      "confidence": "A-B",
+      "gameUse": ["相互支援", "説得", "連携攻撃"]
+    },
+    {
+      "id": "naomiku",
+      "members": ["nao", "miku"],
+      "confidence": "A-B",
+      "gameUse": ["説得", "仲間かつライバル型支援", "同時出撃会話"]
+    },
+    {
+      "id": "mipan-family",
+      "members": ["mirei", "hina", "hiyori", "haruyo"],
+      "confidence": "A",
+      "gameUse": ["複数段階説得", "家族的救援", "章開始会話"]
+    },
+    {
+      "id": "ayamei",
+      "members": ["ayaka", "mei"],
+      "confidence": "A-B",
+      "gameUse": ["飛行と剣士の連携", "説得", "相互支援"]
+    },
+    {
+      "id": "mao-sarina",
+      "members": ["mao", "sarina"],
+      "confidence": "B-C",
+      "gameUse": ["主要説得", "加入後会話"]
+    },
+    {
+      "id": "command-pair",
+      "members": ["kumi", "kage"],
+      "confidence": "C plus role-fit",
+      "gameUse": ["作戦会議", "指揮技能", "分岐目標の助言"]
+    }
+  ]
+}
