@@ -1,0 +1,19 @@
+name: Sangokushi regression
+on:
+  push:
+    paths:
+      - 'sangokushi/v24/**'
+      - '.github/workflows/sangokushi-regression.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax check
+        run: find sangokushi/v24 -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Regression tests
+        run: node sangokushi/v24/tests/regression_test.js
