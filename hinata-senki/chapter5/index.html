@@ -23,87 +23,36 @@
       </div>
       <button id="menuButton" class="icon-button" aria-label="メニュー">☰</button>
     </header>
-
     <section class="hud">
       <div><span>ターン</span><strong id="turnLabel">1</strong></div>
       <div><span>フェイズ</span><strong id="phaseLabel">自軍</strong></div>
       <div><span>軍資金</span><strong id="goldLabel">0 G</strong></div>
       <div class="objective"><span>勝利条件</span><strong id="objectiveLabel">作戦開始後に表示</strong></div>
     </section>
-
     <main>
-      <div id="mapViewport" class="map-viewport" aria-label="戦場マップ">
-        <div id="map" class="map"></div>
-      </div>
+      <div id="mapViewport" class="map-viewport" aria-label="戦場マップ"><div id="map" class="map"></div></div>
       <aside class="side-panel">
-        <section id="unitCard" class="panel-card empty">
-          <h2>ユニット情報</h2>
-          <p>ユニットをタップしてください。</p>
-        </section>
-        <section class="panel-card controls">
-          <div id="actionButtons" class="action-buttons"></div>
-          <button id="dangerButton">敵危険範囲</button>
-          <button id="endTurnButton" class="danger">ターン終了</button>
-        </section>
-        <section class="panel-card log-card">
-          <h2>戦況</h2>
-          <div id="battleLog" class="battle-log" aria-live="polite"></div>
-        </section>
+        <section id="unitCard" class="panel-card empty"><h2>ユニット情報</h2><p>ユニットをタップしてください。</p></section>
+        <section class="panel-card controls"><div id="actionButtons" class="action-buttons"></div><button id="dangerButton">敵危険範囲</button><button id="endTurnButton" class="danger">ターン終了</button></section>
+        <section class="panel-card log-card"><h2>戦況</h2><div id="battleLog" class="battle-log" aria-live="polite"></div></section>
       </aside>
     </main>
   </div>
-
-  <dialog id="modal">
-    <div id="modalContent"></div>
-    <form method="dialog"><button class="wide">閉じる</button></form>
-  </dialog>
-
+  <dialog id="modal"><div id="modalContent"></div><form method="dialog"><button class="wide">閉じる</button></form></dialog>
   <section id="storyOverlay" class="story-overlay" hidden>
-    <div class="story-scene" role="dialog" aria-modal="true">
-      <div id="storyChapter" class="story-chapter"></div>
-      <div id="storyWindows" class="story-windows"></div>
-      <div class="story-controls">
-        <button id="storyBack">前へ</button>
-        <button id="storyNext">次へ</button>
-      </div>
-    </div>
+    <div class="story-scene" role="dialog" aria-modal="true"><div id="storyChapter" class="story-chapter"></div><div id="storyWindows" class="story-windows"></div><div class="story-controls"><button id="storyBack">前へ</button><button id="storyNext">次へ</button></div></div>
   </section>
-
-  <section id="levelOverlay" class="level-overlay" hidden>
-    <div class="level-panel" role="dialog" aria-modal="true">
-      <div class="level-title">LEVEL UP!</div>
-      <div class="level-main">
-        <div class="level-profile">
-          <img id="levelPortrait" alt="">
-          <strong id="levelName"></strong>
-          <span id="levelClass"></span>
-          <div class="level-change"><b id="oldLevel"></b><span>→</span><strong id="newLevel"></strong></div>
-        </div>
-        <div id="levelStats" class="level-stats"></div>
-      </div>
-      <p id="levelMessage"></p>
-      <button id="levelConfirm" disabled>確認</button>
-    </div>
-  </section>
-
+  <section id="levelOverlay" class="level-overlay" hidden><div class="level-panel" role="dialog" aria-modal="true"><div class="level-title">LEVEL UP!</div><div class="level-main"><div class="level-profile"><img id="levelPortrait" alt=""><strong id="levelName"></strong><span id="levelClass"></span><div class="level-change"><b id="oldLevel"></b><span>→</span><strong id="newLevel"></strong></div></div><div id="levelStats" class="level-stats"></div></div><p id="levelMessage"></p><button id="levelConfirm" disabled>確認</button></div></section>
   <div id="toast" class="toast" role="status"></div>
-
   <script src="../campaign.js?v=3"></script>
-  <script src="./trial-mode.js?v=1"></script>
-  <script src="../role-migration.js?v=2"></script>
-  <script src="../role-runtime-patch.js?v=1"></script>
+  <script src="./trial-mode.js?v=2"></script>
   <script src="../portraits/kumi.js?v=1"></script>
   <script src="../portraits/toshi.js?v=1"></script>
   <script src="../portraits/kyoko.js?v=1"></script>
   <script src="../portraits/mao.js?v=1"></script>
   <script src="../portraits/sarina.js?v=1"></script>
   <script src="../portraits/hina.js?v=1"></script>
-  <script src="../dialogue-face-guard.js?v=1"></script>
-  <script src="../experience-runtime-guard.js?v=1"></script>
-  <script src="./courier-balance-runtime-patch.js?v=1"></script>
-  <script src="./pacing-runtime-patch.js?v=1"></script>
-  <script src="./game-loader.js?v=2"></script>
-  <script src="./chapter6-transition.js?v=1"></script>
-  <script src="../audio-prototype.js?v=2"></script>
+  <script src="./direct-game.js?v=1"></script>
+  <script src="../audio-prototype.js?v=3"></script>
 </body>
 </html>
