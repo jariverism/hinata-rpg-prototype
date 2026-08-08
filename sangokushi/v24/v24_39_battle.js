@@ -108,6 +108,8 @@ function nearestTarget(u,targets,b){
 }
 function defenderShouldHold(b,u,targets){
  if(u.side!==defenderSide(b)||!isCastleTile(terrainAt(b,u.x,u.y)))return false;
+ // The defending commander starts at the keep, but must remain free to sortie or intercept.
+ if(b.v2436Commanders?.[u.side]===u.name)return false;
  return Math.min(...targets.map(t=>dist(u,t)))>5;
 }
 function enemyAct(b,u){
