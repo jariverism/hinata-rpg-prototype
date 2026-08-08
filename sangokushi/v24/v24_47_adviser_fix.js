@@ -1,4 +1,4 @@
-// v24.47 — robust strategist appointment for all Hinata scenarios
+// v24.48 — keep strategist UI and actual adviser system in sync
 (()=>{
 function ownOfficers(){
   if(typeof state==='undefined'||!state?.officers)return [];
@@ -7,16 +7,29 @@ function ownOfficers(){
 function currentRulerName(){
   return state?.rulerName || ownOfficers().find(o=>o.status==='君主')?.name || '佐々木久美';
 }
-function currentStrategist(){return ownOfficers().find(o=>o.status==='軍師')||null}
+function adviserName(){
+  if(state?.advisers?.['日向軍'])return state.advisers['日向軍'];
+  return state?.strategistName||state?.adviserName||state?.advisorName||ownOfficers().find(o=>o.status==='軍師')?.name||null;
+}
+function currentStrategist(){
+  const name=adviserName();
+  return ownOfficers().find(o=>o.name===name)||ownOfficers().find(o=>o.status==='軍師')||null;
+}
+function syncStrategist(name){
+  if(!state)return;
+  state.advisers=state.advisers||{};
+  state.advisers['日向軍']=name;
+  state.strategistName=name;
+  state.adviserName=name;
+  state.advisorName=name;
+}
 function appointStrategist(name){
   const list=ownOfficers(),target=list.find(o=>o.name===name);if(!target)return;
   const ruler=currentRulerName();
   if(target.name===ruler||target.status==='君主')return alert('君主自身を軍師には任命できません。');
   list.forEach(o=>{if(o.status==='軍師')o.status='一般'});
   target.status='軍師';
-  state.strategistName=target.name;
-  state.adviserName=target.name;
-  state.advisorName=target.name;
+  syncStrategist(target.name);
   if(typeof log==='function')log(`${target.name}を軍師に任命した。`);
   if(typeof closeModal==='function')closeModal();
   if(typeof render==='function')render();
@@ -26,28 +39,27 @@ function showStrategistModal(){
   const ruler=currentRulerName(),cur=currentStrategist();
   const candidates=ownOfficers().filter(o=>o.name!==ruler&&o.status!=='君主').sort((a,b)=>(Number(b.int)||0)-(Number(a.int)||0)||(Number(b.pol)||0)-(Number(a.pol)||0));
   if(!candidates.length)return alert('軍師に任命できる配下がいません。');
-  const html=`<h2>軍師任命</h2><p>現在の軍師：<b>${cur?.name||'なし'}</b></p><p><small>知力の高い武将ほど計略・助言役に向きます。</small></p><div class="choice-list v2447-strategist-list">${candidates.map(o=>`<button data-v2447-strategist="${o.name}"><span><b>${o.name}</b>${o.status==='軍師'?'　【現軍師】':''}<br><small>知${o.int}　政${o.pol}　統${o.lead}　魅${o.cha}</small></span><span>任命</span></button>`).join('')}</div><button data-close>閉じる</button>`;
+  const html=`<h2>軍師任命</h2><p>現在の軍師：<b>${cur?.name||'なし'}</b></p><p><small>知力の高い武将ほど計略・助言役に向きます。</small></p><div class="choice-list v2447-strategist-list">${candidates.map(o=>`<button data-v2447-strategist="${o.name}"><span><b>${o.name}</b>${o.name===cur?.name?'　【現軍師】':''}<br><small>知${o.int}　政${o.pol}　統${o.lead}　魅${o.cha}</small></span><span>任命</span></button>`).join('')}</div><button data-close>閉じる</button>`;
   if(typeof showModal==='function')showModal(html);else return;
   modalCard.querySelectorAll('[data-v2447-strategist]').forEach(btn=>btn.onclick=()=>appointStrategist(btn.dataset.v2447Strategist));
 }
+function repairLegacyState(){
+  if(!state)return;
+  const cur=ownOfficers().find(o=>o.status==='軍師');
+  if(cur&&state?.advisers?.['日向軍']!==cur.name)syncStrategist(cur.name);
+}
 function decorateStrategistUI(){
   if(typeof state==='undefined'||!state||state.battle)return;
+  repairLegacyState();
   const dashboard=document.querySelector('.dashboard');if(!dashboard)return;
   const commands=dashboard.querySelector('.commands');if(!commands)return;
   let btn=commands.querySelector('[data-cmd="strategist"], [data-cmd="adviser"], [data-cmd="advisor"]');
-  if(!btn){
-    btn=document.createElement('button');btn.dataset.cmd='strategist';btn.textContent='軍師任命';commands.appendChild(btn);
-  }
+  if(!btn){btn=document.createElement('button');btn.dataset.cmd='strategist';btn.textContent='軍師任命';commands.appendChild(btn)}
   btn.disabled=false;btn.onclick=e=>{e.preventDefault();e.stopPropagation();showStrategistModal()};
   const cur=currentStrategist();
   const titlePanel=[...dashboard.querySelectorAll('.panel')].find(p=>p.textContent.includes('日向軍'));
-  if(titlePanel){
-    let line=titlePanel.querySelector('.v2447-strategist-line');
-    if(!line){line=document.createElement('div');line.className='v2447-strategist-line';titlePanel.appendChild(line)}
-    line.innerHTML=`<small>軍師　<b>${cur?.name||'未任命'}</b></small>`;
-  }
+  if(titlePanel){let line=titlePanel.querySelector('.v2447-strategist-line');if(!line){line=document.createElement('div');line.className='v2447-strategist-line';titlePanel.appendChild(line)}line.innerHTML=`<small>軍師　<b>${cur?.name||'未任命'}</b></small>`}
 }
-// Capture any pre-existing strategist appointment button even if its onclick was lost by a redraw.
 document.addEventListener('click',e=>{
   const btn=e.target.closest('button');if(!btn)return;
   const txt=(btn.textContent||'').trim();
@@ -56,8 +68,8 @@ document.addEventListener('click',e=>{
   }
 },true);
 const previousRender=window.render;
-window.render=function(){const r=previousRender.apply(this,arguments);setTimeout(decorateStrategistUI,0);return r};
-setTimeout(decorateStrategistUI,0);
-window.V2447={showStrategistModal,appointStrategist,currentStrategist};
+window.render=function(){repairLegacyState();const r=previousRender.apply(this,arguments);setTimeout(decorateStrategistUI,0);return r};
+setTimeout(()=>{repairLegacyState();decorateStrategistUI()},0);
+window.V2447={showStrategistModal,appointStrategist,currentStrategist,syncStrategist};
 const style=document.createElement('style');style.textContent=`.v2447-strategist-list button{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;text-align:left}.v2447-strategist-line{margin-top:5px;color:#e7c477}`;document.head.appendChild(style);
 })();
