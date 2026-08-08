@@ -23,6 +23,16 @@ t=battleFor('松尾桜');const ally={name:'味方',side:'player',troops:2000,max
 ctx.state.battle=null;ctx.state.officers.filter(o=>ctx.V2458.NAMES.has(o.name)).forEach(o=>o.force='日向軍');before=JSON.stringify(Object.fromEntries(Object.entries(ctx.state.cities).map(([n,c])=>[n,c.force])));sel=ctx.state.selected;assert(ctx.V2460.check(),'五期生集結イベントが発火しない');assert.equal(JSON.stringify(Object.fromEntries(Object.entries(ctx.state.cities).map(([n,c])=>[n,c.force]))),before,'集結イベントが都市所有権を変更');assert.equal(ctx.state.selected,sel,'集結イベントが選択都市を変更');
 assert(ctx.V2461.selfTest(),'戦場計略4/3/2/1回テスト失敗');assert.equal(ctx.V2461.limit(100),4);assert.equal(ctx.V2461.limit(95),3);assert.equal(ctx.V2461.limit(85),2);assert.equal(ctx.V2461.limit(75),1);
 ctx.state.rulerName='髙橋未来虹';ctx.state.officers.push({name:'森本茉莉',force:'日向軍',city:'上党',status:'軍師',int:82},{name:'上村ひなの',force:'日向軍',city:'上党',status:'一般',int:95});ctx.state.advisers={日向軍:'森本茉莉'};before=citySnapshot();sel=ctx.state.selected;const adv=ctx.V2462.sync();assert.equal(adv.name,'森本茉莉');assert.equal(ctx.state.advisers['日向軍'],'森本茉莉');assert.equal(citySnapshot(),before,'軍師同期が都市状態を変更');assert.equal(ctx.state.selected,sel,'軍師同期が選択都市を変更');
+
+// Defending commander: starts on the keep exactly once, then remains free to move.
+ctx.V2439={defenderSide:b=>b.defense?'player':'enemy',CX:7,CY:6};load('v24_65_commander_start.js');
+const commander={name:'守将',side:'enemy',troops:3000,x:9,y:6,done:false,movedThisTurn:false,movedDistance:0};
+const centerGuard={name:'副将',side:'enemy',troops:2500,x:7,y:6,done:false,movedThisTurn:false,movedDistance:0};
+ctx.state.battle={v2439LargeSiege:true,v2439DeploymentDone:true,v2436Commanders:{enemy:'守将'},defense:false,day:1,phase:'player',units:[commander,centerGuard],logs:[]};
+assert(ctx.V2465.putCommanderAtKeep(ctx.state.battle),'総大将の初期本丸配置が実行されない');assert.equal(commander.x,7);assert.equal(commander.y,6);assert.equal(centerGuard.x,9);assert.equal(centerGuard.y,6);
+commander.x=8;commander.y=6;assert.equal(ctx.V2465.putCommanderAtKeep(ctx.state.battle),false,'初期配置後に総大将を本丸へ再固定している');assert.equal(commander.x,8,'総大将が移動後に本丸へ戻された');
+const battleSrc=fs.readFileSync(path.join(root,'v24_39_battle.js'),'utf8');assert(battleSrc.includes("if(b.v2436Commanders?.[u.side]===u.name)return false;"),'守備総大将がAI待機固定の対象外になっていない');
+
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');for(const bad of ['v24_43_patch.js','v24_51_retreatfix.js','v24_53_defense_guard.js','v24_54_state_recovery.js','v24_55_city_select_fix.js'])assert(!index.includes(bad),`危険な旧パッチが再読込: ${bad}`);
-for(const good of ['v24_57_mikuni_mode.js','v24_58_fifth_data.js','v24_59_fifth_skills.js','v24_60_fifth_event.js','v24_61_tactic_limit_guard.js','v24_62_adviser_guard.js'])assert(index.includes(good),`必要パッチ未読込: ${good}`);
+for(const good of ['v24_57_mikuni_mode.js','v24_58_fifth_data.js','v24_59_fifth_skills.js','v24_60_fifth_event.js','v24_61_tactic_limit_guard.js','v24_62_adviser_guard.js','v24_65_commander_start.js'])assert(index.includes(good),`必要パッチ未読込: ${good}`);
 console.log('regression_test: PASS');
