@@ -4,6 +4,10 @@ on:
     paths:
       - 'sangokushi/v24/**'
       - '.github/workflows/sangokushi-regression.yml'
+  pull_request:
+    paths:
+      - 'sangokushi/v24/**'
+      - '.github/workflows/sangokushi-regression.yml'
   workflow_dispatch:
 jobs:
   test:
