@@ -1,2 +1,3 @@
 CI verification marker for Version 1.64.
 Retry after CommonJS regression harness fix.
+Run historical coverage audit.
