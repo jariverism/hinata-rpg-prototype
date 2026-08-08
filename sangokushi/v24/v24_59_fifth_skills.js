@@ -63,5 +63,17 @@ window.battleAction=function(action){
  if(skill.kind==='ally')return chooseAlly(p,skill);
  return execute(p);
 };
-window.V2459={SKILLS,NAMES,execute,dist};
+function decorateButton(){
+ if(!state?.battle)return;const p=current();if(!p||!NAMES.has(p.name))return;
+ const actions=document.querySelector('.battle-actions');if(!actions)return;
+ let btn=actions.querySelector('[data-ba="special"]');
+ if(!btn){btn=document.createElement('button');btn.dataset.ba='special';btn.className='special-btn';actions.insertBefore(btn,actions.querySelector('[data-ba="end"]')||null)}
+ const skill=SKILLS[p.name];btn.textContent=`必殺技・${skill.name}`;btn.disabled=!!p.done||!!p.specialUsed;btn.onclick=()=>window.battleAction('special');
+ let note=actions.parentElement?.querySelector('.v2459-skill-note');if(!note&&actions.parentElement){note=document.createElement('div');note.className='skill-note v2459-skill-note';actions.parentElement.insertBefore(note,actions)}
+ if(note)note.innerHTML=`<b>固有必殺技：${skill.name}</b><br>${skill.desc}<br>一戦につき1回${p.specialUsed?'（使用済み）':''}`;
+}
+const previousRender=window.render;
+window.render=function(){const r=previousRender.apply(this,arguments);setTimeout(decorateButton,0);return r};
+setTimeout(decorateButton,0);
+window.V2459={SKILLS,NAMES,execute,dist,decorateButton};
 })();
