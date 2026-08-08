@@ -1,4 +1,2 @@
-CI verification marker for Version 1.64.
-Retry after CommonJS regression harness fix.
-Run historical coverage audit.
-Retry coverage audit with VM parser.
+CI verification marker for Version 1.65.
+Commander starts at keep, then may move normally.
