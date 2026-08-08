@@ -1,4 +1,4 @@
-// v24.58 — fifth-generation officers for Mikuni mode; data only, no campaign-engine overrides
+// v24.58 — fifth-generation officers for Mikuni mode; static data only after initial spawn
 (()=>{
 if(window.V2458_FIFTH_DATA)return;window.V2458_FIFTH_DATA=true;
 const FIFTH=[
@@ -14,22 +14,48 @@ const FIFTH=[
  {name:'松尾桜',lead:92,war:85,int:90,pol:88,cha:97,apt:'槍兵',force:'曹操',city:'許昌',loy:81}
 ];
 const NAMES=new Set(FIFTH.map(x=>x.name));
+const STATIC_KEYS=['lead','war','int','pol','cha','apt'];
 function applyOne(d){
  if(!state?.officers)return;
  let o=state.officers.find(x=>x.name===d.name);
- if(!o){o={name:d.name};state.officers.push(o)}
- // Do not touch cities, selection, battle flow, ownership, or any non-officer state.
- Object.assign(o,d,{status:d.force==='在野'?'在野':'一般',type:d.apt,acted:Number(o.acted)||0,statSource:'五期生固定値'});
+ if(!o){
+  // Initial spawn only: starting force/city/status/loyalty are assigned exactly once.
+  o={name:d.name,lead:d.lead,war:d.war,int:d.int,pol:d.pol,cha:d.cha,apt:d.apt,type:d.apt,
+     force:d.force,city:d.city,loy:d.loy,status:d.force==='在野'?'在野':'一般',acted:0,
+     statSource:'五期生固定値',v2458Spawned:true};
+  state.officers.push(o);
+  return o;
+ }
+ // Existing officer: NEVER overwrite campaign-progress fields.
+ // Search/recruit/move/capture must own force, city, status, loyalty and acted state.
+ for(const k of STATIC_KEYS)o[k]=d[k];
+ o.type=d.apt;o.statSource='五期生固定値';o.v2458Spawned=true;
+ return o;
 }
 function apply(){
  if(!state||state.modeId!=='mikuni')return;
  FIFTH.forEach(applyOne);
  state.v2458FifthData=true;
 }
+function lifecycleSelfTest(){
+ const snapshot=state;if(!state)return true;
+ try{
+  const sakai=state.officers.find(o=>o.name==='坂井新奈'),ono=state.officers.find(o=>o.name==='大野愛実');
+  if(!sakai||!ono)return false;
+  const sb={force:sakai.force,city:sakai.city,status:sakai.status,loy:sakai.loy,acted:sakai.acted};
+  const ob={force:ono.force,city:ono.city,status:ono.status,loy:ono.loy,acted:ono.acted};
+  Object.assign(sakai,{force:'在野',city:'上党',status:'在野',loy:41,acted:7});
+  Object.assign(ono,{force:'日向軍',city:'洛陽',status:'一般',loy:72,acted:7});
+  apply();
+  const ok=sakai.force==='在野'&&sakai.city==='上党'&&sakai.status==='在野'&&sakai.loy===41&&sakai.acted===7&&
+    ono.force==='日向軍'&&ono.city==='洛陽'&&ono.status==='一般'&&ono.loy===72&&ono.acted===7;
+  Object.assign(sakai,sb);Object.assign(ono,ob);return ok;
+ }catch(e){console.error('v24.58 lifecycle self-test:',e);return false}
+}
 const prevBegin=window.beginGame;
 window.beginGame=function(){const r=prevBegin.apply(this,arguments);apply();return r};
 const prevRender=window.render;
 window.render=function(){if(state?.modeId==='mikuni'&&!state?.battle)apply();return prevRender.apply(this,arguments)};
 setTimeout(()=>{try{apply()}catch(e){console.error('v24.58 fifth data:',e)}},0);
-window.V2458={FIFTH,NAMES,apply};
+window.V2458={FIFTH,NAMES,apply,applyOne,lifecycleSelfTest};
 })();
