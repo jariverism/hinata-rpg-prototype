@@ -21,5 +21,7 @@ jobs:
         run: find sangokushi/v24 -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Regression tests
         run: node sangokushi/v24/tests/regression_test.cjs
+      - name: Battle 2.0 regression tests
+        run: node sangokushi/v24/tests/battle2_test.cjs
       - name: Historical stat coverage audit
         run: node sangokushi/v24/tests/historical_coverage.cjs
