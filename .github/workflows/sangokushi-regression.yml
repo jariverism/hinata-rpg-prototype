@@ -23,5 +23,7 @@ jobs:
         run: node sangokushi/v24/tests/regression_test.cjs
       - name: Battle 2.0 regression tests
         run: node sangokushi/v24/tests/battle2_test.cjs
+      - name: Advanced Battle 2.0 regression tests
+        run: node sangokushi/v24/tests/battle2_advanced_test.cjs
       - name: Historical stat coverage audit
         run: node sangokushi/v24/tests/historical_coverage.cjs
