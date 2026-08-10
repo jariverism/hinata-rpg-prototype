@@ -28,7 +28,7 @@ function rewriteCards(){
  for(const el of document.querySelectorAll('.officer')){
   const name=el.querySelector('b')?.textContent?.trim(),o=ownCanonical().find(x=>x.name===name);if(!o)continue;
   const small=el.querySelector('small');if(small)small.textContent=small.textContent.replace(/統\d+\s*武\d+\s*知\d+\s*政\d+\s*魅\d+/,`統${o.lead} 武${o.war} 知${o.int} 政${o.pol} 魅${o.cha}`);
-  const detail=el.querySelector('.rogue-stat-detail');if(detail){const b=BASE[name],rb=o.rogueRunBonusV8||{};detail.textContent=`基礎→現在：統${b.lead}→${o.lead} 武${b.war}→${o.war} 知${b.int}→${o.int} 政${b.pol}→${o.pol} 魅${b.cha}→${o.cha}`}
+  const detail=el.querySelector('.rogue-stat-detail');if(detail){const b=BASE[name];detail.textContent=`基礎→現在：統${b.lead}→${o.lead} 武${b.war}→${o.war} 知${b.int}→${o.int} 政${b.pol}→${o.pol} 魅${b.cha}→${o.cha}`}
  }
 }
 function mark(){const s=document.querySelector('header h1 small');if(s)s.textContent='Prototype 0.8';let b=document.getElementById('rogueStatEngineBadge');if(b)b.textContent='能力Engine v8'}
@@ -38,4 +38,6 @@ const prevBeginBattle=window.beginBattle;
 window.beginBattle=function(){if(isRogue())normalize();const r=prevBeginBattle.apply(this,arguments);if(isRogue()&&state?.battle){normalize();for(const u of state.battle.units||[]){if(u.side!=='player'||!BASE[u.name])continue;const o=(state.officers||[]).find(x=>x.name===u.name&&x.force==='日向軍');if(!o)continue;for(const k of ['lead','war','int'])u[k]=Number(o[k])||0}}return r};
 setTimeout(()=>{try{if(isRogue()){normalize();rewriteCards()}mark()}catch(e){console.error('ROGUE fixed roster v8:',e)}},0);
 window.HINATA_ROGUE_FIXED_V8={normalize,ensureBases,BASE,count:Object.keys(BASE).length};
+// Load the v9 recruitment layer after every legacy/common wrapper has finished loading.
+if(typeof document!=='undefined'&&!document.querySelector('script[data-rogue-hire-v9]')){const s=document.createElement('script');s.src='rogue_hire_v9.js?v=9';s.dataset.rogueHireV9='1';document.body.appendChild(s)}
 })();
