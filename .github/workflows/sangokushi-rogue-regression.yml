@@ -3,11 +3,13 @@ on:
   push:
     paths:
       - 'sangokushi/rogue/**'
+      - 'sangokushi/rogue08/**'
       - 'sangokushi/v24/v24_74_hinata_fixed_stats.js'
       - '.github/workflows/sangokushi-rogue-regression.yml'
   pull_request:
     paths:
       - 'sangokushi/rogue/**'
+      - 'sangokushi/rogue08/**'
       - 'sangokushi/v24/v24_74_hinata_fixed_stats.js'
       - '.github/workflows/sangokushi-rogue-regression.yml'
   workflow_dispatch:
@@ -20,7 +22,9 @@ jobs:
         with:
           node-version: '22'
       - name: JavaScript syntax check
-        run: find sangokushi/rogue -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+        run: |
+          find sangokushi/rogue -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+          find sangokushi/rogue08 -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: ROGUE rules regression
         run: node sangokushi/rogue/tests/rogue_rules_test.cjs
       - name: Canonical stat engine v6 regression
@@ -29,6 +33,8 @@ jobs:
         run: node sangokushi/rogue/tests/roster_stat_v7_test.cjs
       - name: Fixed roster base v8 regression
         run: node sangokushi/rogue/tests/fixed_roster_v8_test.cjs
+      - name: Double material +4 +4 regression
+        run: node sangokushi/rogue/tests/double_material_v8_test.cjs
       - name: Shared fixed table regression
         run: node sangokushi/v24/tests/hinata_fixed_stats_test.cjs
       - name: Start-city guard regression
@@ -46,3 +52,5 @@ jobs:
           grep -q 'Prototype 0.8' sangokushi/rogue/index.html
           grep -q 'no-store, no-cache' sangokushi/rogue/index.html
           grep -q '日向三國志 ROGUE' sangokushi/rogue/index.html
+          grep -q "fetch('../rogue/index.html?clean=0808102249'" sangokushi/rogue08/index.html
+          grep -q '能力Engine v8 / CLEAN' sangokushi/rogue08/guard_v08.js
