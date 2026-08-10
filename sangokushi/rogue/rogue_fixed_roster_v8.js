@@ -38,6 +38,6 @@ const prevBeginBattle=window.beginBattle;
 window.beginBattle=function(){if(isRogue())normalize();const r=prevBeginBattle.apply(this,arguments);if(isRogue()&&state?.battle){normalize();for(const u of state.battle.units||[]){if(u.side!=='player'||!BASE[u.name])continue;const o=(state.officers||[]).find(x=>x.name===u.name&&x.force==='日向軍');if(!o)continue;for(const k of ['lead','war','int'])u[k]=Number(o[k])||0}}return r};
 setTimeout(()=>{try{if(isRogue()){normalize();rewriteCards()}mark()}catch(e){console.error('ROGUE fixed roster v8:',e)}},0);
 window.HINATA_ROGUE_FIXED_V8={normalize,ensureBases,BASE,count:Object.keys(BASE).length};
-// Load the v9 recruitment layer after every legacy/common wrapper has finished loading.
-if(typeof document!=='undefined'&&!document.querySelector('script[data-rogue-hire-v9]')){const s=document.createElement('script');s.src='rogue_hire_v9.js?v=9';s.dataset.rogueHireV9='1';document.body.appendChild(s)}
+// Load the v9 recruitment layer only in a real browser DOM, after legacy/common wrappers finish.
+if(typeof document!=='undefined'&&typeof document.createElement==='function'&&document.body&&typeof document.body.appendChild==='function'&&!document.querySelector('script[data-rogue-hire-v9]')){const s=document.createElement('script');s.src='rogue_hire_v9.js?v=9';s.dataset.rogueHireV9='1';document.body.appendChild(s)}
 })();
