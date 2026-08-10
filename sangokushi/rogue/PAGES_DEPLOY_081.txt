@@ -1,1 +1,2 @@
 Trigger explicit GitHub Pages deploy for ROGUE 0.8.1 after pages-deploy.yml is present on main.
+Second trigger after confirming Pages Source is already GitHub Actions. 2026-08-11 01:06 JST.
