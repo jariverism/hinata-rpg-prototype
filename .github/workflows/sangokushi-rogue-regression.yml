@@ -1,0 +1,28 @@
+name: Sangokushi ROGUE regression
+on:
+  push:
+    paths:
+      - 'sangokushi/rogue/**'
+      - '.github/workflows/sangokushi-rogue-regression.yml'
+  pull_request:
+    paths:
+      - 'sangokushi/rogue/**'
+      - '.github/workflows/sangokushi-rogue-regression.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax check
+        run: node --check sangokushi/rogue/rogue.js
+      - name: ROGUE rules regression
+        run: node sangokushi/rogue/tests/rogue_rules_test.cjs
+      - name: Entry point references
+        run: |
+          grep -q 'rogue.js' sangokushi/rogue/index.html
+          grep -q '../v24/v24_73_pressure.js' sangokushi/rogue/index.html
+          grep -q '日向三國志 ROGUE' sangokushi/rogue/index.html
