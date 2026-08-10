@@ -1,0 +1,1 @@
+Trigger explicit GitHub Pages deploy for ROGUE 0.8.1 after pages-deploy.yml is present on main.
