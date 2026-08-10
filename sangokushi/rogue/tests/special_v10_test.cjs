@@ -1,0 +1,15 @@
+const fs=require('fs'),assert=require('assert');
+const src=fs.readFileSync('sangokushi/rogue/rogue_special_v10.js','utf8');
+for(const id of ['double_attack','double_move','double_domestic','clone','recruit100','inspire','reinforcement','guard'])assert(src.includes(`${id}:`)||src.includes(`'${id}'`),`missing trait ${id}`);
+for(const [name,id] of [['曹操','double_domestic'],['関羽','double_attack'],['呂布','double_attack'],['諸葛亮','recruit100'],['趙雲','double_move'],['司馬懿','recruit100']])assert(src.includes(`'${name}':'${id}'`),`famous trait mapping missing: ${name}`);
+assert(src.includes('秘伝化：${t.name}'),'capture/recruit conversion must offer secret-art inheritance');
+assert(src.includes("intent.kind==='attack'&&hasTrait(o,'double_attack')"),'double attack activation missing');
+assert(src.includes("hasTrait(o,'double_move')"),'double move activation missing');
+assert(src.includes("hasTrait(o,'double_domestic')"),'double domestic action missing');
+assert(src.includes("hasTrait(o,'clone')"),'clone battle spawn missing');
+assert(src.includes('rogueCloneOf'),'clone identity tracking missing');
+assert(src.includes('playerGuardTurns'),'guard damage-reduction hook missing');
+assert(src.includes("hasTrait(o,'reinforcement')"),'reinforcement troop bonus missing');
+assert(src.includes("hasTrait(o,'inspire')"),'inspire morale bonus missing');
+assert(src.includes("new Set(['farm','commerce','flood','patrol','recruit','train','search','reward'])"),'domestic command scope changed unexpectedly');
+console.log('ROGUE v0.10 inherited special ability regression: PASS');
