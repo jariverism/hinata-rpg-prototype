@@ -1,0 +1,1 @@
+Trigger CI for ROGUE Prototype 0.7 full-roster stat lifecycle.
