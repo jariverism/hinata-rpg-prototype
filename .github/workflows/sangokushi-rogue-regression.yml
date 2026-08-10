@@ -35,6 +35,8 @@ jobs:
         run: node sangokushi/rogue/tests/fixed_roster_v8_test.cjs
       - name: Double material +4 +4 regression
         run: node sangokushi/rogue/tests/double_material_v8_test.cjs
+      - name: Recruitment and strategist advice v9 regression
+        run: node sangokushi/rogue/tests/hire_v9_test.cjs
       - name: Shared fixed table regression
         run: node sangokushi/v24/tests/hinata_fixed_stats_test.cjs
       - name: Start-city guard regression
@@ -46,6 +48,7 @@ jobs:
           grep -q 'rogue_roster_stats_v7.js?v=8' sangokushi/rogue/index.html
           grep -q 'rogue_fixed_roster_v8.js?v=8' sangokushi/rogue/index.html
           grep -q '../v24/v24_74_hinata_fixed_stats.js?v=8' sangokushi/rogue/index.html
+          grep -q 'rogue_hire_v9.js?v=9' sangokushi/rogue/rogue_fixed_roster_v8.js
           ! grep -q 'rogue_stat_guard.js' sangokushi/rogue/index.html
           ! grep -q 'rogue_stat_engine.js?v=' sangokushi/rogue/index.html
           grep -q '../v24/v24_73_pressure.js?v=8' sangokushi/rogue/index.html
