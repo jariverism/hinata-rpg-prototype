@@ -18,11 +18,18 @@ jobs:
         with:
           node-version: '22'
       - name: JavaScript syntax check
-        run: node --check sangokushi/rogue/rogue.js
+        run: find sangokushi/rogue -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: ROGUE rules regression
         run: node sangokushi/rogue/tests/rogue_rules_test.cjs
+      - name: Stat guard regression surface
+        run: |
+          grep -q 'statLedger' sangokushi/rogue/rogue_stat_guard.js
+          grep -q 'ROGUE補正' sangokushi/rogue/rogue_stat_guard.js
+          grep -q "window.beginBattle" sangokushi/rogue/rogue_stat_guard.js
       - name: Entry point references
         run: |
           grep -q 'rogue.js' sangokushi/rogue/index.html
+          grep -q 'rogue_stat_guard.js' sangokushi/rogue/index.html
           grep -q '../v24/v24_73_pressure.js' sangokushi/rogue/index.html
+          grep -q 'Prototype 0.2' sangokushi/rogue/index.html
           grep -q '日向三國志 ROGUE' sangokushi/rogue/index.html
