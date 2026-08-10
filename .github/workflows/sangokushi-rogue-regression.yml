@@ -21,15 +21,17 @@ jobs:
         run: find sangokushi/rogue -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: ROGUE rules regression
         run: node sangokushi/rogue/tests/rogue_rules_test.cjs
-      - name: Deterministic stat engine regression
+      - name: Canonical stat engine v6 regression
         run: node sangokushi/rogue/tests/stat_engine_model_test.cjs
       - name: Start-city guard regression
-        run: grep -q 'rogue_start_fix.js' sangokushi/rogue/index.html
+        run: grep -q 'rogue_start_fix.js?v=2' sangokushi/rogue/index.html
       - name: Entry point references
         run: |
-          grep -q 'rogue.js' sangokushi/rogue/index.html
-          grep -q 'rogue_stat_engine.js' sangokushi/rogue/index.html
+          grep -q 'rogue.js?v=6' sangokushi/rogue/index.html
+          grep -q 'rogue_stat_engine_v6.js?v=6' sangokushi/rogue/index.html
           ! grep -q 'rogue_stat_guard.js' sangokushi/rogue/index.html
-          grep -q '../v24/v24_73_pressure.js' sangokushi/rogue/index.html
-          grep -q 'Prototype 0.5' sangokushi/rogue/index.html
+          ! grep -q 'rogue_stat_engine.js?v=' sangokushi/rogue/index.html
+          grep -q '../v24/v24_73_pressure.js?v=6' sangokushi/rogue/index.html
+          grep -q 'Prototype 0.6' sangokushi/rogue/index.html
+          grep -q 'no-store, no-cache' sangokushi/rogue/index.html
           grep -q '日向三國志 ROGUE' sangokushi/rogue/index.html
