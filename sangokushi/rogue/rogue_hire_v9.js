@@ -1,9 +1,11 @@
-// 日向三國志 ROGUE Prototype 0.9 — restore strategist advice and cross-faction recruitment
+// 日向三國志 ROGUE Prototype 0.10 — exact recruitment probability + strategist advice
 (()=>{
 if(window.HINATA_ROGUE_HIRE_V9)return;window.HINATA_ROGUE_HIRE_V9=true;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const BASE=window.HINATA_CANONICAL_STATS||{};
 const isHinata=name=>!!BASE[name];
+function traitId(x){return typeof x==='string'?x:x?.id}
+function hasTrait(o,id){return (o?.rogueTraits||[]).some(x=>traitId(x)===id)}
 function candidatePool(s=state){
  const city=s?.selected;
  return (s?.officers||[]).filter(t=>{
@@ -18,22 +20,25 @@ function candidatePool(s=state){
  });
 }
 function successChance(actor,target){
- return clamp(15+(Number(actor?.cha)||0)*.45+(100-(Number(target?.loy)||0))*.45-(target?.force==='在野'?0:20),5,90);
+ if(hasTrait(actor,'recruit100'))return 100;
+ const raw=15+(Number(actor?.cha)||0)*.45+(100-(Number(target?.loy)||0))*.45-(target?.force==='在野'?0:20);
+ return clamp(Math.round(raw),5,99);
 }
+function rollRecruit(chance,rng=Math.random){const pct=clamp(Math.round(Number(chance)||0),0,100),roll=Math.floor(rng()*100)+1;return{chance:pct,roll,ok:roll<=pct}}
 function currentStrategist(){
  try{return window.V2447?.currentStrategist?.()||window.V2462?.sync?.()||null}catch(e){return null}
 }
 function adviceFor(actor,target){
- const a=currentStrategist(),p=Math.round(successChance(actor,target));
- if(!a)return {name:null,text:'軍師不在：助言なし',chance:p};
- const tone=p>=70?'かなり見込みがあります':p>=50?'五分以上の見込みです':p>=30?'難しいですが可能性はあります':'成功はかなり難しいでしょう';
+ const a=currentStrategist(),p=successChance(actor,target);
+ if(!a)return {name:null,text:`軍師不在：助言なし　成功見込 ${p}%`,chance:p};
+ const tone=p===100?'必ず成功します':p>=90?'ほぼ間違いないでしょう':p>=70?'かなり見込みがあります':p>=50?'五分以上の見込みです':p>=30?'難しいですが可能性はあります':'成功はかなり難しいでしょう';
  return {name:a.name,text:`軍師 ${a.name}「${tone}」 成功見込 ${p}%`,chance:p};
 }
 function playerHinata(){return (state?.officers||[]).filter(o=>o.force==='日向軍'&&isHinata(o.name)&&!['死亡','捕虜'].includes(o.status))}
 function statLabel(k){return{lead:'統率',war:'武力',int:'知力',pol:'政治',cha:'魅力'}[k]||k}
 function strongestStat(o){return window.HINATA_ROGUE_RULES?.strongestStat?.(o)||['lead','war','int','pol','cha'].sort((a,b)=>(Number(o?.[b])||0)-(Number(o?.[a])||0))[0]||'war'}
 function gearFor(o){return window.HINATA_ROGUE_RULES?.gearFor?.(o)||{name:`${o.name}の佩`,stat:strongestStat(o),amount:6,desc:'能力＋6'}}
-function finishReward(){state.rogue.rewardOpen=false;closeModal();render()}
+function finishReward(){state.rogue.rewardOpen=false;closeModal();render();setTimeout(()=>{try{window.pumpRewards?.()}catch(e){}},80)}
 function chooseMember(title,cb){
  const xs=playerHinata();showModal(`<h2>${title}</h2><div class="choice-list">${xs.map(o=>`<button data-v9-member="${o.name}"><b>${o.name}</b> 統${o.lead} 武${o.war} 知${o.int} 政${o.pol} 魅${o.cha}${o.rogueEquip?`<br><small>装備：${o.rogueEquip.name}</small>`:''}</button>`).join('')}</div><button data-close>閉じる</button>`);
  modalCard.querySelectorAll('[data-v9-member]').forEach(b=>b.onclick=()=>{const o=xs.find(x=>x.name===b.dataset.v9Member);if(o)cb(o)});
@@ -56,20 +61,20 @@ function retireHistorical(t){
 function rogueHire(actor){
  const ts=candidatePool();if(!ts.length)return alert('登用・調略できる武将がいません。');
  const adviser=currentStrategist();
- showModal(`<h2>登用・調略</h2><p class="v9-adviser-head">${adviser?`軍師 <b>${adviser.name}</b> が成功見込みを助言します。`:'<b>軍師不在</b>のため助言はありません。'}</p><div class="choice-list v9-hire-list">${ts.slice(0,80).map(t=>{const ad=adviceFor(actor,t);return `<button data-v9-hire="${t.name}"><span><b>${t.name}</b>　${isHinata(t.name)?'日向坂→加入':'歴史武将→戦利品化'}<br><small>${t.force}・${t.city||'所在不明'}　忠${t.loy}</small><br><small class="v9-advice">${ad.text}</small></span><span>${Math.round(ad.chance)}%</span></button>`}).join('')}</div><button data-close>閉じる</button>`);
+ showModal(`<h2>登用・調略</h2><p class="v9-adviser-head">${adviser?`軍師 <b>${adviser.name}</b> が実際の抽選確率を助言します。`:'<b>軍師不在</b>。表示％は実際の抽選確率です。'}</p><div class="choice-list v9-hire-list">${ts.slice(0,80).map(t=>{const ad=adviceFor(actor,t);return `<button data-v9-hire="${t.name}"><span><b>${t.name}</b>　${isHinata(t.name)?'日向坂→加入':'歴史武将→戦利品化'}<br><small>${t.force}・${t.city||'所在不明'}　忠${t.loy}</small><br><small class="v9-advice">${ad.text}</small></span><span>${ad.chance}%</span></button>`}).join('')}</div><button data-close>閉じる</button>`);
  modalCard.querySelectorAll('[data-v9-hire]').forEach(btn=>btn.onclick=()=>{
-  const t=(state.officers||[]).find(x=>x.name===btn.dataset.v9Hire);if(!t)return;const chance=successChance(actor,t),cost=Math.min(180,Number(cityObj()?.gold)||0);cityObj().gold=Math.max(0,(Number(cityObj().gold)||0)-cost);actor.acted=state.turn;const ok=Math.random()*100<chance;closeModal();
-  if(ok){
-   if(isHinata(t.name)){t.force='日向軍';t.city=state.selected;t.status='一般';t.loy=72;log(`${actor.name}が${t.name}の登用に成功しました。`);render();}
-   else{log(`${actor.name}が${t.name}の調略に成功しました。`);retireHistorical(t);}
-  }else{log(`${actor.name}の${t.name}への${isHinata(t.name)?'登用':'調略'}は失敗しました。`);render();}
+  const t=(state.officers||[]).find(x=>x.name===btn.dataset.v9Hire);if(!t)return;const chance=successChance(actor,t),result=rollRecruit(chance),cost=Math.min(180,Number(cityObj()?.gold)||0);cityObj().gold=Math.max(0,(Number(cityObj().gold)||0)-cost);actor.acted=state.turn;closeModal();
+  if(result.ok){
+   if(isHinata(t.name)){t.force='日向軍';t.city=state.selected;t.status='一般';t.loy=72;log(`${actor.name}が${t.name}の登用に成功しました。（成功率${result.chance}%／判定${result.roll}）`);render();}
+   else{log(`${actor.name}が${t.name}の調略に成功しました。（成功率${result.chance}%／判定${result.roll}）`);retireHistorical(t);}
+  }else{log(`${actor.name}の${t.name}への${isHinata(t.name)?'登用':'調略'}は失敗しました。（成功率${result.chance}%／判定${result.roll}）`);render();}
  });
 }
-window.HINATA_ROGUE_HIRE_V9_API={candidatePool,successChance,adviceFor,isHinata};
+window.HINATA_ROGUE_HIRE_V9_API={candidatePool,successChance,rollRecruit,adviceFor,isHinata,hasTrait};
 if(typeof document==='undefined')return;
 window.hire=rogueHire;
 const prevRender=window.render;
-function mark(){const s=document.querySelector('header h1 small');if(s)s.textContent='Prototype 0.9';const b=document.getElementById('rogueStatEngineBadge');if(b)b.textContent='能力Engine v8 / 登用v9'}
+function mark(){const s=document.querySelector('header h1 small');if(s)s.textContent='Prototype 0.10';const b=document.getElementById('rogueStatEngineBadge');if(b)b.textContent='能力Engine v8 / 登用v10'}
 window.render=function(){const r=prevRender.apply(this,arguments);mark();setTimeout(mark,80);return r};setTimeout(mark,0);
 const style=document.createElement('style');style.textContent='.v9-hire-list button{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;text-align:left}.v9-advice{color:#f1cf7a}.v9-adviser-head{margin:6px 0 10px;color:#d7c39a}';document.head.appendChild(style);
 })();
