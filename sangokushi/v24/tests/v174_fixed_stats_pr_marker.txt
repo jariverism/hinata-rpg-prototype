@@ -1,0 +1,1 @@
+Trigger CI for Sangokushi v1.74 fixed Hinata stats.
