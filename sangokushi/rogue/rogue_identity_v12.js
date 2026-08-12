@@ -64,6 +64,11 @@ if(typeof prevShowModal==='function')window.showModal=function(html){
  return prevShowModal.apply(this,arguments);
 };
 function mark(){const s=document.querySelector?.('header h1 small');if(s)s.textContent='Prototype 0.12';const b=document.getElementById?.('rogueStatEngineBadge');if(b)b.textContent='能力Engine v8 / 共通名簿 v12'}
-setTimeout(()=>{try{repairMisclassified();mark()}catch(e){console.error('ROGUE identity v12:',e)}},0);
+function loadCaptureV13(){
+ if(typeof document==='undefined'||window.HINATA_ROGUE_CAPTURE_V13)return;
+ if(document.querySelector?.('script[data-rogue-capture-v13]'))return;
+ const s=document.createElement('script');s.dataset.rogueCaptureV13='1';s.src='rogue_capture_guard_v13.js?v=13';s.async=false;document.head.appendChild(s);
+}
+setTimeout(()=>{try{repairMisclassified();mark();loadCaptureV13()}catch(e){console.error('ROGUE identity v12:',e)}},0);
 window.HINATA_ROGUE_IDENTITY_V12_API={isHinata,canonicalName,repairMisclassified,count:Object.keys(BASE).length};
 })();
