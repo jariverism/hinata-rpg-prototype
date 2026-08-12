@@ -29,3 +29,4 @@ assert(!src.includes('成功見込 ${p}%'),'v11 must not use the old direct-prob
 assert(css.includes('padding-bottom:calc(160px + env(safe-area-inset-bottom))'),'page bottom safe room missing');
 assert(css.includes('padding-bottom:calc(150px + env(safe-area-inset-bottom))'),'modal bottom scroll room missing');
 console.log('ROGUE v0.11 clone/adviser/mobile regression: PASS');
+require('./capture_v13_test.cjs');
