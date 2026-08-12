@@ -43,26 +43,32 @@ jobs:
         run: node sangokushi/rogue/tests/fix_v11_test.cjs
       - name: Canonical Hinata identity v12 regression
         run: node sangokushi/rogue/tests/identity_v12_test.cjs
+      - name: Ruler succession capture v13 regression
+        run: node sangokushi/rogue/tests/capture_v13_test.cjs
+      - name: Endless mode v14 regression
+        run: node sangokushi/rogue/tests/endless_v14_test.cjs
       - name: Shared fixed table regression
         run: node sangokushi/v24/tests/hinata_fixed_stats_test.cjs
       - name: Start-city guard regression
         run: grep -q 'rogue_start_fix.js?v=4' sangokushi/rogue/index.html
       - name: Entry point references
         run: |
-          grep -q 'rogue.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_stat_engine_v6.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_roster_stats_v7.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_fixed_roster_v8.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_hire_v9.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_special_v10.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_fix_v11.js?v=12' sangokushi/rogue/index.html
-          grep -q 'rogue_identity_v12.js?v=12' sangokushi/rogue/index.html
+          grep -q 'rogue.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_stat_engine_v6.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_roster_stats_v7.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_fixed_roster_v8.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_hire_v9.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_special_v10.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_fix_v11.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_identity_v12.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_capture_guard_v13.js?v=14' sangokushi/rogue/index.html
+          grep -q 'rogue_endless_v14.js?v=14' sangokushi/rogue/index.html
           grep -q '../v24/v24_74_hinata_fixed_stats.js?v=8' sangokushi/rogue/index.html
           ! grep -q 'rogue_stat_guard.js' sangokushi/rogue/index.html
           ! grep -q 'rogue_stat_engine.js?v=' sangokushi/rogue/index.html
           grep -q '../v24/v24_73_pressure.js?v=8' sangokushi/rogue/index.html
-          grep -q 'Prototype 0.12' sangokushi/rogue/index.html
-          grep -q 'rogue.css?v=12' sangokushi/rogue/index.html
+          grep -q 'Prototype 0.14' sangokushi/rogue/index.html
+          grep -q 'rogue.css?v=14' sangokushi/rogue/index.html
           grep -q 'no-store, no-cache' sangokushi/rogue/index.html
           grep -q '日向三國志 ROGUE' sangokushi/rogue/index.html
           grep -q "fetch('../rogue/index.html?clean=0808102249'" sangokushi/rogue08/index.html
