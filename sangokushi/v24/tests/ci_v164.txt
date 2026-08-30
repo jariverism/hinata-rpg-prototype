@@ -1,0 +1,2 @@
+CI verification marker for Version 1.65.
+Commander starts at keep, then may move normally.
