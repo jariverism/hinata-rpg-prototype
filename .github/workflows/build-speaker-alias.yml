@@ -1,0 +1,26 @@
+name: Build S1 speaker alias plugin
+
+on:
+  push:
+    branches: [ speaker-alias-build ]
+    paths:
+      - 'speaker_alias_build/**'
+      - '.github/workflows/build-speaker-alias.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+      - name: Restore
+        run: dotnet restore speaker_alias_build/HinataS1SpeakerNames.csproj
+      - name: Build
+        run: dotnet build speaker_alias_build/HinataS1SpeakerNames.csproj -c Release --no-restore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HinataS1SpeakerNames
+          path: speaker_alias_build/bin/Release/net6.0/HinataS1SpeakerNames.dll
+          if-no-files-found: error
