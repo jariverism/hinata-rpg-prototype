@@ -24,12 +24,14 @@ jobs:
           curl -L --fail -o .deps/bepinex.zip \
             https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip
           unzip -q .deps/bepinex.zip -d .deps/bepinex
+          chmod -R u+rwX .deps/bepinex
           echo "BepInEx files:"
           find .deps/bepinex -maxdepth 4 -type f | sort | head -80
 
       - name: Build
         run: |
-          BEP_CORE="$(dirname "$(find "$GITHUB_WORKSPACE/.deps/bepinex" -type f -name BepInEx.Core.dll | head -1)")"
+          BEP_DLL="$(find "$GITHUB_WORKSPACE/.deps/bepinex" -type f -name BepInEx.Core.dll | head -1)"
+          BEP_CORE="$(dirname "$BEP_DLL")"
           echo "Using BepInEx core: $BEP_CORE"
           test -f "$BEP_CORE/BepInEx.Core.dll"
           test -f "$BEP_CORE/BepInEx.Unity.IL2CPP.dll"
