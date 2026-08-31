@@ -1,0 +1,39 @@
+name: Build Hinata S1 Speaker Plugin
+
+on:
+  push:
+    branches:
+      - build-hinata-speaker-worldnames-20260831
+    paths:
+      - 'tools/HinataS1SpeakerNames/**'
+      - '.github/workflows/build-hinata-speaker.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Download BepInEx IL2CPP references
+        run: |
+          mkdir -p .deps
+          curl -L --fail -o .deps/bepinex.zip \
+            https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip
+          unzip -q .deps/bepinex.zip -d .deps/bepinex
+
+      - name: Build
+        run: |
+          dotnet build tools/HinataS1SpeakerNames/HinataS1SpeakerNames.csproj \
+            -c Release \
+            -p:BepInExDir="$GITHUB_WORKSPACE/.deps/bepinex/BepInEx/core"
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: HinataS1SpeakerNames-0.2.0
+          path: tools/HinataS1SpeakerNames/bin/Release/net6.0/HinataS1SpeakerNames.dll
+          if-no-files-found: error
