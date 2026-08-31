@@ -1,0 +1,45 @@
+name: Build Hinata S1 Shop QoL
+
+on:
+  push:
+    branches:
+      - build-hinata-shop-qol-diag-20260831
+    paths:
+      - 'tools/HinataS1ShopQoL/**'
+      - '.github/workflows/build-hinata-shop-qol.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Download BepInEx IL2CPP references
+        run: |
+          mkdir -p .deps
+          curl -L --fail -o .deps/bepinex.zip \
+            https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip
+          unzip -q .deps/bepinex.zip -d .deps/bepinex
+          chmod -R u+rwX,go+rX .deps/bepinex
+
+      - name: Build
+        run: |
+          BEP_CORE="$(dirname "$(find "$GITHUB_WORKSPACE/.deps/bepinex" -type f -name BepInEx.Core.dll | head -1)")"
+          echo "Using BepInEx core: $BEP_CORE"
+          test -f "$BEP_CORE/BepInEx.Core.dll"
+          test -f "$BEP_CORE/BepInEx.Unity.IL2CPP.dll"
+          test -f "$BEP_CORE/0Harmony.dll"
+          dotnet build tools/HinataS1ShopQoL/HinataS1ShopQoL.csproj \
+            -c Release \
+            -p:BepInExDir="$BEP_CORE"
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: HinataS1ShopQoL-DIAG-0.1.0
+          path: tools/HinataS1ShopQoL/bin/Release/net6.0/HinataS1ShopQoL.dll
+          if-no-files-found: error
