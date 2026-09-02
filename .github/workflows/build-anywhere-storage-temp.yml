@@ -54,7 +54,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: HinataS1AnywhereStorage-canary-v0.5.0
+          name: HinataS1AnywhereStorage-v1.0.0
           path: artifact/
           if-no-files-found: error
           retention-days: 7
