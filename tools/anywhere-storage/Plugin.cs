@@ -15,7 +15,7 @@ public sealed class Plugin : BasePlugin
 {
     public const string PluginGuid = "hinata.s1anywherestorage";
     public const string PluginName = "Hinata S1 Anywhere Storage";
-    public const string PluginVersion = "0.5.0-canary";
+    public const string PluginVersion = "1.0.0";
 
     private const int VK_F8 = 0x77;
     private const int RocMemberId = 85;
@@ -27,9 +27,7 @@ public sealed class Plugin : BasePlugin
     private static object _currentDelegate;
     private static bool _runnerActive;
     private static bool _previousF8Down;
-    private static int _frameCounter;
     private static int _runnerFrames;
-    private static int _sameStateFrames;
     private static string _lastStateLabel = "";
     private static DateTime _lastAttemptUtc = DateTime.MinValue;
 
@@ -40,10 +38,8 @@ public sealed class Plugin : BasePlugin
     {
         _logger = base.Log;
         _harmony = new Harmony(PluginGuid);
-
         _logger.LogInfo($"[{PluginName}] Loading v{PluginVersion}");
-        _logger.LogInfo("[AnywhereStorage] v0.5 uses the original public azukari_demo state-machine entry. It no longer calls azukari_start directly.");
-        _logger.LogInfo("[AnywhereStorage] Safety: Roc recruited + Suikoden Fix GSD1 Map free-roam before starting.");
+        _logger.LogInfo("[AnywhereStorage] F8 opens the original Suikoden I warehouse state-machine after Roc is recruited.");
 
         try
         {
@@ -70,20 +66,14 @@ public sealed class Plugin : BasePlugin
     {
         try
         {
-            _frameCounter++;
-            if (_frameCounter == 60)
-                _logger.LogInfo("[AnywhereStorage] Update hook active.");
-
             short state = GetAsyncKeyState(VK_F8);
             bool down = (state & 0x8000) != 0;
             bool pressedSinceLastPoll = (state & 0x0001) != 0;
             bool pressed = pressedSinceLastPoll || (down && !_previousF8Down);
 
             if (pressed)
-            {
-                _logger.LogInfo($"[AnywhereStorage] F8 detected (state=0x{((ushort)state):X4}).");
                 OnHotkey();
-            }
+
             _previousF8Down = down;
 
             if (_runnerActive)
@@ -109,14 +99,8 @@ public sealed class Plugin : BasePlugin
         _warehouseEntry = type.GetMethods(flags)
             .FirstOrDefault(m => m.Name == "azukari_demo" && m.IsStatic && m.GetParameters().Length == 0);
 
-        if (_warehouseEntry != null)
-        {
-            _logger.LogInfo($"[AnywhereStorage] Bound canonical warehouse entry: {_warehouseEntry.DeclaringType?.FullName}.{_warehouseEntry.Name}() -> {_warehouseEntry.ReturnType.Name}");
-        }
-        else
-        {
+        if (_warehouseEntry == null)
             _logger.LogError("[AnywhereStorage] D_azukar_c.azukari_demo() not found. Plugin will not invoke warehouse code.");
-        }
     }
 
     private static void OnHotkey()
@@ -127,14 +111,14 @@ public sealed class Plugin : BasePlugin
 
         if (_runnerActive)
         {
-            _logger.LogInfo("[AnywhereStorage] F8 ignored: warehouse state-machine is already active.");
+            _logger.LogInfo("[AnywhereStorage] F8 ignored: warehouse is already active.");
             return;
         }
 
         BindWarehouseEntry();
         if (_warehouseEntry == null)
         {
-            _logger.LogWarning("[AnywhereStorage] F8 ignored: canonical warehouse entry is unavailable.");
+            _logger.LogWarning("[AnywhereStorage] F8 ignored: warehouse entry is unavailable.");
             return;
         }
 
@@ -143,35 +127,27 @@ public sealed class Plugin : BasePlugin
             _logger.LogWarning($"[AnywhereStorage] F8 ignored: warehouse not unlocked in this save ({unlockReason}).");
             return;
         }
-        _logger.LogInfo($"[AnywhereStorage] Roc recruitment confirmed: member_flag[85]={rocFlag}.");
 
         if (!IsSafeFreeRoam(out string safetyReason))
         {
             _logger.LogWarning($"[AnywhereStorage] F8 ignored for safety: {safetyReason}");
             return;
         }
-        _logger.LogInfo($"[AnywhereStorage] Safety check passed: {safetyReason}.");
 
         try
         {
-            LogCriticalWarehouseState("BEFORE");
-            _logger.LogInfo("[AnywhereStorage] Starting original warehouse state-machine via azukari_demo().");
+            _logger.LogInfo($"[AnywhereStorage] Opening warehouse (Roc member_flag[85]={rocFlag}).");
             object result = _warehouseEntry.Invoke(null, Array.Empty<object>());
-            if (!AcceptStateResult(result, "azukari_demo", null))
-            {
-                LogCriticalWarehouseState("AFTER_ENTRY_NO_RUNNER");
-                return;
-            }
-            LogCriticalWarehouseState("AFTER_ENTRY");
+            AcceptStateResult(result, "azukari_demo", null);
         }
         catch (TargetInvocationException tie)
         {
-            _logger.LogError($"[AnywhereStorage] azukari_demo failed safely: {tie.InnerException ?? tie}");
+            _logger.LogError($"[AnywhereStorage] Warehouse entry failed safely: {tie.InnerException ?? tie}");
             StopRunner("entry exception");
         }
         catch (Exception ex)
         {
-            _logger.LogError($"[AnywhereStorage] azukari_demo failed safely: {ex}");
+            _logger.LogError($"[AnywhereStorage] Warehouse entry failed safely: {ex}");
             StopRunner("entry exception");
         }
     }
@@ -187,7 +163,7 @@ public sealed class Plugin : BasePlugin
         _runnerFrames++;
         if (_runnerFrames > MaxRunnerFrames)
         {
-            _logger.LogError("[AnywhereStorage] State-machine safety timeout reached. Runner stopped; reload the game if a menu remains open.");
+            _logger.LogError("[AnywhereStorage] Warehouse safety timeout reached. Runner stopped; reload the game if a menu remains open.");
             StopRunner("safety timeout");
             return;
         }
@@ -200,7 +176,7 @@ public sealed class Plugin : BasePlugin
             MethodInfo invoke = FindZeroArgInvoke(current.GetType());
             if (invoke == null)
             {
-                _logger.LogError($"[AnywhereStorage] Cannot invoke warehouse delegate type {current.GetType().FullName}: zero-argument Invoke() not found.");
+                _logger.LogError($"[AnywhereStorage] Cannot invoke warehouse state {label}: zero-argument Invoke() not found.");
                 StopRunner("delegate Invoke unavailable");
                 return;
             }
@@ -224,7 +200,7 @@ public sealed class Plugin : BasePlugin
     {
         if (!TryReadStateTuple(result, out bool flag, out object nextDelegate))
         {
-            _logger.LogError($"[AnywhereStorage] {sourceLabel} returned an unreadable state result ({DescribeObject(result)}). Runner stopped before guessing.");
+            _logger.LogError($"[AnywhereStorage] {sourceLabel} returned an unreadable state result. Runner stopped before guessing.");
             StopRunner("unreadable state result");
             return false;
         }
@@ -234,14 +210,7 @@ public sealed class Plugin : BasePlugin
         if (stateKey != _lastStateLabel)
         {
             _lastStateLabel = stateKey;
-            _sameStateFrames = 0;
-            _logger.LogInfo($"[AnywhereStorage][STATE] source={sourceLabel}, flag={flag}, next={nextLabel}");
-        }
-        else
-        {
-            _sameStateFrames++;
-            if (_sameStateFrames > 0 && _sameStateFrames % 300 == 0)
-                _logger.LogInfo($"[AnywhereStorage][STATE] still running {sourceLabel} for {_sameStateFrames} repeated frame(s), flag={flag}, next={nextLabel}");
+            _logger.LogInfo($"[AnywhereStorage] State: {sourceLabel} -> {nextLabel} (flag={flag}).");
         }
 
         if (nextDelegate != null)
@@ -251,9 +220,6 @@ public sealed class Plugin : BasePlugin
             return true;
         }
 
-        // The game's SHIRO-style state functions expose (bool, nextDelegate).
-        // A false flag with no next function is treated conservatively as "stay on current state".
-        // A true flag with no next function is treated as completion. This avoids inventing a new transition.
         if (!flag && currentDelegate != null)
         {
             _currentDelegate = currentDelegate;
@@ -261,9 +227,8 @@ public sealed class Plugin : BasePlugin
             return true;
         }
 
-        _logger.LogInfo($"[AnywhereStorage] Warehouse state-machine completed at {sourceLabel} (flag={flag}, next=NULL).");
+        _logger.LogInfo("[AnywhereStorage] Warehouse closed normally.");
         StopRunner("normal completion");
-        LogCriticalWarehouseState("AFTER_COMPLETION");
         return false;
     }
 
@@ -327,41 +292,14 @@ public sealed class Plugin : BasePlugin
         return del.GetType().Name;
     }
 
-    private static string DescribeObject(object value)
-    {
-        if (value == null) return "<NULL>";
-        try { return value.GetType().FullName ?? value.GetType().Name; }
-        catch { return "<non-null>"; }
-    }
-
     private static void StopRunner(string reason)
     {
         if (_runnerActive || _currentDelegate != null)
-            _logger.LogInfo($"[AnywhereStorage] State-machine runner stopped: {reason}.");
+            _logger.LogDebug($"[AnywhereStorage] State-machine runner stopped: {reason}.");
         _runnerActive = false;
         _currentDelegate = null;
         _runnerFrames = 0;
-        _sameStateFrames = 0;
         _lastStateLabel = "";
-    }
-
-    private static void LogCriticalWarehouseState(string stage)
-    {
-        try
-        {
-            var type = FindType("GSD1.D_azukar_c") ?? FindTypeByName("D_azukar_c");
-            if (type == null) return;
-            string[] names = { "a_work", "azukari_work", "item_data_table", "machi_kaiwa", "prev_func", "step_func" };
-            foreach (string name in names)
-            {
-                object value = GetStaticMember(type, name);
-                _logger.LogInfo($"[AnywhereStorage][{stage}] {name}={DescribeObject(value)}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning($"[AnywhereStorage][{stage}] critical-state read failed: {ex.Message}");
-        }
     }
 
     private static bool IsRocRecruited(out int flag, out string reason)
@@ -415,7 +353,7 @@ public sealed class Plugin : BasePlugin
         reason = "unknown game state";
         if (!TryReadSuikodenFixSafety(out bool available, out bool safe, out string fixReason) || !available)
         {
-            reason = "Suikoden Fix state unavailable; canary refuses to guess";
+            reason = "Suikoden Fix state unavailable";
             return false;
         }
         if (!safe)
