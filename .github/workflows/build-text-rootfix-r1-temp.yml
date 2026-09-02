@@ -1,0 +1,46 @@
+name: Build Text RootFix R1
+
+on:
+  push:
+    branches:
+      - build-anywhere-storage-20260902
+    paths:
+      - 'tools/text-rootfix/**'
+      - '.github/workflows/build-text-rootfix-r1-temp.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+      - name: Download BepInEx refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf tools/text-rootfix/lib tools/text-rootfix/refs
+          mkdir -p tools/text-rootfix/lib tools/text-rootfix/refs
+          curl -L --fail --retry 3 'https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip' -o /tmp/bepinex.zip
+          unzip -q /tmp/bepinex.zip -d tools/text-rootfix/lib
+          chmod -R u+rwX tools/text-rootfix/lib
+          for f in 0Harmony.dll BepInEx.Core.dll BepInEx.Unity.IL2CPP.dll Il2CppInterop.Runtime.dll; do
+            src="$(find tools/text-rootfix/lib -type f -name "$f" | head -n 1)"
+            test -n "$src"
+            cp "$src" "tools/text-rootfix/refs/$f"
+          done
+      - name: Build
+        run: dotnet build tools/text-rootfix/HinataS1TextRootFix.csproj -c Release
+      - name: Stage
+        shell: bash
+        run: |
+          mkdir -p artifact
+          cp tools/text-rootfix/bin/Release/net6.0/HinataS1TextRootFix.dll artifact/
+          sha256sum artifact/HinataS1TextRootFix.dll > artifact/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HinataS1TextRootFix-R1
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 7
