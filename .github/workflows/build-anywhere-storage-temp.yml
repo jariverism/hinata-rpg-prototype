@@ -30,6 +30,7 @@ jobs:
             'https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip' \
             -o /tmp/bepinex.zip
           unzip -q /tmp/bepinex.zip -d tools/anywhere-storage/lib
+          chmod -R u+rwX tools/anywhere-storage/lib
           echo 'BepInEx reference candidates:'
           find tools/anywhere-storage/lib -type f \( -name '0Harmony.dll' -o -name 'BepInEx.Core.dll' -o -name 'BepInEx.Unity.IL2CPP.dll' -o -name 'Il2CppInterop.Runtime.dll' \) -print
           for f in 0Harmony.dll BepInEx.Core.dll BepInEx.Unity.IL2CPP.dll Il2CppInterop.Runtime.dll; do
