@@ -15,7 +15,7 @@ public sealed class Plugin : BasePlugin
 {
     public const string PluginGuid = "hinata.s1anywherestorage";
     public const string PluginName = "Hinata S1 Anywhere Storage";
-    public const string PluginVersion = "0.2.0";
+    public const string PluginVersion = "0.3.0";
 
     private const int VK_F8 = 0x77;
     private const int RocMemberId = 85;
@@ -25,7 +25,6 @@ public sealed class Plugin : BasePlugin
     private static MethodInfo _storageStart;
     private static MethodInfo _storageEnd;
     private static bool _storageOpen;
-    private static bool _invokingFromHotkey;
     private static bool _previousF8Down;
     private static int _frameCounter;
     private static DateTime _lastAttemptUtc = DateTime.MinValue;
@@ -39,8 +38,8 @@ public sealed class Plugin : BasePlugin
         _harmony = new Harmony(PluginGuid);
 
         _logger.LogInfo($"[{PluginName}] Loading v{PluginVersion}");
-        _logger.LogInfo("[AnywhereStorage] Unlock rule: Roc recruited in current Suikoden I save (member_flag[85]). No need to visit the castle after installing.");
-        _logger.LogInfo("[AnywhereStorage] Safety: map/field only; blocked during menus, messages, events, battles and special menus.");
+        _logger.LogInfo("[AnywhereStorage] Unlock rule: Roc recruited in current Suikoden I save (member_flag[85]).");
+        _logger.LogInfo("[AnywhereStorage] Safety: Suikoden Fix map-state first; blocked during menus, messages, events, battles and special menus.");
 
         try
         {
@@ -139,15 +138,8 @@ public sealed class Plugin : BasePlugin
         }
     }
 
-    private static void StorageStartPrefix()
-    {
-        _storageOpen = true;
-    }
-
-    private static void StorageEndPostfix()
-    {
-        _storageOpen = false;
-    }
+    private static void StorageStartPrefix() => _storageOpen = true;
+    private static void StorageEndPostfix() => _storageOpen = false;
 
     private static void OnHotkey()
     {
@@ -187,11 +179,11 @@ public sealed class Plugin : BasePlugin
             _logger.LogWarning($"[AnywhereStorage] F8 ignored for safety: {reason}");
             return;
         }
+        _logger.LogInfo($"[AnywhereStorage] Safety check passed: {reason}.");
 
         try
         {
             _logger.LogInfo("[AnywhereStorage] F8 -> invoking original Suikoden I warehouse entry.");
-            _invokingFromHotkey = true;
             _storageStart.Invoke(null, Array.Empty<object>());
             _logger.LogInfo("[AnywhereStorage] Warehouse entry call completed.");
         }
@@ -204,10 +196,6 @@ public sealed class Plugin : BasePlugin
         {
             _storageOpen = false;
             _logger.LogError($"[AnywhereStorage] Warehouse call failed safely: {ex}");
-        }
-        finally
-        {
-            _invokingFromHotkey = false;
         }
     }
 
@@ -261,26 +249,111 @@ public sealed class Plugin : BasePlugin
     {
         reason = "unknown game state";
 
-        if (!IsGsd1MapOrField(out reason))
-            return false;
-
-        if (TryReadSuikodenFixSafety(out bool fixAvailable, out bool safe, out string fixReason) && fixAvailable && !safe)
+        // Preferred path: Suikoden Fix already performs the game's real chapter classification.
+        // Reflection on activeChapter reports its IL2CPP wrapper/base type as ChapterBase on this build,
+        // so relying on GetType().Name alone incorrectly rejects valid map movement.
+        TryReadSuikodenFixSafety(out bool fixAvailable, out bool fixSafe, out string fixReason);
+        if (fixAvailable)
         {
+            if (!fixSafe)
+            {
+                reason = fixReason;
+                return false;
+            }
+
+            if (IsStandardWindowOpen(out string windowReason))
+            {
+                reason = windowReason;
+                return false;
+            }
+
             reason = fixReason;
-            return false;
+            return true;
         }
 
-        if (IsStandardWindowOpen(out string windowReason))
+        // Fallback only when Suikoden Fix is unavailable.
+        if (!IsGsd1MapOrFieldFallback(out reason))
+            return false;
+
+        if (IsStandardWindowOpen(out string fallbackWindowReason))
         {
-            reason = windowReason;
+            reason = fallbackWindowReason;
             return false;
         }
 
-        reason = "safe free roam";
+        reason = "fallback map/field check passed";
         return true;
     }
 
-    private static bool IsGsd1MapOrField(out string reason)
+    private static bool TryReadSuikodenFixSafety(out bool available, out bool safe, out string reason)
+    {
+        available = false;
+        safe = false;
+        reason = "Suikoden Fix unavailable";
+
+        try
+        {
+            var type = FindType("Suikoden_Fix.ModComponent");
+            if (type == null)
+                return true;
+
+            object instance = GetStaticMember(type, "Instance");
+            if (instance == null)
+                return true;
+
+            available = true;
+
+            string activeGame = Convert.ToString(GetInstanceMember(instance, "ActiveGame"));
+            if (!string.Equals(activeGame, "GSD1", StringComparison.OrdinalIgnoreCase))
+            {
+                reason = $"Suikoden Fix reports ActiveGame={activeGame}";
+                return true;
+            }
+
+            var chapterField = type.GetField("_chapter", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (chapterField == null)
+            {
+                reason = "Suikoden Fix _chapter field unavailable";
+                return true;
+            }
+
+            string chapter = Convert.ToString(chapterField.GetValue(instance));
+            if (!string.Equals(chapter, "Map", StringComparison.OrdinalIgnoreCase))
+            {
+                reason = $"Suikoden Fix chapter={chapter}";
+                return true;
+            }
+
+            string[] boolMembers =
+            {
+                "IsMenuOpened", "IsMessageBoxOpened", "IsInSpecialMenu", "IsInGameEvent",
+                "IsInDanceMinigame", "IsInMovieGallery", "GamePaused"
+            };
+
+            foreach (string member in boolMembers)
+            {
+                object value = GetInstanceMember(instance, member);
+                if (value is bool b && b)
+                {
+                    reason = $"Suikoden Fix safety flag {member}=true";
+                    return true;
+                }
+            }
+
+            safe = true;
+            reason = "Suikoden Fix confirms GSD1 Map free roam";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            available = true;
+            safe = false;
+            reason = $"Suikoden Fix safety check failed: {ex.Message}";
+            return true;
+        }
+    }
+
+    private static bool IsGsd1MapOrFieldFallback(out string reason)
     {
         reason = "GSD1 chapter unavailable";
         try
@@ -313,66 +386,13 @@ public sealed class Plugin : BasePlugin
                 return true;
             }
 
-            reason = $"current chapter is {chapterName}";
+            reason = $"fallback current chapter wrapper is {chapterName}";
             return false;
         }
         catch (Exception ex)
         {
-            reason = $"chapter check failed: {ex.Message}";
+            reason = $"fallback chapter check failed: {ex.Message}";
             return false;
-        }
-    }
-
-    private static bool TryReadSuikodenFixSafety(out bool available, out bool safe, out string reason)
-    {
-        available = false;
-        safe = true;
-        reason = "";
-        try
-        {
-            var type = FindType("Suikoden_Fix.ModComponent");
-            if (type == null)
-                return true;
-
-            object instance = GetStaticMember(type, "Instance");
-            if (instance == null)
-                return true;
-
-            available = true;
-            string activeGame = Convert.ToString(GetInstanceMember(instance, "ActiveGame"));
-            if (!string.Equals(activeGame, "GSD1", StringComparison.OrdinalIgnoreCase))
-            {
-                safe = false;
-                reason = $"Suikoden Fix reports ActiveGame={activeGame}";
-                return true;
-            }
-
-            string[] boolMembers =
-            {
-                "IsMenuOpened", "IsMessageBoxOpened", "IsInSpecialMenu", "IsInGameEvent",
-                "IsInDanceMinigame", "IsInMovieGallery", "GamePaused"
-            };
-
-            foreach (string member in boolMembers)
-            {
-                object value = GetInstanceMember(instance, member);
-                if (value is bool b && b)
-                {
-                    safe = false;
-                    reason = $"Suikoden Fix safety flag {member}=true";
-                    return true;
-                }
-            }
-
-            safe = true;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            available = true;
-            safe = false;
-            reason = $"Suikoden Fix safety check failed: {ex.Message}";
-            return true;
         }
     }
 
@@ -417,6 +437,7 @@ public sealed class Plugin : BasePlugin
             reason = $"window safety check failed: {ex.Message}";
             return true;
         }
+
         return false;
     }
 
@@ -509,6 +530,7 @@ public sealed class Plugin : BasePlugin
     {
         if (instance == null)
             return null;
+
         var type = instance.GetType();
         var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         try
