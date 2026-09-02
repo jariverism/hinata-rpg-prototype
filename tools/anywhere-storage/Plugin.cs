@@ -3,8 +3,6 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -17,47 +15,32 @@ public sealed class Plugin : BasePlugin
 {
     public const string PluginGuid = "hinata.s1anywherestorage";
     public const string PluginName = "Hinata S1 Anywhere Storage";
-    public const string PluginVersion = "0.1.0";
+    public const string PluginVersion = "0.2.0";
+
+    private const int VK_F8 = 0x77;
+    private const int RocMemberId = 85;
 
     private static ManualLogSource _logger;
     private static Harmony _harmony;
     private static MethodInfo _storageStart;
     private static MethodInfo _storageEnd;
-    private static object _capturedStorageInstance;
     private static bool _storageOpen;
     private static bool _invokingFromHotkey;
-    private static bool _previousF8;
-    private static bool _storageUnlocked;
+    private static bool _previousF8Down;
     private static int _frameCounter;
     private static DateTime _lastAttemptUtc = DateTime.MinValue;
-    private static string _unlockMarkerPath;
-
-    private const int VK_F8 = 0x77;
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     public override void Load()
     {
         _logger = base.Log;
         _harmony = new Harmony(PluginGuid);
-        _unlockMarkerPath = Path.Combine(Paths.ConfigPath, "hinata.s1anywherestorage.unlocked");
-        _storageUnlocked = File.Exists(_unlockMarkerPath);
 
         _logger.LogInfo($"[{PluginName}] Loading v{PluginVersion}");
-        _logger.LogInfo("[AnywhereStorage] Safety policy: Suikoden I map/field only, no ordinary menu/message, no detected special menu/event.");
-        _logger.LogInfo($"[AnywhereStorage] Persistent warehouse unlock marker: {(_storageUnlocked ? "YES" : "NO")}");
-
-        if (!_storageUnlocked)
-        {
-            _logger.LogInfo("[AnywhereStorage] Open the normal warehouse once after installing. This records that the warehouse has legitimately been unlocked.");
-        }
+        _logger.LogInfo("[AnywhereStorage] Unlock rule: Roc recruited in current Suikoden I save (member_flag[85]). No need to visit the castle after installing.");
+        _logger.LogInfo("[AnywhereStorage] Safety: map/field only; blocked during menus, messages, events, battles and special menus.");
 
         try
         {
@@ -85,21 +68,28 @@ public sealed class Plugin : BasePlugin
         try
         {
             _frameCounter++;
-            if (_storageStart == null && _frameCounter % 120 == 0)
-            {
-                TryBindStorageMethods();
-            }
+            if (_frameCounter == 60)
+                _logger.LogInfo("[AnywhereStorage] Update hook active.");
 
-            bool f8 = (GetAsyncKeyState(VK_F8) & 0x8000) != 0;
-            if (f8 && !_previousF8)
+            if (_storageStart == null && _frameCounter % 120 == 0)
+                TryBindStorageMethods();
+
+            short state = GetAsyncKeyState(VK_F8);
+            bool down = (state & 0x8000) != 0;
+            bool pressedSinceLastPoll = (state & 0x0001) != 0;
+            bool pressed = pressedSinceLastPoll || (down && !_previousF8Down);
+
+            if (pressed)
             {
+                _logger.LogInfo($"[AnywhereStorage] F8 detected (state=0x{((ushort)state):X4}).");
                 OnHotkey();
             }
-            _previousF8 = f8;
+
+            _previousF8Down = down;
         }
         catch (Exception ex)
         {
-            _logger?.LogError($"[AnywhereStorage] Frame handler error: {ex.Message}");
+            _logger?.LogError($"[AnywhereStorage] Frame handler error: {ex}");
         }
     }
 
@@ -126,13 +116,11 @@ public sealed class Plugin : BasePlugin
 
             if (_storageStart == null)
             {
-                _logger.LogWarning("[AnywhereStorage] GSD1.D_azukar_c found, but azukari_start was not found.");
+                _logger.LogWarning("[AnywhereStorage] D_azukar_c found, but azukari_start was not found.");
                 return;
             }
 
-            MethodInfo startPatch = typeof(Plugin).GetMethod(
-                _storageStart.IsStatic ? nameof(StorageStartStaticPrefix) : nameof(StorageStartInstancePrefix),
-                BindingFlags.Static | BindingFlags.NonPublic);
+            var startPatch = typeof(Plugin).GetMethod(nameof(StorageStartPrefix), BindingFlags.Static | BindingFlags.NonPublic);
             _harmony.Patch(_storageStart, prefix: new HarmonyMethod(startPatch));
 
             if (_storageEnd != null)
@@ -143,55 +131,17 @@ public sealed class Plugin : BasePlugin
 
             string signature = string.Join(", ", _storageStart.GetParameters().Select(p => p.ParameterType.Name + " " + p.Name));
             _logger.LogInfo($"[AnywhereStorage] Bound storage entry: {_storageStart.DeclaringType?.FullName}.{_storageStart.Name}({signature}), static={_storageStart.IsStatic}");
-            if (_storageStart.GetParameters().Length != 0)
-            {
-                _logger.LogWarning("[AnywhereStorage] Storage entry has parameters. Canary will not guess arguments; F8 will refuse unless a zero-argument entry is available.");
-            }
         }
         catch (Exception ex)
         {
-            _logger.LogError($"[AnywhereStorage] Binding storage methods failed safely: {ex.Message}");
+            _logger.LogError($"[AnywhereStorage] Binding storage methods failed safely: {ex}");
             _storageStart = null;
         }
     }
 
-    private static void StorageStartStaticPrefix(MethodBase __originalMethod)
-    {
-        OnStorageStartObserved(null, __originalMethod);
-    }
-
-    private static void StorageStartInstancePrefix(object __instance, MethodBase __originalMethod)
-    {
-        OnStorageStartObserved(__instance, __originalMethod);
-    }
-
-    private static void OnStorageStartObserved(object instance, MethodBase original)
+    private static void StorageStartPrefix()
     {
         _storageOpen = true;
-        if (instance != null)
-            _capturedStorageInstance = instance;
-
-        if (_invokingFromHotkey)
-            return;
-
-        if (!_storageUnlocked)
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(_unlockMarkerPath));
-                File.WriteAllText(_unlockMarkerPath, "Warehouse legitimately opened in Suikoden I.\r\n");
-                _storageUnlocked = true;
-                _logger.LogInfo("[AnywhereStorage] Normal warehouse opening observed. Anywhere access is now unlocked for this installation.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning($"[AnywhereStorage] Could not write unlock marker: {ex.Message}");
-            }
-        }
-        else
-        {
-            _logger.LogDebug($"[AnywhereStorage] Normal storage entry observed: {original?.Name}");
-        }
     }
 
     private static void StorageEndPostfix()
@@ -201,10 +151,7 @@ public sealed class Plugin : BasePlugin
 
     private static void OnHotkey()
     {
-        if (!IsGameForeground())
-            return;
-
-        if ((DateTime.UtcNow - _lastAttemptUtc).TotalMilliseconds < 750)
+        if ((DateTime.UtcNow - _lastAttemptUtc).TotalMilliseconds < 600)
             return;
         _lastAttemptUtc = DateTime.UtcNow;
 
@@ -212,15 +159,22 @@ public sealed class Plugin : BasePlugin
 
         if (_storageStart == null)
         {
-            _logger.LogWarning("[AnywhereStorage] F8 ignored: storage entry is not available yet.");
+            _logger.LogWarning("[AnywhereStorage] F8 ignored: original storage entry is not available.");
             return;
         }
 
-        if (!_storageUnlocked)
+        if (_storageStart.GetParameters().Length != 0 || !_storageStart.IsStatic)
         {
-            _logger.LogWarning("[AnywhereStorage] F8 ignored: open the castle warehouse normally once first. Progression is not bypassed.");
+            _logger.LogWarning("[AnywhereStorage] F8 refused: storage entry shape changed; no unsafe argument/instance guessing performed.");
             return;
         }
+
+        if (!IsRocRecruited(out int rocFlag, out string unlockReason))
+        {
+            _logger.LogWarning($"[AnywhereStorage] F8 ignored: warehouse not unlocked in this save ({unlockReason}).");
+            return;
+        }
+        _logger.LogInfo($"[AnywhereStorage] Roc recruitment confirmed: member_flag[85]={rocFlag}.");
 
         if (_storageOpen)
         {
@@ -234,28 +188,11 @@ public sealed class Plugin : BasePlugin
             return;
         }
 
-        if (_storageStart.GetParameters().Length != 0)
-        {
-            _logger.LogWarning("[AnywhereStorage] F8 refused: azukari_start is not zero-argument. No argument guessing performed.");
-            return;
-        }
-
-        object target = null;
-        if (!_storageStart.IsStatic)
-        {
-            target = ResolveStorageInstance(_storageStart.DeclaringType);
-            if (target == null)
-            {
-                _logger.LogWarning("[AnywhereStorage] F8 cannot open yet: storage entry is instance-based and no safe live instance was found. Open the normal warehouse once in this game session, then try F8 again.");
-                return;
-            }
-        }
-
         try
         {
             _logger.LogInfo("[AnywhereStorage] F8 -> invoking original Suikoden I warehouse entry.");
             _invokingFromHotkey = true;
-            _storageStart.Invoke(target, Array.Empty<object>());
+            _storageStart.Invoke(null, Array.Empty<object>());
             _logger.LogInfo("[AnywhereStorage] Warehouse entry call completed.");
         }
         catch (TargetInvocationException tie)
@@ -274,61 +211,50 @@ public sealed class Plugin : BasePlugin
         }
     }
 
-    private static object ResolveStorageInstance(Type storageType)
+    private static bool IsRocRecruited(out int flag, out string reason)
     {
-        if (_capturedStorageInstance != null && storageType.IsInstanceOfType(_capturedStorageInstance))
-            return _capturedStorageInstance;
-
-        var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
-        string[] preferredNames = { "Instance", "instance", "m_Instance", "s_instance", "Singleton" };
-
-        foreach (string name in preferredNames)
-        {
-            try
-            {
-                var prop = storageType.GetProperty(name, flags);
-                if (prop != null && storageType.IsAssignableFrom(prop.PropertyType))
-                {
-                    var value = prop.GetValue(null);
-                    if (value != null)
-                        return value;
-                }
-
-                var field = storageType.GetField(name, flags);
-                if (field != null && storageType.IsAssignableFrom(field.FieldType))
-                {
-                    var value = field.GetValue(null);
-                    if (value != null)
-                        return value;
-                }
-            }
-            catch { }
-        }
-
+        flag = 0;
+        reason = "Roc recruitment flag unavailable";
         try
         {
-            foreach (var prop in storageType.GetProperties(flags))
+            var oldSrcBase = FindType("GSD1.OldSrcBase") ?? FindTypeByName("OldSrcBase");
+            if (oldSrcBase == null)
             {
-                if (storageType.IsAssignableFrom(prop.PropertyType) && prop.GetIndexParameters().Length == 0)
-                {
-                    var value = prop.GetValue(null);
-                    if (value != null)
-                        return value;
-                }
+                reason = "OldSrcBase type not found";
+                return false;
             }
-            foreach (var field in storageType.GetFields(flags))
-            {
-                if (storageType.IsAssignableFrom(field.FieldType))
-                {
-                    var value = field.GetValue(null);
-                    if (value != null)
-                        return value;
-                }
-            }
-        }
-        catch { }
 
-        return null;
+            object gameWork = GetStaticMember(oldSrcBase, "game_work");
+            if (gameWork == null)
+            {
+                reason = "game_work is null";
+                return false;
+            }
+
+            object flags = GetInstanceMember(gameWork, "member_flag");
+            if (flags == null)
+            {
+                reason = "member_flag is null";
+                return false;
+            }
+
+            object value = GetIndexedValue(flags, RocMemberId);
+            if (value == null)
+            {
+                reason = "member_flag[85] unavailable";
+                return false;
+            }
+
+            flag = Convert.ToInt32(value);
+            bool recruited = (flag & 1) != 0;
+            reason = recruited ? "Roc recruited" : $"member_flag[85]={flag}";
+            return recruited;
+        }
+        catch (Exception ex)
+        {
+            reason = $"Roc flag check failed: {ex.Message}";
+            return false;
+        }
     }
 
     private static bool IsSafeFreeRoam(out string reason)
@@ -338,13 +264,10 @@ public sealed class Plugin : BasePlugin
         if (!IsGsd1MapOrField(out reason))
             return false;
 
-        if (TryReadSuikodenFixSafety(out bool fixAvailable, out bool safe, out string fixReason) && fixAvailable)
+        if (TryReadSuikodenFixSafety(out bool fixAvailable, out bool safe, out string fixReason) && fixAvailable && !safe)
         {
-            if (!safe)
-            {
-                reason = fixReason;
-                return false;
-            }
+            reason = fixReason;
+            return false;
         }
 
         if (IsStandardWindowOpen(out string windowReason))
@@ -362,17 +285,26 @@ public sealed class Plugin : BasePlugin
         reason = "GSD1 chapter unavailable";
         try
         {
-            var chapterManagerType = FindType("GSD1.ChapterManager");
+            var chapterManagerType = FindType("GSD1.ChapterManager") ?? FindTypeByName("ChapterManager");
             if (chapterManagerType == null)
+            {
+                reason = "ChapterManager type not found";
                 return false;
+            }
 
             object manager = GetStaticMember(chapterManagerType, "GR1Instance");
             if (manager == null)
+            {
+                reason = "GR1Instance unavailable";
                 return false;
+            }
 
             object chapter = GetInstanceMember(manager, "activeChapter");
             if (chapter == null)
+            {
+                reason = "activeChapter unavailable";
                 return false;
+            }
 
             string chapterName = chapter.GetType().Name;
             if (chapterName == "MapChapter" || chapterName == "FieldChapter")
@@ -407,7 +339,6 @@ public sealed class Plugin : BasePlugin
                 return true;
 
             available = true;
-
             string activeGame = Convert.ToString(GetInstanceMember(instance, "ActiveGame"));
             if (!string.Equals(activeGame, "GSD1", StringComparison.OrdinalIgnoreCase))
             {
@@ -433,18 +364,6 @@ public sealed class Plugin : BasePlugin
                 }
             }
 
-            var chapterField = type.GetField("_chapter", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (chapterField != null)
-            {
-                string chapter = Convert.ToString(chapterField.GetValue(instance));
-                if (!string.Equals(chapter, "Map", StringComparison.OrdinalIgnoreCase))
-                {
-                    safe = false;
-                    reason = $"Suikoden Fix chapter={chapter}";
-                    return true;
-                }
-            }
-
             safe = true;
             return true;
         }
@@ -462,7 +381,7 @@ public sealed class Plugin : BasePlugin
         reason = "";
         try
         {
-            var type = FindType("GSD1.WindowManager");
+            var type = FindType("GSD1.WindowManager") ?? FindTypeByName("WindowManager");
             if (type == null)
                 return false;
 
@@ -501,20 +420,37 @@ public sealed class Plugin : BasePlugin
         return false;
     }
 
-    private static bool IsGameForeground()
+    private static object GetIndexedValue(object collection, int index)
     {
+        if (collection == null)
+            return null;
+
+        var type = collection.GetType();
+        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
         try
         {
-            IntPtr hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero)
-                return false;
-            GetWindowThreadProcessId(hwnd, out uint pid);
-            return pid == (uint)Process.GetCurrentProcess().Id;
+            var countProp = type.GetProperty("Count", flags);
+            if (countProp != null)
+            {
+                int count = Convert.ToInt32(countProp.GetValue(collection));
+                if (index < 0 || index >= count)
+                    return null;
+            }
+
+            var itemProp = type.GetProperties(flags)
+                .FirstOrDefault(p => p.Name == "Item" && p.GetIndexParameters().Length == 1 && p.GetIndexParameters()[0].ParameterType == typeof(int));
+            if (itemProp != null)
+                return itemProp.GetValue(collection, new object[] { index });
+
+            var getItem = type.GetMethods(flags)
+                .FirstOrDefault(m => (m.Name == "get_Item" || m.Name == "get_Item_Int32") && m.GetParameters().Length == 1);
+            if (getItem != null)
+                return getItem.Invoke(collection, new object[] { index });
         }
-        catch
-        {
-            return true;
-        }
+        catch { }
+
+        return null;
     }
 
     private static Type FindType(string fullName)
