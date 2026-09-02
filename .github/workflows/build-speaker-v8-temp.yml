@@ -1,0 +1,41 @@
+name: Build Speaker Names V8
+on:
+  push:
+    branches: [build-anywhere-storage-20260902]
+    paths:
+      - 'tools/speaker-names-v8/**'
+      - '.github/workflows/build-speaker-v8-temp.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+      - name: Download BepInEx refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf tools/speaker-names-v8/refs /tmp/bep
+          mkdir -p tools/speaker-names-v8/refs /tmp/bep
+          curl -L --fail --retry 3 'https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip' -o /tmp/bep.zip
+          unzip -q /tmp/bep.zip -d /tmp/bep
+          chmod -R u+rwX /tmp/bep
+          for f in 0Harmony.dll BepInEx.Core.dll BepInEx.Unity.IL2CPP.dll Il2CppInterop.Runtime.dll; do
+            src="$(find /tmp/bep -type f -name "$f" | head -n 1)"; test -n "$src"; cp "$src" "tools/speaker-names-v8/refs/$f"
+          done
+      - name: Build
+        run: dotnet build tools/speaker-names-v8/HinataS1SpeakerNames.csproj -c Release
+      - name: Stage
+        shell: bash
+        run: |
+          mkdir -p artifact
+          cp tools/speaker-names-v8/bin/Release/net6.0/HinataS1SpeakerNames.dll artifact/
+          sha256sum artifact/HinataS1SpeakerNames.dll > artifact/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HinataS1SpeakerNames-v8-clean
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 7
