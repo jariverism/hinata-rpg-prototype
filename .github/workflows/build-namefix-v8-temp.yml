@@ -1,0 +1,60 @@
+name: Build NameFix V8 Speaker
+
+on:
+  push:
+    branches:
+      - build-namefix-v8-20260902
+    paths:
+      - 'tools/namefix-v8/**'
+      - '.github/workflows/build-namefix-v8-temp.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Download BepInEx IL2CPP references
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf tools/namefix-v8/lib tools/namefix-v8/refs
+          mkdir -p tools/namefix-v8/lib tools/namefix-v8/refs
+          curl -L --fail --retry 3 \
+            'https://github.com/BepInEx/BepInEx/releases/download/v6.0.0-pre.2/BepInEx-Unity.IL2CPP-win-x64-6.0.0-pre.2.zip' \
+            -o /tmp/bepinex.zip
+          unzip -q /tmp/bepinex.zip -d tools/namefix-v8/lib
+          chmod -R u+rwX tools/namefix-v8/lib
+          for f in 0Harmony.dll BepInEx.Core.dll BepInEx.Unity.IL2CPP.dll Il2CppInterop.Runtime.dll; do
+            src="$(find tools/namefix-v8/lib -type f -name "$f" | head -n 1)"
+            test -n "$src"
+            cp "$src" "tools/namefix-v8/refs/$f"
+          done
+
+      - name: Build speaker plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build tools/namefix-v8/HinataS1SpeakerNames.csproj -c Release
+
+      - name: Stage artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifact
+          cp tools/namefix-v8/bin/Release/net6.0/HinataS1SpeakerNames.dll artifact/
+          sha256sum artifact/HinataS1SpeakerNames.dll > artifact/SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HinataS1SpeakerNames-clean-v1.0.0
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 7
