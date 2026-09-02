@@ -10,19 +10,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>lib/BepInEx/core/0Harmony.dll</HintPath>
+      <HintPath>refs/0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx.Core">
-      <HintPath>lib/BepInEx/core/BepInEx.Core.dll</HintPath>
+      <HintPath>refs/BepInEx.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="BepInEx.Unity.IL2CPP">
-      <HintPath>lib/BepInEx/core/BepInEx.Unity.IL2CPP.dll</HintPath>
+      <HintPath>refs/BepInEx.Unity.IL2CPP.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppInterop.Runtime">
-      <HintPath>lib/BepInEx/core/Il2CppInterop.Runtime.dll</HintPath>
+      <HintPath>refs/Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
